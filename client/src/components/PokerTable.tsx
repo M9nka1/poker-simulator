@@ -55,7 +55,6 @@ const PokerTable: React.FC<PokerTableProps> = ({
 }) => {
   const [table, setTable] = useState<TableData>(initialTable);
   const [isLoading, setIsLoading] = useState(false);
-  const [betAmount, setBetAmount] = useState<number>(0);
   const [useCardImages, setUseCardImages] = useState<boolean>(false);
 
   useEffect(() => {
@@ -369,45 +368,7 @@ const PokerTable: React.FC<PokerTableProps> = ({
         </div>
       )}
 
-      {/* Custom Bet Input */}
-      {isCurrentPlayerActive && (
-        <div style={{ margin: '15px 0', textAlign: 'center' }}>
-          <input
-            type="number"
-            value={betAmount}
-            onChange={(e) => setBetAmount(Number(e.target.value))}
-            placeholder="Сумма ставки"
-            min="1"
-            max={currentPlayer.stack}
-            style={{
-              padding: '8px',
-              borderRadius: '5px',
-              border: '1px solid rgba(255,255,255,0.3)',
-              background: 'rgba(255,255,255,0.1)',
-              color: 'white',
-              width: '120px',
-              marginRight: '10px'
-            }}
-          />
-          <button
-            className="action-btn bet"
-            onClick={() => makeAction('bet', betAmount)}
-            disabled={isLoading || betAmount <= 0 || betAmount > currentPlayer.stack}
-            style={{
-              background: 'rgba(255,167,38,0.2)',
-              border: '2px solid #FFA726',
-              color: '#FFA726',
-              padding: '8px 15px',
-              borderRadius: '8px',
-              cursor: (betAmount <= 0 || betAmount > currentPlayer.stack) ? 'not-allowed' : 'pointer',
-              fontWeight: 'bold',
-              opacity: (betAmount <= 0 || betAmount > currentPlayer.stack) ? 0.5 : 1
-            }}
-          >
-            🎯 Bet €{betAmount}
-          </button>
-        </div>
-      )}
+
 
       {/* New Hand Button */}
       {table.handComplete && (
