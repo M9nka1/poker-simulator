@@ -1,0 +1,11 @@
+PokerStars Hand #242345678901: Hold'em No Limit (€5/€10 EUR) - 2024/05/25 15:30:00 CET
+Table 'Example 6-max' 6-max Seat #1 is the button
+Seat 1: Player1 (€1000 in chips)
+Seat 2: Player2 (€1000 in chips)
+Player2: posts small blind €5
+Player1: posts big blind €10
+*** HOLE CARDS ***
+Dealt to Player1 [Ah Kh]
+Dealt to Player2 [Qd Qs]
+Player1: raises €20 to €30
+Player2: calls €25 

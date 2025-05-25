@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 WebSocket Диагностика</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1e3c72;
+            color: white;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: rgba(76,175,80,0.2); color: #4CAF50; }
+        .error { background: rgba(244,67,54,0.2); color: #f44336; }
+        .info { background: rgba(33,150,243,0.2); color: #2196F3; }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #45a049; }
+        .log {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            height: 300px;
+            overflow-y: auto;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 WebSocket Диагностика</h1>
+        
+        <div id="status" class="status info">Готов к тестированию</div>
+        
+        <button onclick="testWebSocket()">🔗 Тест WebSocket</button>
+        <button onclick="clearLog()">🗑️ Очистить лог</button>
+        
+        <div id="log" class="log">Лог событий появится здесь...\n</div>
+        
+        <h3>📋 Информация:</h3>
+        <ul>
+            <li><strong>Текущий URL:</strong> <span id="currentUrl"></span></li>
+            <li><strong>WebSocket URL:</strong> <span id="wsUrl"></span></li>
+            <li><strong>Протокол:</strong> <span id="protocol"></span></li>
+        </ul>
+    </div>
+
+    <script>
+        let ws = null;
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').textContent = 'Лог очищен...\n';
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+        }
+        
+        function testWebSocket() {
+            log('🔧 Начинаем диагностику WebSocket...');
+            
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.hostname}:5000`;
+            
+            log(`🔗 Подключаемся к: ${wsUrl}`);
+            updateStatus('🔄 Подключение...', 'info');
+            
+            try {
+                ws = new WebSocket(wsUrl);
+                
+                ws.onopen = () => {
+                    log('✅ WebSocket подключен успешно!');
+                    updateStatus('🟢 Подключен', 'success');
+                    
+                    // Отправляем тестовое сообщение
+                    const testMessage = {
+                        type: 'test',
+                        message: 'Тестовое сообщение от диагностики',
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    ws.send(JSON.stringify(testMessage));
+                    log('📤 Отправлено тестовое сообщение');
+                };
+                
+                ws.onmessage = (event) => {
+                    log(`📨 Получено сообщение: ${event.data}`);
+                };
+                
+                ws.onclose = (event) => {
+                    log(`🔌 WebSocket закрыт. Код: ${event.code}, Причина: ${event.reason || 'Не указана'}`);
+                    updateStatus('🔴 Отключен', 'error');
+                };
+                
+                ws.onerror = (error) => {
+                    log(`❌ Ошибка WebSocket: ${error}`);
+                    updateStatus('❌ Ошибка подключения', 'error');
+                };
+                
+            } catch (error) {
+                log(`❌ Исключение при создании WebSocket: ${error.message}`);
+                updateStatus('❌ Ошибка создания', 'error');
+            }
+        }
+        
+        // Инициализация информации о странице
+        window.onload = () => {
+            document.getElementById('currentUrl').textContent = window.location.href;
+            
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.hostname}:5000`;
+            document.getElementById('wsUrl').textContent = wsUrl;
+            document.getElementById('protocol').textContent = window.location.protocol;
+            
+            log('🎮 Диагностическая страница загружена');
+            log('💡 Нажмите "Тест WebSocket" для проверки подключения');
+        };
+    </script>
+</body>
+</html> 

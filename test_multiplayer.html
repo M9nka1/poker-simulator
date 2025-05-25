@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Тест многопользовательской игры</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .success { background: rgba(76, 175, 80, 0.2); border: 1px solid #4CAF50; color: #4CAF50; }
+        .error { background: rgba(244, 67, 54, 0.2); border: 1px solid #f44336; color: #f44336; }
+        .info { background: rgba(33, 150, 243, 0.2); border: 1px solid #2196F3; color: #2196F3; }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover { background: #45a049; }
+        button:disabled { background: #666; cursor: not-allowed; }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        .log {
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            height: 200px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Тест многопользовательской игры</h1>
+        <p>Проверка WebSocket соединения и многопользовательской функциональности</p>
+
+        <!-- Статус подключения -->
+        <div class="test-section">
+            <h3>📡 Статус подключения</h3>
+            <div id="connectionStatus" class="status info">🔄 Подключение...</div>
+            <button onclick="testConnection()">🔄 Переподключиться</button>
+            <button onclick="disconnectWS()">❌ Отключиться</button>
+        </div>
+
+        <!-- Тест API -->
+        <div class="test-section">
+            <h3>🔧 Тест API</h3>
+            <button onclick="testAPI()">🧪 Тест создания сессии</button>
+            <div id="apiStatus" class="status info">Готов к тестированию</div>
+            <div id="sessionInfo"></div>
+        </div>
+
+        <!-- Тест WebSocket -->
+        <div class="test-section">
+            <h3>🌐 Тест WebSocket</h3>
+            <button onclick="testWebSocket()">🔗 Тест WebSocket</button>
+            <button onclick="sendTestMessage()">📤 Отправить тестовое сообщение</button>
+            <div id="wsStatus" class="status info">WebSocket не подключен</div>
+        </div>
+
+        <!-- Симуляция игры -->
+        <div class="test-section">
+            <h3>🎲 Симуляция многопользовательской игры</h3>
+            <input type="text" id="playerName" placeholder="Введите ваше имя" value="Тестер">
+            <button onclick="simulatePlayer1()">🎯 Симулировать Игрока 1</button>
+            <button onclick="simulatePlayer2()">🎲 Симулировать Игрока 2</button>
+            <button onclick="simulateAction()">⚡ Симулировать действие</button>
+        </div>
+
+        <!-- Лог -->
+        <div class="test-section">
+            <h3>📝 Лог событий</h3>
+            <div id="log" class="log"></div>
+            <button onclick="clearLog()">🗑️ Очистить лог</button>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let currentSessionId = null;
+        let currentTableId = 1;
+        let currentPlayerId = null;
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.className = `status ${type}`;
+            element.textContent = message;
+        }
+
+        // Тест API
+        async function testAPI() {
+            log('🧪 Начинаем тест API...');
+            updateStatus('apiStatus', '🔄 Тестирование API...', 'info');
+
+            try {
+                // Тест создания сессии
+                const sessionData = {
+                    preflopHistory: '',
+                    boardSettings: {
+                        flopSettings: { random: true },
+                        turnSettings: { enabled: true },
+                        riverSettings: { enabled: true }
+                    },
+                    handRanges: {
+                        player1: ['AA', 'KK', 'QQ'],
+                        player2: ['AA', 'KK', 'QQ']
+                    },
+                    tableCount: 1,
+                    betSizes: { quarter: true, half: true, pot: true }
+                };
+
+                const response = await fetch('/api/create-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(sessionData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    currentSessionId = result.sessionId;
+                    currentTableId = result.tables[0].id;
+                    
+                    updateStatus('apiStatus', '✅ API работает корректно', 'success');
+                    document.getElementById('sessionInfo').innerHTML = `
+                        <div class="status success">
+                            📋 Сессия создана: ${currentSessionId}<br>
+                            🎯 Стол ID: ${currentTableId}<br>
+                            🎴 Столов: ${result.tables.length}
+                        </div>
+                    `;
+                    log(`✅ Сессия создана: ${currentSessionId}`);
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                updateStatus('apiStatus', `❌ Ошибка API: ${error.message}`, 'error');
+                log(`❌ Ошибка API: ${error.message}`);
+            }
+        }
+
+        // Тест WebSocket
+        function testWebSocket() {
+            log('🌐 Тестируем WebSocket соединение...');
+            
+            if (ws) {
+                ws.close();
+            }
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.hostname}:5000`;
+            
+            log(`🔗 Подключаемся к: ${wsUrl}`);
+            
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                updateStatus('connectionStatus', '🟢 WebSocket подключен', 'success');
+                updateStatus('wsStatus', '✅ WebSocket соединение активно', 'success');
+                log('✅ WebSocket подключен успешно');
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                log(`📨 Получено сообщение: ${JSON.stringify(data, null, 2)}`);
+            };
+
+            ws.onclose = () => {
+                updateStatus('connectionStatus', '🔴 WebSocket отключен', 'error');
+                updateStatus('wsStatus', '❌ WebSocket соединение закрыто', 'error');
+                log('❌ WebSocket соединение закрыто');
+            };
+
+            ws.onerror = (error) => {
+                updateStatus('connectionStatus', '🔴 Ошибка WebSocket', 'error');
+                updateStatus('wsStatus', '❌ Ошибка WebSocket соединения', 'error');
+                log(`❌ Ошибка WebSocket: ${error}`);
+            };
+        }
+
+        function sendTestMessage() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ WebSocket не подключен');
+                return;
+            }
+
+            const testMessage = {
+                type: 'test',
+                message: 'Тестовое сообщение',
+                timestamp: new Date().toISOString()
+            };
+
+            ws.send(JSON.stringify(testMessage));
+            log(`📤 Отправлено тестовое сообщение: ${JSON.stringify(testMessage)}`);
+        }
+
+        // Симуляция игроков
+        function simulatePlayer1() {
+            if (!currentSessionId) {
+                log('❌ Сначала создайте сессию');
+                return;
+            }
+
+            const playerName = document.getElementById('playerName').value || 'Игрок 1';
+            currentPlayerId = 1;
+
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                testWebSocket();
+                setTimeout(() => simulatePlayer1(), 1000);
+                return;
+            }
+
+            const joinMessage = {
+                type: 'join_session',
+                sessionId: currentSessionId,
+                tableId: currentTableId,
+                playerId: 1,
+                playerName: playerName
+            };
+
+            ws.send(JSON.stringify(joinMessage));
+            log(`🎯 Игрок 1 (${playerName}) присоединяется к сессии`);
+        }
+
+        function simulatePlayer2() {
+            if (!currentSessionId) {
+                log('❌ Сначала создайте сессию');
+                return;
+            }
+
+            const playerName = document.getElementById('playerName').value || 'Игрок 2';
+            currentPlayerId = 2;
+
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                testWebSocket();
+                setTimeout(() => simulatePlayer2(), 1000);
+                return;
+            }
+
+            const joinMessage = {
+                type: 'join_session',
+                sessionId: currentSessionId,
+                tableId: currentTableId,
+                playerId: 2,
+                playerName: playerName
+            };
+
+            ws.send(JSON.stringify(joinMessage));
+            log(`🎲 Игрок 2 (${playerName}) присоединяется к сессии`);
+        }
+
+        function simulateAction() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                log('❌ WebSocket не подключен');
+                return;
+            }
+
+            if (!currentSessionId || !currentPlayerId) {
+                log('❌ Сначала присоединитесь как игрок');
+                return;
+            }
+
+            const actions = ['check', 'call', 'bet'];
+            const randomAction = actions[Math.floor(Math.random() * actions.length)];
+            const amount = randomAction === 'bet' ? 50 : undefined;
+
+            const actionMessage = {
+                type: 'player_action',
+                sessionId: currentSessionId,
+                tableId: currentTableId,
+                playerId: currentPlayerId,
+                action: randomAction,
+                amount: amount
+            };
+
+            ws.send(JSON.stringify(actionMessage));
+            log(`⚡ Игрок ${currentPlayerId} делает действие: ${randomAction}${amount ? ` (${amount})` : ''}`);
+        }
+
+        function testConnection() {
+            testWebSocket();
+        }
+
+        function disconnectWS() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        // Автоматический запуск тестов при загрузке
+        window.onload = () => {
+            log('🎮 Тестовая страница загружена');
+            log('📋 Доступные тесты:');
+            log('  1. Тест API - создание сессии');
+            log('  2. Тест WebSocket - соединение');
+            log('  3. Симуляция игроков');
+            log('🚀 Начните с тестирования API');
+        };
+    </script>
+</body>
+</html> 

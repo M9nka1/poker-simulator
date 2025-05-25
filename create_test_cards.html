@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор тестовых карт</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #2c3e50;
+            color: white;
+        }
+        .card {
+            width: 200px;
+            height: 300px;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 10px;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .rank {
+            font-size: 72px;
+            font-weight: bold;
+            color: #333;
+        }
+        .suit {
+            font-size: 48px;
+            margin-top: 10px;
+        }
+        .red { color: #e74c3c; }
+        .black { color: #2c3e50; }
+        .cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .instructions {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎴 Генератор тестовых карт</h1>
+    
+    <div class="instructions">
+        <h3>Инструкция:</h3>
+        <ol>
+            <li>Нажмите "Создать тестовые карты"</li>
+            <li>Правой кнопкой мыши на каждую карту → "Сохранить изображение как..."</li>
+            <li>Сохраните в папку <code>client/public/cards/</code></li>
+            <li>Используйте правильные имена файлов (AS.png, KH.png, и т.д.)</li>
+        </ol>
+    </div>
+
+    <button onclick="createTestCards()">Создать тестовые карты</button>
+    <button onclick="downloadAll()">Скачать все карты</button>
+
+    <div id="cards-container" class="cards-container"></div>
+
+    <script>
+        const testCards = [
+            {rank: 'A', suit: '♠', color: 'black', filename: 'AS.png'},
+            {rank: 'K', suit: '♥', color: 'red', filename: 'KH.png'},
+            {rank: 'Q', suit: '♦', color: 'red', filename: 'QD.png'},
+            {rank: 'J', suit: '♣', color: 'black', filename: 'JC.png'},
+            {rank: '10', suit: '♠', color: 'black', filename: '10S.png'},
+            {rank: '9', suit: '♥', color: 'red', filename: '9H.png'},
+            {rank: '8', suit: '♦', color: 'red', filename: '8D.png'},
+            {rank: '7', suit: '♣', color: 'black', filename: '7C.png'},
+            {rank: '6', suit: '♠', color: 'black', filename: '6S.png'},
+            {rank: '5', suit: '♥', color: 'red', filename: '5H.png'},
+            {rank: '4', suit: '♦', color: 'red', filename: '4D.png'},
+            {rank: '3', suit: '♣', color: 'black', filename: '3C.png'},
+            {rank: '2', suit: '♠', color: 'black', filename: '2S.png'}
+        ];
+
+        function createTestCards() {
+            const container = document.getElementById('cards-container');
+            container.innerHTML = '';
+
+            testCards.forEach(card => {
+                const cardElement = createCardElement(card);
+                container.appendChild(cardElement);
+            });
+        }
+
+        function createCardElement(card) {
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'card';
+            cardDiv.innerHTML = `
+                <div class="rank">${card.rank}</div>
+                <div class="suit ${card.color}">${card.suit}</div>
+            `;
+            
+            // Добавляем возможность скачивания
+            cardDiv.addEventListener('click', () => downloadCard(cardDiv, card.filename));
+            cardDiv.style.cursor = 'pointer';
+            cardDiv.title = `Нажмите для скачивания ${card.filename}`;
+            
+            return cardDiv;
+        }
+
+        function downloadCard(cardElement, filename) {
+            // Создаем canvas для конвертации в изображение
+            html2canvas(cardElement).then(canvas => {
+                const link = document.createElement('a');
+                link.download = filename;
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+
+        function downloadAll() {
+            alert('Для скачивания всех карт нажимайте на каждую карту по очереди. Каждая карта скачается с правильным именем файла.');
+        }
+
+        // Загружаем html2canvas библиотеку
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        document.head.appendChild(script);
+    </script>
+</body>
+</html> 

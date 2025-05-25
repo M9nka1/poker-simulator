@@ -1,0 +1,12 @@
+PokerStars Hand #242345678902: Hold'em No Limit (€5/€10 EUR) - 2024/05/25 16:15:45 CET
+Table 'Advanced 2-max' 2-max Seat #2 is the button
+Seat 1: Hero (€1500 in chips)
+Seat 2: Villain (€1200 in chips)
+Hero: posts small blind €5
+Villain: posts big blind €10
+*** HOLE CARDS ***
+Dealt to Hero [As Ks]
+Dealt to Villain [Tc Th]
+Hero: raises €25 to €35
+Villain: raises €85 to €120
+Hero: calls €85 
