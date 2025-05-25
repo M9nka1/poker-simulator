@@ -29,17 +29,28 @@ export class WebSocketService {
   private connect() {
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.hostname}:5000`;
+      
+      // Определяем правильный URL для WebSocket
+      let wsUrl: string;
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        // Локальная разработка - используем порт 5000
+        wsUrl = `${protocol}//${window.location.hostname}:5000`;
+      } else {
+        // Продакшн (Railway) - используем тот же хост без порта
+        wsUrl = `${protocol}//${window.location.host}`;
+      }
       
       this.ws = new WebSocket(wsUrl);
       
       this.ws.onopen = () => {
         console.log('✅ WebSocket connected to:', wsUrl);
+        console.log('🌐 Environment:', window.location.hostname === 'localhost' ? 'Development' : 'Production');
         this.isConnected = true;
         this.reconnectAttempts = 0;
         
         // Rejoin session if we have player info
         if (this.playerInfo) {
+          console.log('🔄 Rejoining session:', this.playerInfo);
           this.joinSession(this.playerInfo);
         }
       };
