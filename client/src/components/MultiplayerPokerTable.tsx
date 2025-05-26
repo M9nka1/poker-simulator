@@ -230,28 +230,6 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
     if (!currentPlayer || !otherPlayer) return 0;
     
     // Правильный расчет общих ставок с учетом покерной логики
-    const getPlayerStreetTotal = (player: any) => {
-      const streetActions = player.actions
-        .filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
-        .sort((a: any, b: any) => a.timestamp - b.timestamp);
-      
-      let totalBet = 0;
-      
-      for (const action of streetActions) {
-        if (action.action === 'bet') {
-          totalBet = action.amount; // Bet устанавливает новую ставку
-        } else if (action.action === 'raise') {
-          totalBet += action.amount; // Raise добавляет к текущей максимальной ставке
-        } else if (action.action === 'call') {
-          // Call не изменяет общую ставку игрока, он уже учтен в amount
-          totalBet += action.amount;
-        }
-      }
-      
-      return totalBet;
-    };
-    
-    // Альтернативный метод: отслеживаем максимальную ставку на улице
     const calculateCorrectTotals = () => {
       const allActions = [
         ...currentPlayer.actions.filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call')),
