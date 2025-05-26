@@ -965,15 +965,6 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
                     
                     if (!currentPlayer || !otherPlayer) return;
                     
-                    // Рассчитываем текущие ставки игроков на улице
-                    const myTotal = currentPlayer.actions
-                      .filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
-                      .reduce((total: number, action: any) => total + (action.amount || 0), 0);
-                    
-                    const opponentTotal = otherPlayer.actions
-                      .filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
-                      .reduce((total: number, action: any) => total + (action.amount || 0), 0);
-                    
                     const callAmount = getCallAmount();
                     const hasOpponentBet = callAmount > 0;
                     
