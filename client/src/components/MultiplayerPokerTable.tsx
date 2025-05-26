@@ -66,6 +66,14 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
   const [currentPlayerId, setCurrentPlayerId] = useState<number | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<string>('Подключение...');
   const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [showSizingSettings, setShowSizingSettings] = useState<boolean>(false);
+  const [customSizings, setCustomSizings] = useState<{[key: string]: number}>({
+    quarter: 25,
+    half: 50,
+    threeQuarter: 75,
+    pot: 100,
+    allIn: 100
+  });
 
   useEffect(() => {
     setTable(initialTable);
@@ -194,10 +202,10 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
     
     let baseAmount = 0;
     switch (type) {
-      case 'quarter': baseAmount = Math.round(pot * 0.25); break;
-      case 'half': baseAmount = Math.round(pot * 0.5); break;
-      case 'threeQuarter': baseAmount = Math.round(pot * 0.75); break;
-      case 'pot': baseAmount = pot; break;
+      case 'quarter': baseAmount = Math.round(pot * (customSizings.quarter / 100)); break;
+      case 'half': baseAmount = Math.round(pot * (customSizings.half / 100)); break;
+      case 'threeQuarter': baseAmount = Math.round(pot * (customSizings.threeQuarter / 100)); break;
+      case 'pot': baseAmount = Math.round(pot * (customSizings.pot / 100)); break;
       case 'allIn': baseAmount = maxStack; break;
       default: baseAmount = 0;
     }
@@ -247,10 +255,10 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
     .map(([type, _]) => ({
       type,
       amount: calculateBetSize(type),
-      label: type === 'quarter' ? '25%' :
-             type === 'half' ? '50%' :
-             type === 'threeQuarter' ? '75%' :
-             type === 'pot' ? '100%' :
+      label: type === 'quarter' ? `${customSizings.quarter}%` :
+             type === 'half' ? `${customSizings.half}%` :
+             type === 'threeQuarter' ? `${customSizings.threeQuarter}%` :
+             type === 'pot' ? `${customSizings.pot}%` :
              'All-in'
     }));
 
@@ -691,54 +699,187 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
       {/* Action Buttons */}
       {isMyTurn && (
         <div style={{ margin: '20px 0' }}>
-          {/* Sizing Buttons */}
-          <div style={{ 
-            display: 'flex', 
-            gap: '8px', 
-            justifyContent: 'center', 
-            flexWrap: 'wrap',
-            marginBottom: '15px'
+          {/* Sizing Panel */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(33,150,243,0.1), rgba(76,175,80,0.1))',
+            border: '2px solid rgba(255,167,38,0.3)',
+            borderRadius: '15px',
+            padding: '15px',
+            marginBottom: '20px',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
           }}>
-            <div style={{ 
-              fontSize: '0.9rem', 
-              color: '#FFA726', 
-              fontWeight: 'bold',
-              alignSelf: 'center',
-              marginRight: '10px'
+            {/* Header with Settings Button */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '15px'
             }}>
-              Размер:
+              <div style={{ 
+                fontSize: '1rem', 
+                color: '#FFA726', 
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                🎯 Размеры ставок:
+              </div>
+              <button
+                onClick={() => setShowSizingSettings(!showSizingSettings)}
+                style={{
+                  background: showSizingSettings ? 'linear-gradient(135deg, #4CAF50, #45a049)' : 'linear-gradient(135deg, #2196F3, #1976D2)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '6px 12px',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                  transition: 'all 0.3s ease'
+                }}
+                title="Настроить проценты"
+              >
+                {showSizingSettings ? '✅ Готово' : '⚙️ Настроить'}
+              </button>
             </div>
-            {availableBetSizes.map(({ type, amount, label }) => {
-              const callAmount = getCallAmount();
-              const isRaise = callAmount > 0;
-              let finalAmount = isRaise ? amount + callAmount : amount;
-              
-              const currentPlayerData = table.players.find(p => p.id === currentPlayerId);
-              const maxStack = currentPlayerData?.stack || 1000;
-              finalAmount = Math.min(finalAmount, maxStack);
-              
-              if (isRaise && finalAmount <= callAmount) {
-                return null;
-              }
-              
-              return (
-                <button
-                  key={type}
-                  onClick={() => setSelectedBetAmount(finalAmount)}
-                  className={`btn ${selectedBetAmount === finalAmount ? 'btn-warning' : 'btn-outline'}`}
-                  style={{
-                    fontSize: '0.8rem',
-                    padding: '6px 12px',
-                    background: selectedBetAmount === finalAmount ? '#FFA726' : 'transparent',
-                    borderColor: '#FFA726',
-                    color: selectedBetAmount === finalAmount ? 'white' : '#FFA726'
-                  }}
-                  title={`€${finalAmount}`}
-                >
-                  {label}
-                </button>
-              );
-            }).filter(Boolean)}
+
+            {/* Settings Panel */}
+            {showSizingSettings && (
+              <div style={{
+                background: 'rgba(0,0,0,0.2)',
+                borderRadius: '10px',
+                padding: '15px',
+                marginBottom: '15px',
+                border: '1px solid rgba(255,255,255,0.1)'
+              }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                  gap: '10px'
+                }}>
+                  {Object.entries(customSizings).filter(([key]) => key !== 'allIn').map(([key, value]) => (
+                    <div key={key} style={{ textAlign: 'center' }}>
+                      <label style={{
+                        display: 'block',
+                        color: '#FFA726',
+                        fontSize: '0.8rem',
+                        marginBottom: '5px',
+                        fontWeight: 'bold'
+                      }}>
+                        {key === 'quarter' ? '1/4' :
+                         key === 'half' ? '1/2' :
+                         key === 'threeQuarter' ? '3/4' :
+                         'Пот'}
+                      </label>
+                      <input
+                        type="number"
+                        min="5"
+                        max="200"
+                        step="5"
+                        value={value}
+                        onChange={(e) => setCustomSizings(prev => ({
+                          ...prev,
+                          [key]: parseInt(e.target.value) || 0
+                        }))}
+                        style={{
+                          width: '60px',
+                          padding: '4px 8px',
+                          borderRadius: '5px',
+                          border: '1px solid #FFA726',
+                          background: 'rgba(255,255,255,0.1)',
+                          color: 'white',
+                          textAlign: 'center',
+                          fontSize: '0.9rem'
+                        }}
+                      />
+                      <span style={{
+                        color: '#FFA726',
+                        fontSize: '0.8rem',
+                        marginLeft: '2px'
+                      }}>%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sizing Buttons */}
+            <div style={{ 
+              display: 'flex', 
+              gap: '10px', 
+              justifyContent: 'center', 
+              flexWrap: 'wrap'
+            }}>
+              {availableBetSizes.map(({ type, amount, label }) => {
+                const callAmount = getCallAmount();
+                const isRaise = callAmount > 0;
+                let finalAmount = isRaise ? amount + callAmount : amount;
+                
+                const currentPlayerData = table.players.find(p => p.id === currentPlayerId);
+                const maxStack = currentPlayerData?.stack || 1000;
+                finalAmount = Math.min(finalAmount, maxStack);
+                
+                if (isRaise && finalAmount <= callAmount) {
+                  return null;
+                }
+                
+                const isSelected = selectedBetAmount === finalAmount;
+                
+                return (
+                  <button
+                    key={type}
+                    onClick={() => setSelectedBetAmount(finalAmount)}
+                    onDoubleClick={() => {
+                      if (type !== 'allIn') {
+                        setShowSizingSettings(true);
+                      }
+                    }}
+                    style={{
+                      background: isSelected 
+                        ? 'linear-gradient(135deg, #FFA726, #FF9800)' 
+                        : 'linear-gradient(135deg, rgba(255,167,38,0.2), rgba(255,152,0,0.2))',
+                      border: isSelected 
+                        ? '2px solid #FFA726' 
+                        : '2px solid rgba(255,167,38,0.5)',
+                      color: isSelected ? 'white' : '#FFA726',
+                      borderRadius: '12px',
+                      padding: '10px 16px',
+                      fontSize: '0.9rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      boxShadow: isSelected 
+                        ? '0 4px 15px rgba(255,167,38,0.4), inset 0 2px 4px rgba(255,255,255,0.2)' 
+                        : '0 2px 8px rgba(0,0,0,0.2), inset 0 1px 2px rgba(255,255,255,0.1)',
+                      transition: 'all 0.3s ease',
+                      transform: isSelected ? 'translateY(-2px)' : 'none',
+                      minWidth: '70px',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                    title={`€${finalAmount} ${type !== 'allIn' ? '(двойной клик для настройки)' : ''}`}
+                  >
+                    <div style={{
+                      position: 'relative',
+                      zIndex: 1
+                    }}>
+                      {label}
+                    </div>
+                    {/* Shine effect */}
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: '-100%',
+                      width: '100%',
+                      height: '100%',
+                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+                      transition: 'left 0.5s ease',
+                      ...(isSelected && { left: '100%' })
+                    }} />
+                  </button>
+                );
+              }).filter(Boolean)}
+            </div>
           </div>
 
           {/* Main Action Buttons */}
