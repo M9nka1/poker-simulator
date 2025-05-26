@@ -60,13 +60,6 @@ const JoinSessionPage: React.FC<JoinSessionPageProps> = ({
       if (response.ok) {
         const sessionData = await response.json();
         
-        const gameSession: GameSession = {
-          sessionId: sessionData.sessionId,
-          tables: sessionData.tables,
-          settings: sessionData.settings,
-          playerNames: sessionData.playerNames || []
-        };
-        
         // Открываем новое окно для второго игрока
         openPlayerWindow(sessionData.sessionId, sessionData.tables[0].id, sessionData.playerNames || []);
         
