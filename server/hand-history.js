@@ -397,12 +397,22 @@ class HandHistoryGenerator {
     allActions.sort((a, b) => a.timestamp - b.timestamp);
     
     allActions.forEach((action, index) => {
+      // Проверяем корректность данных действия
+      if (!action.amount || action.amount < 0) {
+        console.warn(`⚠️ Invalid action amount: ${action.amount} for ${action.action}`);
+        action.amount = 0;
+      }
+      
       switch (action.action) {
         case 'check':
           actions += `${action.playerName}: checks\n`;
           break;
         case 'bet':
-          actions += `${action.playerName}: bets ${this.currency}${action.amount.toFixed(2)}\n`;
+          const betAmount = Math.max(0, action.amount);
+          if (betAmount <= 0) {
+            console.warn(`Invalid bet amount: ${action.amount}`);
+          }
+          actions += `${action.playerName}: bets ${this.currency}${betAmount.toFixed(2)}\n`;
           break;
         case 'call':
           // Для call нужно показать сумму доплаты до максимальной ставки
@@ -430,39 +440,57 @@ class HandHistoryGenerator {
           
           // Call amount = максимальная ставка - ставка игрока до call
           const playerTotalBeforeCall = playerTotalsForCall[action.playerId] - action.amount;
-          const callAmount = maxBetOnStreet - playerTotalBeforeCall;
+          const callAmount = Math.max(0, maxBetOnStreet - playerTotalBeforeCall);
           
-          actions += `${action.playerName}: calls ${this.currency}${callAmount.toFixed(2)}\n`;
+          // Проверяем корректность значений
+          if (callAmount <= 0) {
+            console.warn(`Invalid call amount: ${callAmount}, using action.amount: ${action.amount}`);
+            // Fallback: используем сумму из action
+            actions += `${action.playerName}: calls ${this.currency}${Math.max(0, action.amount).toFixed(2)}\n`;
+          } else {
+            actions += `${action.playerName}: calls ${this.currency}${callAmount.toFixed(2)}\n`;
+          }
           break;
         case 'raise':
           // Для raise нужно показать "raises $X to $Y"
-          // Теперь в action.amount хранится общая потраченная сумма игроком
-          // Нужно найти максимальную ставку на улице до этого raise
+          // Определяем, есть ли активная ставка от другого игрока на этой улице
           const previousActions = allActions.slice(0, index);
-          let maxBetBeforeRaise = 0;
           
-          // Находим максимальную ставку среди всех игроков до этого raise
+          // Находим последнюю ставку/рейз от ДРУГОГО игрока
+          const lastOpponentBetAction = previousActions
+            .filter(a => a.playerId !== action.playerId && (a.action === 'bet' || a.action === 'raise'))
+            .pop();
+          
+          // Рассчитываем общие ставки каждого игрока до этого действия
           const playerTotals = {};
+          table.players.forEach(player => {
+            playerTotals[player.id] = 0;
+          });
+          
           for (const prevAction of previousActions) {
-            if (!playerTotals[prevAction.playerId]) {
-              playerTotals[prevAction.playerId] = 0;
-            }
-            
             if (prevAction.action === 'bet' || prevAction.action === 'raise' || prevAction.action === 'call') {
               playerTotals[prevAction.playerId] += prevAction.amount;
             }
           }
           
-          // Максимальная ставка до raise
-          maxBetBeforeRaise = Math.max(0, ...Object.values(playerTotals));
+          // Общая ставка игрока после этого действия
+          const currentPlayerTotal = playerTotals[action.playerId] + action.amount;
           
-          // Общая ставка игрока после raise
-          const totalBetAmount = action.amount;
-          
-          // Raise amount = общая ставка - максимальная ставка до raise
-          const raiseAmount = totalBetAmount - maxBetBeforeRaise;
-          
-          actions += `${action.playerName}: raises ${this.currency}${raiseAmount.toFixed(2)} to ${this.currency}${totalBetAmount.toFixed(2)}\n`;
+          // Если есть активная ставка от оппонента, это raise
+          if (lastOpponentBetAction) {
+            const maxBetBeforeRaise = Math.max(...Object.values(playerTotals));
+            const raiseAmount = Math.max(0, currentPlayerTotal - maxBetBeforeRaise);
+            
+            if (raiseAmount > 0) {
+              actions += `${action.playerName}: raises ${this.currency}${raiseAmount.toFixed(2)} to ${this.currency}${currentPlayerTotal.toFixed(2)}\n`;
+            } else {
+              // Fallback: показываем как bet
+              actions += `${action.playerName}: bets ${this.currency}${Math.max(0, action.amount).toFixed(2)}\n`;
+            }
+          } else {
+            // Нет активной ставки от оппонента - это первая ставка (bet)
+            actions += `${action.playerName}: bets ${this.currency}${Math.max(0, action.amount).toFixed(2)}\n`;
+          }
           break;
         case 'fold':
           actions += `${action.playerName}: folds\n`;

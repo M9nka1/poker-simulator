@@ -415,8 +415,8 @@ class PokerEngine {
     this.validateAction(table, playerId, action, amount);
 
     // Рассчитываем стоимость действия ДО добавления в actions
-    let actualCost = amount;
-    let totalBetAmount = amount; // Для сохранения в actions
+    let actualCost = Math.max(0, amount || 0);
+    let totalBetAmount = Math.max(0, amount || 0); // Для сохранения в actions
     
     if (action === 'raise' && amount > 0) {
       // При raise amount - это доплата к максимальной ставке на улице
@@ -424,12 +424,19 @@ class PokerEngine {
       const alreadySpent = this.getStreetTotal(player, table.currentStreet);
       const maxBetOnStreet = this.getMaxBetOnStreet(table, table.currentStreet);
       const newTotalBet = maxBetOnStreet + amount;
-      actualCost = newTotalBet - alreadySpent;
+      actualCost = Math.max(0, newTotalBet - alreadySpent);
+      
+      // Проверяем корректность значений
+      if (actualCost <= 0) {
+        console.warn(`⚠️ Invalid raise calculation: alreadySpent=${alreadySpent}, maxBetOnStreet=${maxBetOnStreet}, amount=${amount}`);
+        // Fallback: используем минимальную ставку
+        actualCost = Math.min(amount, player.stack);
+      }
       
       // Ограничиваем actualCost стеком игрока (all-in protection)
       if (actualCost > player.stack) {
         actualCost = player.stack;
-        console.log(`⚠️ Raise limited by stack: requested ${newTotalBet - alreadySpent}, limited to ${actualCost}`);
+        console.log(`⚠️ Raise limited by stack: requested ${actualCost}, limited to ${player.stack}`);
       }
       
       totalBetAmount = actualCost; // Сохраняем реальную потраченную сумму

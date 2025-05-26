@@ -827,13 +827,20 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
               {availableBetSizes.map(({ type, amount, label }) => {
                 const callAmount = getCallAmount();
                 const isRaise = callAmount > 0;
-                let finalAmount = isRaise ? amount + callAmount : amount;
                 
-                const currentPlayerData = table.players.find(p => p.id === currentPlayerId);
-                const maxStack = currentPlayerData?.stack || 1000;
-                finalAmount = Math.min(finalAmount, maxStack);
+                // Определяем финальную сумму в зависимости от типа действия
+                let finalAmount: number;
                 
-                if (isRaise && finalAmount <= callAmount) {
+                if (isRaise) {
+                  // Для raise: amount - это доплата к максимальной ставке
+                  finalAmount = amount; // Размер raise
+                } else {
+                  // Для bet: amount - это размер ставки
+                  finalAmount = amount;
+                }
+                
+                // Для raise проверяем, что размер больше 0
+                if (isRaise && finalAmount <= 0) {
                   return null;
                 }
                 
@@ -958,35 +965,47 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
                     
                     if (!currentPlayer || !otherPlayer) return;
                     
-                    // Рассчитываем текущие ставки на улице
-                    const myTotal = currentPlayer.actions
-                      .filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
-                      .reduce((total: number, action: any) => total + (action.amount || 0), 0);
+                    // Проверяем, есть ли активная ставка от оппонента
+                    const allActions = [
+                      ...currentPlayer.actions.filter((a: any) => a.street === table.currentStreet),
+                      ...otherPlayer.actions.filter((a: any) => a.street === table.currentStreet)
+                    ].sort((a: any, b: any) => a.timestamp - b.timestamp);
                     
-                    const opponentTotal = otherPlayer.actions
-                      .filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
-                      .reduce((total: number, action: any) => total + (action.amount || 0), 0);
+                    const lastOpponentBetAction = allActions
+                      .filter((a: any) => a.playerId !== currentPlayerId && (a.action === 'bet' || a.action === 'raise'))
+                      .pop();
                     
-                    // Определяем желаемую общую ставку
-                    const desiredTotalBet = selectedBetAmount || (opponentTotal + calculateBetSize('half'));
+                    // Определяем действие: bet или raise
+                    const actionType = lastOpponentBetAction ? 'raise' : 'bet';
                     
-                    // Рассчитываем размер raise (доплату к максимальной ставке)
-                    const maxBetOnStreet = Math.max(myTotal, opponentTotal);
-                    const raiseAmount = Math.max(0, desiredTotalBet - maxBetOnStreet);
+                    // Рассчитываем сумму
+                    let actionAmount;
+                    if (actionType === 'bet') {
+                      // Для bet используем выбранную сумму или половину банка
+                      actionAmount = selectedBetAmount || calculateBetSize('half');
+                    } else {
+                      // Для raise рассчитываем доплату к максимальной ставке
+                      const myTotal = currentPlayer.actions
+                        .filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
+                        .reduce((total: number, action: any) => total + (action.amount || 0), 0);
+                      
+                      const opponentTotal = otherPlayer.actions
+                        .filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
+                        .reduce((total: number, action: any) => total + (action.amount || 0), 0);
+                      
+                      const maxBetOnStreet = Math.max(myTotal, opponentTotal);
+                      const desiredTotalBet = selectedBetAmount || (opponentTotal + calculateBetSize('half'));
+                      actionAmount = Math.max(0, desiredTotalBet - maxBetOnStreet);
+                    }
                     
-                    // Ограничиваем стеком (сервер тоже это сделает, но лучше показать правильную сумму)
-                    const actualCost = desiredTotalBet - myTotal;
-                    const limitedRaiseAmount = actualCost > currentPlayer.stack ? 
-                      Math.max(0, currentPlayer.stack - (maxBetOnStreet - myTotal)) : raiseAmount;
-                    
-                    makeAction('raise', limitedRaiseAmount);
+                    makeAction(actionType, actionAmount);
                   }}
                   disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
                   className="btn btn-success"
                   style={{ fontSize: '1.1rem', padding: '12px 20px' }}
-                  title={`Рейз до €${selectedBetAmount || (getCallAmount() + calculateBetSize('half'))}`}
+                  title={`${getCallAmount() > 0 ? 'Рейз' : 'Бет'} €${selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half'))}`}
                 >
-                  🚀 РЕЙЗ €{selectedBetAmount || (getCallAmount() + calculateBetSize('half'))}
+                  {getCallAmount() > 0 ? '🚀 РЕЙЗ' : '💰 БЕТ'} €{selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half'))}
                 </button>
               </>
             )}
