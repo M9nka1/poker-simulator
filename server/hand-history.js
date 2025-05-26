@@ -318,6 +318,33 @@ class HandHistoryGenerator {
     return activePlayers;
   }
 
+  // Метод для извлечения соответствия имен игроков и номеров мест из префлоп файла
+  getPlayerSeatMapping(preflopHistory) {
+    if (!preflopHistory) return {};
+    
+    const lines = preflopHistory.split('\n');
+    const seatMapping = {};
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      // Извлекаем соответствие Seat номер -> имя игрока
+      const seatMatch = trimmedLine.match(/Seat (\d+): (\w+) \([\$€](\d+(?:\.\d+)?) in chips\)/);
+      if (seatMatch) {
+        const seatNumber = parseInt(seatMatch[1]);
+        const playerName = seatMatch[2];
+        seatMapping[playerName] = seatNumber;
+      }
+      
+      // Останавливаемся на HOLE CARDS
+      if (trimmedLine.includes('*** HOLE CARDS ***')) {
+        break;
+      }
+    }
+    
+    return seatMapping;
+  }
+
   generateHandId() {
     return globalHandNumber++;
   }
@@ -415,32 +442,63 @@ class HandHistoryGenerator {
     }
     summary += `]\n`;
     
-    // Player summaries
-    if (table.winner === 'tie') {
-      // Split pot scenario
-      const splitAmount = Math.floor(potAfterRake / 2);
-      table.players.forEach(player => {
-        const folded = player.actions.some(action => action.action === 'fold');
-        if (folded) {
-          summary += `Seat ${player.id}: ${player.name} folded\n`;
-        } else {
-          summary += `Seat ${player.id}: ${player.name} showed [${this.formatCards(player.holeCards)}] and won (${this.currency}${splitAmount.toFixed(2)}) with split pot\n`;
+    // Получаем соответствие имен игроков и номеров мест из префлоп файла
+    const seatMapping = this.getPlayerSeatMapping(this.preflopHistory);
+    const activePlayers = this.getActivePlayers(this.preflopHistory);
+    
+    // Если есть префлоп история, показываем всех игроков с правильными номерами мест
+    if (this.preflopHistory && Object.keys(seatMapping).length > 0) {
+      // Сортируем по номерам мест
+      const sortedSeats = Object.entries(seatMapping).sort((a, b) => a[1] - b[1]);
+      
+      for (const [playerName, seatNumber] of sortedSeats) {
+        const tablePlayer = table.players.find(p => p.name === playerName);
+        
+        if (tablePlayer) {
+          // Игрок участвует в постфлоп игре
+          const folded = tablePlayer.actions.some(action => action.action === 'fold');
+          
+          if (table.winner === 'tie' && !folded) {
+            const splitAmount = Math.floor(potAfterRake / 2);
+            summary += `Seat ${seatNumber}: ${playerName} showed [${this.formatCards(tablePlayer.holeCards)}] and won (${this.currency}${splitAmount.toFixed(2)}) with split pot\n`;
+          } else if (table.winner === tablePlayer.id) {
+            summary += `Seat ${seatNumber}: ${playerName} showed [${this.formatCards(tablePlayer.holeCards)}] and won (${this.currency}${potAfterRake.toFixed(2)})\n`;
+          } else if (folded) {
+            summary += `Seat ${seatNumber}: ${playerName} folded\n`;
+          } else {
+            summary += `Seat ${seatNumber}: ${playerName} showed [${this.formatCards(tablePlayer.holeCards)}] and lost\n`;
+          }
+        } else if (!activePlayers.includes(playerName)) {
+          // Игрок сфолдил в префлопе - показываем пустую строку
+          summary += `Seat ${seatNumber}: ${playerName}\n`;
         }
-      });
+      }
     } else {
-      // Regular winner scenario
-      table.players.forEach(player => {
-        if (table.winner === player.id) {
-          summary += `Seat ${player.id}: ${player.name} showed [${this.formatCards(player.holeCards)}] and won (${this.currency}${potAfterRake.toFixed(2)})\n`;
-        } else {
+      // Fallback к старому формату если нет префлоп истории
+      if (table.winner === 'tie') {
+        const splitAmount = Math.floor(potAfterRake / 2);
+        table.players.forEach(player => {
           const folded = player.actions.some(action => action.action === 'fold');
           if (folded) {
             summary += `Seat ${player.id}: ${player.name} folded\n`;
           } else {
-            summary += `Seat ${player.id}: ${player.name} showed [${this.formatCards(player.holeCards)}] and lost\n`;
+            summary += `Seat ${player.id}: ${player.name} showed [${this.formatCards(player.holeCards)}] and won (${this.currency}${splitAmount.toFixed(2)}) with split pot\n`;
           }
-        }
-      });
+        });
+      } else {
+        table.players.forEach(player => {
+          if (table.winner === player.id) {
+            summary += `Seat ${player.id}: ${player.name} showed [${this.formatCards(player.holeCards)}] and won (${this.currency}${potAfterRake.toFixed(2)})\n`;
+          } else {
+            const folded = player.actions.some(action => action.action === 'fold');
+            if (folded) {
+              summary += `Seat ${player.id}: ${player.name} folded\n`;
+            } else {
+              summary += `Seat ${player.id}: ${player.name} showed [${this.formatCards(player.holeCards)}] and lost\n`;
+            }
+          }
+        });
+      }
     }
     
     summary += '\n\n';
