@@ -409,24 +409,33 @@ class HandHistoryGenerator {
           break;
         case 'raise':
           // Для raise нужно показать "raises $X to $Y"
-          // Находим предыдущую максимальную ставку на улице
+          // Теперь в action.amount хранится общая потраченная сумма игроком
+          // Нужно найти максимальную ставку на улице до этого raise
           const previousActions = allActions.slice(0, index);
-          let currentMaxBet = 0;
+          let maxBetBeforeRaise = 0;
           
-          // Отслеживаем максимальную ставку на улице
-          let runningBet = 0;
+          // Находим максимальную ставку среди всех игроков до этого raise
+          const playerTotals = {};
           for (const prevAction of previousActions) {
-            if (prevAction.action === 'bet') {
-              runningBet = prevAction.amount;
-              currentMaxBet = Math.max(currentMaxBet, runningBet);
-            } else if (prevAction.action === 'raise') {
-              runningBet += prevAction.amount;
-              currentMaxBet = Math.max(currentMaxBet, runningBet);
+            if (!playerTotals[prevAction.playerId]) {
+              playerTotals[prevAction.playerId] = 0;
+            }
+            
+            if (prevAction.action === 'bet' || prevAction.action === 'raise' || prevAction.action === 'call') {
+              playerTotals[prevAction.playerId] += prevAction.amount;
             }
           }
           
-          const totalBetAmount = currentMaxBet + action.amount;
-          actions += `${action.playerName}: raises ${this.currency}${action.amount.toFixed(2)} to ${this.currency}${totalBetAmount.toFixed(2)}\n`;
+          // Максимальная ставка до raise
+          maxBetBeforeRaise = Math.max(0, ...Object.values(playerTotals));
+          
+          // Общая ставка игрока после raise
+          const totalBetAmount = action.amount;
+          
+          // Raise amount = общая ставка - максимальная ставка до raise
+          const raiseAmount = totalBetAmount - maxBetBeforeRaise;
+          
+          actions += `${action.playerName}: raises ${this.currency}${raiseAmount.toFixed(2)} to ${this.currency}${totalBetAmount.toFixed(2)}\n`;
           break;
         case 'fold':
           actions += `${action.playerName}: folds\n`;

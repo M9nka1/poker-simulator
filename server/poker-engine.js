@@ -414,10 +414,26 @@ class PokerEngine {
     // Проверяем валидность действия
     this.validateAction(table, playerId, action, amount);
 
+    // Рассчитываем стоимость действия ДО добавления в actions
+    let actualCost = amount;
+    let totalBetAmount = amount; // Для сохранения в actions
+    
+    if (action === 'raise' && amount > 0) {
+      // При raise amount - это доплата к максимальной ставке на улице
+      // Но игрок должен потратить: (максимальная ставка + amount) - уже потраченное им
+      const alreadySpent = this.getStreetTotal(player, table.currentStreet);
+      const maxBetOnStreet = this.getMaxBetOnStreet(table, table.currentStreet);
+      const newTotalBet = maxBetOnStreet + amount;
+      actualCost = newTotalBet - alreadySpent;
+      totalBetAmount = actualCost; // Сохраняем реальную потраченную сумму
+      
+
+    }
+
     const actionData = {
       player: playerId,
       action,
-      amount,
+      amount: totalBetAmount, // Сохраняем реальную потраченную сумму
       street: table.currentStreet,
       timestamp: Date.now()
     };
@@ -426,25 +442,13 @@ class PokerEngine {
 
     switch (action) {
       case 'bet':
-        if (amount > 0) {
-          player.stack -= amount;
-          table.pot += amount;
-        }
-        break;
       case 'raise':
-        if (amount > 0) {
-          // При raise игрок доплачивает указанную сумму сверх уже поставленного
-          player.stack -= amount;
-          table.pot += amount;
-        }
-        break;
       case 'call':
-        if (amount > 0) {
-          // При call игрок доплачивает до уравнивания ставки
-          player.stack -= amount;
-          table.pot += amount;
+        if (actualCost > 0) {
+          player.stack -= actualCost;
+          table.pot += actualCost;
         }
-        break;
+                break;
       case 'check':
         // No money movement
         break;
@@ -565,9 +569,30 @@ class PokerEngine {
   }
 
   getStreetTotal(player, street) {
+    // Рассчитываем общую ставку игрока на улице
+    // Теперь в actions.amount хранится реальная потраченная сумма
     return player.actions
       .filter(a => a.street === street && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
       .reduce((total, action) => total + (action.amount || 0), 0);
+  }
+
+  getPlayerActualStreetTotal(player, street) {
+    // Рассчитывает реально потраченные деньги игроком на улице (для обновления стека)
+    return player.actions
+      .filter(a => a.street === street && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
+      .reduce((total, action) => total + (action.amount || 0), 0);
+  }
+
+  getMaxBetOnStreet(table, street) {
+    // Находит максимальную ставку на улице среди всех игроков
+    let maxBet = 0;
+    
+    table.players.forEach(player => {
+      const playerTotal = this.getStreetTotal(player, street);
+      maxBet = Math.max(maxBet, playerTotal);
+    });
+    
+    return maxBet;
   }
 
   advanceStreet(table) {
@@ -679,32 +704,10 @@ class PokerEngine {
       
       // Рассчитываем правильную сумму call с учетом покерной логики
       const calculateCorrectTotals = () => {
-        const allActions = [
-          ...currentPlayer.actions.filter(a => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call')),
-          ...otherPlayer.actions.filter(a => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
-        ].sort((a, b) => a.timestamp - b.timestamp);
-        
-        let currentMaxBet = 0;
-        let myTotal = 0;
-        let opponentTotal = 0;
-        
-        for (const action of allActions) {
-          const isMyAction = currentPlayer.actions.includes(action);
-          
-          if (action.action === 'bet') {
-            currentMaxBet = action.amount;
-            if (isMyAction) myTotal = action.amount;
-            else opponentTotal = action.amount;
-          } else if (action.action === 'raise') {
-            currentMaxBet += action.amount;
-            if (isMyAction) myTotal = currentMaxBet;
-            else opponentTotal = currentMaxBet;
-          } else if (action.action === 'call') {
-            // Call уравнивает ставку до текущего максимума
-            if (isMyAction) myTotal = currentMaxBet;
-            else opponentTotal = currentMaxBet;
-          }
-        }
+        // Теперь в action.amount хранится реальная потраченная сумма
+        // Просто суммируем все потраченные деньги каждым игроком на улице
+        const myTotal = this.getStreetTotal(currentPlayer, table.currentStreet);
+        const opponentTotal = this.getStreetTotal(otherPlayer, table.currentStreet);
         
         return { myTotal, opponentTotal };
       };
