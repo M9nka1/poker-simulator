@@ -408,6 +408,49 @@ app.get('/api/sessions', (req, res) => {
   }
 });
 
+// Новый endpoint для очистки неиспользуемых сессий
+app.delete('/api/sessions/cleanup', (req, res) => {
+  try {
+    let removedCount = 0;
+    const sessionsToRemove = [];
+    
+    // Находим сессии без подключенных игроков
+    for (const [sessionId, session] of gameSessions.entries()) {
+      let hasConnectedPlayers = false;
+      
+      // Проверяем есть ли подключенные игроки в этой сессии
+      for (const [playerId, playerData] of connectedPlayers.entries()) {
+        if (playerData.sessionId === sessionId) {
+          hasConnectedPlayers = true;
+          break;
+        }
+      }
+      
+      // Если нет подключенных игроков, помечаем для удаления
+      if (!hasConnectedPlayers) {
+        sessionsToRemove.push(sessionId);
+      }
+    }
+    
+    // Удаляем неиспользуемые сессии
+    sessionsToRemove.forEach(sessionId => {
+      gameSessions.delete(sessionId);
+      removedCount++;
+    });
+    
+    console.log(`🧹 Cleaned up ${removedCount} unused sessions`);
+    
+    res.json({
+      success: true,
+      removedCount: removedCount,
+      message: `Удалено ${removedCount} неиспользуемых сессий`
+    });
+  } catch (error) {
+    console.error('Cleanup sessions error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/api/create-session', (req, res) => {
   try {
     const {

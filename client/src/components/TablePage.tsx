@@ -5,13 +5,6 @@ interface TablePageProps {
   sessionId: string;
   tableId: number;
   playerNames: string[];
-  betSizes: {
-    quarter: boolean;
-    half: boolean;
-    threeQuarter: boolean;
-    pot: boolean;
-    allIn: boolean;
-  };
 }
 
 interface TableData {
@@ -32,8 +25,7 @@ interface TableData {
 const TablePage: React.FC<TablePageProps> = ({ 
   sessionId, 
   tableId, 
-  playerNames, 
-  betSizes 
+  playerNames
 }) => {
   const [table, setTable] = useState<TableData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -241,7 +233,6 @@ const TablePage: React.FC<TablePageProps> = ({
           table={table}
           sessionId={sessionId!}
           playerNames={playerNames}
-          betSizes={betSizes}
           onHandComplete={handleHandComplete}
         />
       </div>

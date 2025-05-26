@@ -23,6 +23,7 @@ const JoinSessionPage: React.FC<JoinSessionPageProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
+  const [isCleaningUp, setIsCleaningUp] = useState<boolean>(false);
 
   // Загружаем список доступных сессий при загрузке компонента
   useEffect(() => {
@@ -47,6 +48,31 @@ const JoinSessionPage: React.FC<JoinSessionPageProps> = ({
       setError('Ошибка при загрузке списка сессий. Попробуйте обновить страницу.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const cleanupUnusedSessions = async () => {
+    setIsCleaningUp(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/sessions/cleanup', {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        alert(`✅ ${result.message}`);
+        // Обновляем список сессий после очистки
+        await loadAvailableSessions();
+      } else {
+        throw new Error('Failed to cleanup sessions');
+      }
+    } catch (error) {
+      console.error('Cleanup sessions error:', error);
+      setError('Ошибка при очистке сессий. Попробуйте еще раз.');
+    } finally {
+      setIsCleaningUp(false);
     }
   };
 
@@ -187,23 +213,43 @@ const JoinSessionPage: React.FC<JoinSessionPageProps> = ({
           <h3 style={{ color: 'white', margin: 0 }}>
             Доступные сессии ({sessions.length})
           </h3>
-          <button
-            onClick={loadAvailableSessions}
-            disabled={isLoading}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: '2px solid #2196F3',
-              backgroundColor: 'transparent',
-              color: '#2196F3',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              opacity: isLoading ? 0.5 : 1
-            }}
-          >
-            {isLoading ? '🔄' : '🔄 Обновить'}
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={cleanupUnusedSessions}
+              disabled={isLoading || isCleaningUp}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: '2px solid #FF5722',
+                backgroundColor: 'transparent',
+                color: '#FF5722',
+                cursor: (isLoading || isCleaningUp) ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                opacity: (isLoading || isCleaningUp) ? 0.5 : 1
+              }}
+              title="Удалить сессии без подключенных игроков"
+            >
+              {isCleaningUp ? '🧹' : '🗑️ Очистить'}
+            </button>
+            <button
+              onClick={loadAvailableSessions}
+              disabled={isLoading || isCleaningUp}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: '2px solid #2196F3',
+                backgroundColor: 'transparent',
+                color: '#2196F3',
+                cursor: (isLoading || isCleaningUp) ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                opacity: (isLoading || isCleaningUp) ? 0.5 : 1
+              }}
+            >
+              {isLoading ? '🔄' : '🔄 Обновить'}
+            </button>
+          </div>
         </div>
 
         {error && (

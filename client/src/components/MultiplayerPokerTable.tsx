@@ -40,7 +40,7 @@ interface MultiplayerPokerTableProps {
   table: TableData;
   sessionId: string;
   playerNames?: string[];
-  betSizes: {
+  betSizes?: {
     quarter: boolean;
     half: boolean;
     threeQuarter: boolean;
@@ -54,7 +54,13 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
   table: initialTable, 
   sessionId, 
   playerNames = [],
-  betSizes, 
+  betSizes = {
+    quarter: true,
+    half: true,
+    threeQuarter: true,
+    pot: true,
+    allIn: true
+  }, 
   onHandComplete 
 }) => {
   const [table, setTable] = useState<TableData>(initialTable);
