@@ -409,16 +409,25 @@ class HandHistoryGenerator {
           break;
         case 'raise':
           // Для raise нужно показать "raises $X to $Y"
-          // Находим предыдущую ставку на улице для расчета "to" суммы
+          // Находим максимальную ставку на улице до текущего действия
           const previousBetActions = allActions.slice(0, index)
             .filter(a => a.action === 'bet' || a.action === 'raise');
           
-          let totalBetAmount = action.amount;
+          let currentMaxBet = 0;
           if (previousBetActions.length > 0) {
-            const lastBet = previousBetActions[previousBetActions.length - 1];
-            totalBetAmount = lastBet.amount + action.amount;
+            // Рассчитываем максимальную ставку на улице
+            let runningTotal = 0;
+            for (const betAction of previousBetActions) {
+              if (betAction.action === 'bet') {
+                runningTotal = betAction.amount;
+              } else if (betAction.action === 'raise') {
+                runningTotal += betAction.amount;
+              }
+              currentMaxBet = Math.max(currentMaxBet, runningTotal);
+            }
           }
           
+          const totalBetAmount = currentMaxBet + action.amount;
           actions += `${action.playerName}: raises ${this.currency}${action.amount.toFixed(2)} to ${this.currency}${totalBetAmount.toFixed(2)}\n`;
           break;
         case 'fold':
