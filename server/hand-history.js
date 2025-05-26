@@ -409,21 +409,19 @@ class HandHistoryGenerator {
           break;
         case 'raise':
           // Для raise нужно показать "raises $X to $Y"
-          // Находим максимальную ставку на улице до текущего действия
-          const previousBetActions = allActions.slice(0, index)
-            .filter(a => a.action === 'bet' || a.action === 'raise');
-          
+          // Находим предыдущую максимальную ставку на улице
+          const previousActions = allActions.slice(0, index);
           let currentMaxBet = 0;
-          if (previousBetActions.length > 0) {
-            // Рассчитываем максимальную ставку на улице
-            let runningTotal = 0;
-            for (const betAction of previousBetActions) {
-              if (betAction.action === 'bet') {
-                runningTotal = betAction.amount;
-              } else if (betAction.action === 'raise') {
-                runningTotal += betAction.amount;
-              }
-              currentMaxBet = Math.max(currentMaxBet, runningTotal);
+          
+          // Отслеживаем максимальную ставку на улице
+          let runningBet = 0;
+          for (const prevAction of previousActions) {
+            if (prevAction.action === 'bet') {
+              runningBet = prevAction.amount;
+              currentMaxBet = Math.max(currentMaxBet, runningBet);
+            } else if (prevAction.action === 'raise') {
+              runningBet += prevAction.amount;
+              currentMaxBet = Math.max(currentMaxBet, runningBet);
             }
           }
           
