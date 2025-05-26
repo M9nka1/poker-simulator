@@ -21,13 +21,11 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
   const [preflopFile, setPreflopFile] = useState<File | null>(null);
   const [preflopAnalysis, setPreflopAnalysis] = useState<PreflopAnalysis | null>(null);
   const [tableCount, setTableCount] = useState<number>(1);
-  const [betSizes, setBetSizes] = useState({
-    quarter: true,
-    half: true,
-    threeQuarter: true,
-    pot: true,
-    allIn: true
+  const [rakeSettings, setRakeSettings] = useState({
+    percentage: 5.0,
+    cap: 3.0
   });
+  
   interface HandSelection {
     hand: string;
     percentage: number;
@@ -142,10 +140,6 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
     setBoardSettings(newSettings);
   };
 
-  const handleBetSizeChange = (size: string, enabled: boolean) => {
-    setBetSizes(prev => ({ ...prev, [size]: enabled }));
-  };
-
   const createSession = async () => {
     if (handRanges.player1.length === 0 || handRanges.player2.length === 0) {
       alert('Пожалуйста, выберите диапазоны рук для обоих игроков');
@@ -173,7 +167,6 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
       }
 
       // Create session
-      // Конвертируем HandSelection[] в string[] для совместимости с сервером
       const convertedHandRanges = {
         player1: handRanges.player1.map(h => h.hand),
         player2: handRanges.player2.map(h => h.hand)
@@ -184,7 +177,7 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
         boardSettings,
         handRanges: convertedHandRanges,
         tableCount,
-        betSizes
+        rakeSettings
       };
 
       const response = await fetch('/api/create-session', {
@@ -252,7 +245,7 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
         boardSettings,
         handRanges: convertedHandRanges,
         tableCount,
-        betSizes
+        rakeSettings
       };
 
       const response = await fetch('/api/create-session', {
@@ -266,8 +259,8 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
       if (response.ok) {
         const result = await response.json();
         
-        // Открываем новые окна для каждого стола
-        openTableWindows(result.sessionId, result.tables, result.playerNames || [], betSizes);
+        // Открываем новые окна для каждого стола (без betSizes)
+        openTableWindows(result.sessionId, result.tables, result.playerNames || []);
         
         alert(`✅ Сессия создана! Открыто ${result.tables.length} окон с покерными столами.\n\nID сессии: ${result.sessionId}\n\nПоделитесь этим ID с другими игроками для присоединения к игре.`);
       } else {
@@ -281,22 +274,22 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
     }
   };
 
-  const openTableWindows = (sessionId: string, tables: any[], playerNames: string[], betSizes: any) => {
+  const openTableWindows = (sessionId: string, tables: any[], playerNames: string[]) => {
     tables.forEach((table, index) => {
       // Небольшая задержка между открытием окон
       setTimeout(() => {
-        openTableWindow(sessionId, table.id, playerNames, betSizes, index);
+        openTableWindow(sessionId, table.id, playerNames, index);
       }, index * 300); // 300ms задержка между окнами
     });
   };
 
-  const openTableWindow = (sessionId: string, tableId: number, playerNames: string[], betSizes: any, windowIndex: number) => {
-    // Создаем URL с параметрами для стола
+  const openTableWindow = (sessionId: string, tableId: number, playerNames: string[], windowIndex: number) => {
+    // Создаем URL с параметрами для стола (без betSizes)
     const baseUrl = window.location.origin;
     const tableUrl = new URL(`${baseUrl}`);
     
     // Добавляем параметры в hash для передачи в новое окно
-    tableUrl.hash = `table?sessionId=${sessionId}&tableId=${tableId}&playerNames=${encodeURIComponent(JSON.stringify(playerNames))}&betSizes=${encodeURIComponent(JSON.stringify(betSizes))}`;
+    tableUrl.hash = `table?sessionId=${sessionId}&tableId=${tableId}&playerNames=${encodeURIComponent(JSON.stringify(playerNames))}`;
     
     // Настройки окна для полноэкранного режима без элементов браузера
     const windowFeatures = [
@@ -450,25 +443,84 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
         </div>
 
         <div className="form-group">
-          <label>Размеры ставок</label>
-          <div className="checkbox-group">
-            {Object.entries({
-              quarter: '25% пота',
-              half: '50% пота',
-              threeQuarter: '75% пота',
-              pot: '100% пота',
-              allIn: 'Олл-ин'
-            }).map(([key, label]) => (
-              <div key={key} className="checkbox-item">
-                <input
-                  type="checkbox"
-                  id={key}
-                  checked={betSizes[key as keyof typeof betSizes]}
-                  onChange={(e) => handleBetSizeChange(key, e.target.checked)}
-                />
-                <label htmlFor={key}>{label}</label>
-              </div>
-            ))}
+          <label>💰 Настройки рейка</label>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '15px',
+            marginTop: '10px'
+          }}>
+            <div>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '5px', 
+                fontSize: '0.9rem',
+                color: '#FFA726'
+              }}>
+                Процент рейка (%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                step="0.1"
+                value={rakeSettings.percentage}
+                onChange={(e) => setRakeSettings(prev => ({
+                  ...prev,
+                  percentage: parseFloat(e.target.value) || 0
+                }))}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: '5px',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  background: 'rgba(255,255,255,0.1)',
+                  color: 'white',
+                  fontSize: '1rem'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '5px', 
+                fontSize: '0.9rem',
+                color: '#FFA726'
+              }}>
+                Максимум рейка ($)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="50"
+                step="0.5"
+                value={rakeSettings.cap}
+                onChange={(e) => setRakeSettings(prev => ({
+                  ...prev,
+                  cap: parseFloat(e.target.value) || 0
+                }))}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: '5px',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  background: 'rgba(255,255,255,0.1)',
+                  color: 'white',
+                  fontSize: '1rem'
+                }}
+              />
+            </div>
+          </div>
+          <div style={{
+            marginTop: '10px',
+            padding: '10px',
+            background: 'rgba(33,150,243,0.1)',
+            border: '1px solid rgba(33,150,243,0.3)',
+            borderRadius: '5px',
+            fontSize: '0.8rem',
+            color: 'rgba(255,255,255,0.8)'
+          }}>
+            💡 Рейк будет отображаться в Hand History как "Total pot $X.XX | Rake $Y.YY"
           </div>
         </div>
       </div>
@@ -565,7 +617,7 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
           </h4>
           <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.9rem', margin: '0' }}>
             <strong>Создать новую игру:</strong> Настройте параметры и создайте сессию для игры с друзьями<br />
-            <strong>Присоединиться:</strong> Введите ID существующей сессии для подключения к игре
+            <strong>Присоединиться:</strong> Выберите из списка доступных сессий для подключения к игре
           </p>
         </div>
       </div>

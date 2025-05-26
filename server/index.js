@@ -360,6 +360,54 @@ app.post('/api/extract-player-names', (req, res) => {
   }
 });
 
+// Новый endpoint для получения списка доступных сессий
+app.get('/api/sessions', (req, res) => {
+  try {
+    const sessionsList = [];
+    
+    for (const [sessionId, session] of gameSessions.entries()) {
+      // Извлекаем тип игры из названия файла префлоп истории
+      let gameType = 'Покер сессия';
+      if (session.preflopHistory) {
+        // Пытаемся извлечь информацию о типе игры из префлоп истории
+        const lines = session.preflopHistory.split('\n');
+        const firstLine = lines[0];
+        if (firstLine && firstLine.includes('Table')) {
+          const tableMatch = firstLine.match(/Table '([^']+)'/);
+          if (tableMatch) {
+            gameType = tableMatch[1];
+          }
+        }
+      }
+      
+      // Подсчитываем количество подключенных игроков
+      let playerCount = 0;
+      for (const [playerId, playerData] of connectedPlayers.entries()) {
+        if (playerData.sessionId === sessionId) {
+          playerCount++;
+        }
+      }
+      
+      sessionsList.push({
+        sessionId: sessionId,
+        gameType: gameType,
+        tableCount: session.tables.length,
+        createdAt: session.createdAt || new Date().toISOString(),
+        playerCount: playerCount,
+        maxPlayers: session.tables.length * 2 // 2 игрока на стол
+      });
+    }
+    
+    // Сортируем по времени создания (новые сначала)
+    sessionsList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    res.json(sessionsList);
+  } catch (error) {
+    console.error('Get sessions error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/api/create-session', (req, res) => {
   try {
     const {
@@ -367,7 +415,7 @@ app.post('/api/create-session', (req, res) => {
       boardSettings,
       handRanges,
       tableCount,
-      betSizes
+      rakeSettings
     } = req.body;
 
     const sessionId = uuidv4();
@@ -391,9 +439,10 @@ app.post('/api/create-session', (req, res) => {
       preflopData, // Сохраняем парсенные данные
       playerNames, // Сохраняем имена игроков
       pokerEngine,
-      handHistoryGenerator: new HandHistoryGenerator(preflopHistory),
+      handHistoryGenerator: new HandHistoryGenerator(preflopHistory, rakeSettings),
       tables: [],
-      settings: { boardSettings, handRanges, tableCount, betSizes }
+      settings: { boardSettings, handRanges, tableCount, rakeSettings },
+      createdAt: new Date().toISOString()
     };
 
     // Рассчитываем стеки после префлоп действий

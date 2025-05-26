@@ -30,22 +30,13 @@ function App() {
         const playerNames = params.get('playerNames') 
           ? JSON.parse(decodeURIComponent(params.get('playerNames')!)) 
           : [];
-        const betSizes = params.get('betSizes') 
-          ? JSON.parse(decodeURIComponent(params.get('betSizes')!)) 
-          : {
-              quarter: true,
-              half: true,
-              threeQuarter: true,
-              pot: true,
-              allIn: true
-            };
+        // betSizes теперь настраиваются на столе, не передаются через URL
 
         if (sessionId && tableId) {
           setTableParams({
             sessionId,
             tableId: parseInt(tableId),
-            playerNames,
-            betSizes
+            playerNames
           });
           setCurrentPage('table');
         }

@@ -2,8 +2,9 @@
 let globalHandNumber = 1748175114; // Начинаем с номера как в примере
 
 class HandHistoryGenerator {
-  constructor(preflopHistory) {
+  constructor(preflopHistory, rakeSettings = null) {
     this.preflopHistory = preflopHistory || '';
+    this.rakeSettings = rakeSettings || { percentage: 5.0, cap: 3.0 };
     // Определяем валюту из префлоп файла
     this.currency = this.detectCurrency(preflopHistory);
   }
@@ -403,7 +404,18 @@ class HandHistoryGenerator {
 
   generateSummary(table) {
     let summary = `*** SUMMARY ***\n`;
-    summary += `Total pot ${this.currency}${table.pot}\n`;
+    
+    // Рассчитываем рейк
+    const rakeAmount = this.calculateRake(table.pot);
+    const potAfterRake = table.pot - rakeAmount;
+    
+    // Отображаем общий банк и рейк
+    if (rakeAmount > 0) {
+      summary += `Total pot ${this.currency}${table.pot.toFixed(2)} | Rake ${this.currency}${rakeAmount.toFixed(2)}\n`;
+    } else {
+      summary += `Total pot ${this.currency}${table.pot.toFixed(2)}\n`;
+    }
+    
     summary += `Board [${this.formatCards(table.board.flop)}`;
     
     if (table.board.turn) {
@@ -417,20 +429,20 @@ class HandHistoryGenerator {
     // Player summaries
     if (table.winner === 'tie') {
       // Split pot scenario
-      const splitAmount = Math.floor(table.pot / 2);
+      const splitAmount = Math.floor(potAfterRake / 2);
       table.players.forEach(player => {
         const folded = player.actions.some(action => action.action === 'fold');
         if (folded) {
           summary += `Seat ${player.id}: ${player.name} folded\n`;
         } else {
-          summary += `Seat ${player.id}: ${player.name} showed [${this.formatCards(player.holeCards)}] and won (${this.currency}${splitAmount}) with split pot\n`;
+          summary += `Seat ${player.id}: ${player.name} showed [${this.formatCards(player.holeCards)}] and won (${this.currency}${splitAmount.toFixed(2)}) with split pot\n`;
         }
       });
     } else {
       // Regular winner scenario
       table.players.forEach(player => {
         if (table.winner === player.id) {
-          summary += `Seat ${player.id}: ${player.name} showed [${this.formatCards(player.holeCards)}] and won (${this.currency}${table.pot})\n`;
+          summary += `Seat ${player.id}: ${player.name} showed [${this.formatCards(player.holeCards)}] and won (${this.currency}${potAfterRake.toFixed(2)})\n`;
         } else {
           const folded = player.actions.some(action => action.action === 'fold');
           if (folded) {
@@ -444,6 +456,16 @@ class HandHistoryGenerator {
     
     summary += '\n\n';
     return summary;
+  }
+
+  calculateRake(pot) {
+    if (!this.rakeSettings || pot <= 0) return 0;
+    
+    // Рассчитываем рейк как процент от банка
+    const rakeAmount = (pot * this.rakeSettings.percentage) / 100;
+    
+    // Применяем максимальный лимит (кеп)
+    return Math.min(rakeAmount, this.rakeSettings.cap);
   }
 
   getTotalBet(player) {
