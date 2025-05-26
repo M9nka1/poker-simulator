@@ -231,32 +231,15 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
     
     // Правильный расчет общих ставок с учетом покерной логики
     const calculateCorrectTotals = () => {
-      const allActions = [
-        ...currentPlayer.actions.filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call')),
-        ...otherPlayer.actions.filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
-      ].sort((a: any, b: any) => a.timestamp - b.timestamp);
+      // Теперь в action.amount хранится реальная потраченная сумма
+      // Просто суммируем все потраченные деньги каждым игроком на улице
+      const myTotal = currentPlayer.actions
+        .filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
+        .reduce((total: number, action: any) => total + (action.amount || 0), 0);
       
-      let currentMaxBet = 0;
-      let myTotal = 0;
-      let opponentTotal = 0;
-      
-      for (const action of allActions) {
-        const isMyAction = currentPlayer.actions.includes(action);
-        
-        if (action.action === 'bet') {
-          currentMaxBet = action.amount;
-          if (isMyAction) myTotal = action.amount;
-          else opponentTotal = action.amount;
-        } else if (action.action === 'raise') {
-          currentMaxBet += action.amount;
-          if (isMyAction) myTotal = currentMaxBet;
-          else opponentTotal = currentMaxBet;
-        } else if (action.action === 'call') {
-          // Call уравнивает ставку до текущего максимума
-          if (isMyAction) myTotal = currentMaxBet;
-          else opponentTotal = currentMaxBet;
-        }
-      }
+      const opponentTotal = otherPlayer.actions
+        .filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
+        .reduce((total: number, action: any) => total + (action.amount || 0), 0);
       
       return { myTotal, opponentTotal };
     };

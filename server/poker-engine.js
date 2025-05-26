@@ -703,16 +703,8 @@ class PokerEngine {
       }
       
       // Рассчитываем правильную сумму call с учетом покерной логики
-      const calculateCorrectTotals = () => {
-        // Теперь в action.amount хранится реальная потраченная сумма
-        // Просто суммируем все потраченные деньги каждым игроком на улице
-        const myTotal = this.getStreetTotal(currentPlayer, table.currentStreet);
-        const opponentTotal = this.getStreetTotal(otherPlayer, table.currentStreet);
-        
-        return { myTotal, opponentTotal };
-      };
-      
-      const { myTotal, opponentTotal } = calculateCorrectTotals();
+      const myTotal = this.getStreetTotal(currentPlayer, table.currentStreet);
+      const opponentTotal = this.getStreetTotal(otherPlayer, table.currentStreet);
       const expectedCallAmount = Math.min(opponentTotal - myTotal, currentPlayer.stack);
       
       if (amount !== expectedCallAmount) {
