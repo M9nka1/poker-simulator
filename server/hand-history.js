@@ -67,13 +67,13 @@ class HandHistoryGenerator {
     
     // Turn (if exists)
     if (table.board.turn) {
-      handHistory += `*** TURN *** [${this.formatCards(table.board.flop)} ${this.formatCard(table.board.turn)}]\n`;
+      handHistory += `*** TURN *** [${this.formatCards(table.board.flop)}] [${this.formatCard(table.board.turn)}]\n`;
       handHistory += this.generateStreetActions(table, 'turn');
     }
     
     // River (if exists)
     if (table.board.river) {
-      handHistory += `*** RIVER *** [${this.formatCards(table.board.flop)} ${this.formatCard(table.board.turn)} ${this.formatCard(table.board.river)}]\n`;
+      handHistory += `*** RIVER *** [${this.formatCards(table.board.flop)} ${this.formatCard(table.board.turn)}] [${this.formatCard(table.board.river)}]\n`;
       handHistory += this.generateStreetActions(table, 'river');
     }
     

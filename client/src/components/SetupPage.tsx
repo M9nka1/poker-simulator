@@ -445,20 +445,16 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
         <div className="form-group">
           <label>💰 Настройки рейка</label>
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
+            display: 'flex',
+            alignItems: 'center',
             gap: '15px',
-            marginTop: '10px'
+            marginTop: '10px',
+            flexWrap: 'wrap'
           }}>
-            <div>
-              <label style={{ 
-                display: 'block', 
-                marginBottom: '5px', 
-                fontSize: '0.9rem',
-                color: '#FFA726'
-              }}>
-                Процент рейка (%)
-              </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ color: '#FFA726', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
+                Процент:
+              </span>
               <input
                 type="number"
                 min="0"
@@ -470,25 +466,24 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
                   percentage: parseFloat(e.target.value) || 0
                 }))}
                 style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: '5px',
+                  width: '60px',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
                   border: '1px solid rgba(255,255,255,0.3)',
                   background: 'rgba(255,255,255,0.1)',
                   color: 'white',
-                  fontSize: '1rem'
+                  fontSize: '0.9rem',
+                  textAlign: 'center'
                 }}
               />
+              <span style={{ color: '#FFA726', fontSize: '0.9rem' }}>%</span>
             </div>
-            <div>
-              <label style={{ 
-                display: 'block', 
-                marginBottom: '5px', 
-                fontSize: '0.9rem',
-                color: '#FFA726'
-              }}>
-                Максимум рейка ($)
-              </label>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ color: '#FFA726', fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
+                Максимум:
+              </span>
+              <span style={{ color: '#FFA726', fontSize: '0.9rem' }}>$</span>
               <input
                 type="number"
                 min="0"
@@ -500,27 +495,28 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
                   cap: parseFloat(e.target.value) || 0
                 }))}
                 style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  borderRadius: '5px',
+                  width: '60px',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
                   border: '1px solid rgba(255,255,255,0.3)',
                   background: 'rgba(255,255,255,0.1)',
                   color: 'white',
-                  fontSize: '1rem'
+                  fontSize: '0.9rem',
+                  textAlign: 'center'
                 }}
               />
             </div>
-          </div>
-          <div style={{
-            marginTop: '10px',
-            padding: '10px',
-            background: 'rgba(33,150,243,0.1)',
-            border: '1px solid rgba(33,150,243,0.3)',
-            borderRadius: '5px',
-            fontSize: '0.8rem',
-            color: 'rgba(255,255,255,0.8)'
-          }}>
-            💡 Рейк будет отображаться в Hand History как "Total pot $X.XX | Rake $Y.YY"
+            
+            <div style={{
+              padding: '6px 12px',
+              background: 'rgba(33,150,243,0.1)',
+              border: '1px solid rgba(33,150,243,0.3)',
+              borderRadius: '4px',
+              fontSize: '0.8rem',
+              color: 'rgba(255,255,255,0.8)'
+            }}>
+              💡 Отображается в Hand History
+            </div>
           </div>
         </div>
       </div>
