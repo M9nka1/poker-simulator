@@ -829,7 +829,7 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
                 const isRaise = callAmount > 0;
                 
                 // Определяем финальную сумму в зависимости от типа действия
-                let finalAmount: number;
+                let finalAmount: number = amount;
                 
                 if (isRaise) {
                   // Для raise: amount - это доплата к максимальной ставке
@@ -965,37 +965,44 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
                     
                     if (!currentPlayer || !otherPlayer) return;
                     
-                    // Проверяем, есть ли активная ставка от оппонента
-                    const allActions = [
-                      ...currentPlayer.actions.filter((a: any) => a.street === table.currentStreet),
-                      ...otherPlayer.actions.filter((a: any) => a.street === table.currentStreet)
-                    ].sort((a: any, b: any) => a.timestamp - b.timestamp);
+                    // Рассчитываем текущие ставки игроков на улице
+                    const myTotal = currentPlayer.actions
+                      .filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
+                      .reduce((total: number, action: any) => total + (action.amount || 0), 0);
                     
-                    const lastOpponentBetAction = allActions
-                      .filter((a: any) => a.playerId !== currentPlayerId && (a.action === 'bet' || a.action === 'raise'))
-                      .pop();
+                    const opponentTotal = otherPlayer.actions
+                      .filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
+                      .reduce((total: number, action: any) => total + (action.amount || 0), 0);
                     
-                    // Определяем действие: bet или raise
-                    const actionType = lastOpponentBetAction ? 'raise' : 'bet';
+                    const callAmount = getCallAmount();
+                    const hasOpponentBet = callAmount > 0;
                     
-                    // Рассчитываем сумму
-                    let actionAmount;
-                    if (actionType === 'bet') {
-                      // Для bet используем выбранную сумму или половину банка
+                    // Определяем действие и сумму
+                    let actionType: string;
+                    let actionAmount: number;
+                    
+                    if (!hasOpponentBet) {
+                      // Нет активной ставки - это bet
+                      actionType = 'bet';
                       actionAmount = selectedBetAmount || calculateBetSize('half');
                     } else {
-                      // Для raise рассчитываем доплату к максимальной ставке
-                      const myTotal = currentPlayer.actions
-                        .filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
-                        .reduce((total: number, action: any) => total + (action.amount || 0), 0);
+                      // Есть активная ставка
+                      const desiredAmount = selectedBetAmount || (callAmount + calculateBetSize('half'));
                       
-                      const opponentTotal = otherPlayer.actions
-                        .filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
-                        .reduce((total: number, action: any) => total + (action.amount || 0), 0);
-                      
-                      const maxBetOnStreet = Math.max(myTotal, opponentTotal);
-                      const desiredTotalBet = selectedBetAmount || (opponentTotal + calculateBetSize('half'));
-                      actionAmount = Math.max(0, desiredTotalBet - maxBetOnStreet);
+                      if (desiredAmount === callAmount) {
+                        // Игрок хочет уравнять ставку - это call
+                        actionType = 'call';
+                        actionAmount = callAmount;
+                      } else if (desiredAmount > callAmount) {
+                        // Игрок хочет повысить ставку - это raise
+                        actionType = 'raise';
+                        // Для raise отправляем доплату к максимальной ставке
+                        actionAmount = desiredAmount - callAmount;
+                      } else {
+                        // Fallback: call
+                        actionType = 'call';
+                        actionAmount = callAmount;
+                      }
                     }
                     
                     makeAction(actionType, actionAmount);

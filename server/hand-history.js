@@ -456,11 +456,6 @@ class HandHistoryGenerator {
           // Определяем, есть ли активная ставка от другого игрока на этой улице
           const previousActions = allActions.slice(0, index);
           
-          // Находим последнюю ставку/рейз от ДРУГОГО игрока
-          const lastOpponentBetAction = previousActions
-            .filter(a => a.playerId !== action.playerId && (a.action === 'bet' || a.action === 'raise'))
-            .pop();
-          
           // Рассчитываем общие ставки каждого игрока до этого действия
           const playerTotals = {};
           table.players.forEach(player => {
@@ -476,19 +471,29 @@ class HandHistoryGenerator {
           // Общая ставка игрока после этого действия
           const currentPlayerTotal = playerTotals[action.playerId] + action.amount;
           
-          // Если есть активная ставка от оппонента, это raise
-          if (lastOpponentBetAction) {
-            const maxBetBeforeRaise = Math.max(...Object.values(playerTotals));
-            const raiseAmount = Math.max(0, currentPlayerTotal - maxBetBeforeRaise);
-            
-            if (raiseAmount > 0) {
-              actions += `${action.playerName}: raises ${this.currency}${raiseAmount.toFixed(2)} to ${this.currency}${currentPlayerTotal.toFixed(2)}\n`;
-            } else {
-              // Fallback: показываем как bet
-              actions += `${action.playerName}: bets ${this.currency}${Math.max(0, action.amount).toFixed(2)}\n`;
-            }
+          // Находим максимальную ставку на улице ДО этого действия
+          const maxBetBeforeAction = Math.max(...Object.values(playerTotals));
+          
+          // Проверяем, есть ли активная ставка от оппонента
+          const hasOpponentBet = Object.entries(playerTotals).some(([playerId, total]) => 
+            parseInt(playerId) !== action.playerId && total > 0
+          );
+          
+          // Определяем тип действия
+          if (hasOpponentBet && currentPlayerTotal > maxBetBeforeAction) {
+            // Это raise - игрок повышает существующую ставку
+            const raiseAmount = currentPlayerTotal - maxBetBeforeAction;
+            actions += `${action.playerName}: raises ${this.currency}${raiseAmount.toFixed(2)} to ${this.currency}${currentPlayerTotal.toFixed(2)}\n`;
+          } else if (hasOpponentBet && currentPlayerTotal === maxBetBeforeAction) {
+            // Это call - игрок уравнивает ставку
+            const callAmount = currentPlayerTotal - playerTotals[action.playerId];
+            actions += `${action.playerName}: calls ${this.currency}${callAmount.toFixed(2)}\n`;
+          } else if (!hasOpponentBet) {
+            // Это первая ставка на улице - bet
+            actions += `${action.playerName}: bets ${this.currency}${action.amount.toFixed(2)}\n`;
           } else {
-            // Нет активной ставки от оппонента - это первая ставка (bet)
+            // Fallback
+            console.warn(`⚠️ Unclear action type for ${action.playerName}: amount=${action.amount}, currentTotal=${currentPlayerTotal}, maxBet=${maxBetBeforeAction}`);
             actions += `${action.playerName}: bets ${this.currency}${Math.max(0, action.amount).toFixed(2)}\n`;
           }
           break;
