@@ -45,6 +45,12 @@ class HandHistoryGenerator {
       handHistory += `Seat 2: ${player2.name} (${this.currency}${player2.stack + this.getTotalBet(player2)} in chips)\n`;
     }
     
+    // Hole cards section (должна идти ПЕРЕД префлоп действиями)
+    const player1 = table.players.find(p => p.id === 1);
+    const player2 = table.players.find(p => p.id === 2);
+    
+    handHistory += `*** HOLE CARDS ***\n`;
+    
     // Add preflop actions if available (extract only actions, not header)
     if (this.preflopHistory) {
       const preflopActions = this.extractPreflopActions(this.preflopHistory);
@@ -53,13 +59,7 @@ class HandHistoryGenerator {
       }
     }
     
-    // Hole cards
-    const player1 = table.players.find(p => p.id === 1);
-    const player2 = table.players.find(p => p.id === 2);
-    
-    handHistory += `*** HOLE CARDS ***\n`;
-    handHistory += `Dealt to ${player1.name} [${this.formatCards(player1.holeCards)}]\n`;
-    handHistory += `Dealt to ${player2.name} [${this.formatCards(player2.holeCards)}]\n`;
+    // Add dealt cards (только в summary, не здесь для совместимости с трекерами)
     
     // Flop
     handHistory += `*** FLOP *** [${this.formatCards(table.board.flop)}]\n`;
@@ -107,10 +107,8 @@ class HandHistoryGenerator {
         break;
       }
       
-      // Пропускаем префлоп действия (они будут добавлены отдельно)
-      if (trimmedLine.includes('posts small blind') || 
-          trimmedLine.includes('posts big blind') ||
-          trimmedLine.includes(': folds') || 
+      // Включаем блайнды в шапку, но пропускаем остальные префлоп действия
+      if (trimmedLine.includes(': folds') || 
           trimmedLine.includes(': calls') || 
           trimmedLine.includes(': raises') || 
           trimmedLine.includes(': bets') || 
@@ -133,19 +131,12 @@ class HandHistoryGenerator {
     
     const lines = preflopHistory.split('\n');
     let actions = '';
-    let inPreflopActions = false;
     let foundHoleCards = false;
     
     for (const line of lines) {
       const trimmedLine = line.trim();
       
-      // Начинаем собирать действия после информации о местах
-      if (trimmedLine.includes('Seat ') && trimmedLine.includes('in chips')) {
-        inPreflopActions = true;
-        continue;
-      }
-      
-      // Отмечаем что нашли HOLE CARDS, но продолжаем
+      // Отмечаем что нашли HOLE CARDS
       if (trimmedLine.includes('*** HOLE CARDS ***')) {
         foundHoleCards = true;
         continue;
@@ -161,15 +152,13 @@ class HandHistoryGenerator {
         continue;
       }
       
-      // Добавляем действия игроков в префлопе (включая после HOLE CARDS)
-      if (inPreflopActions && trimmedLine && 
+      // Добавляем действия игроков ТОЛЬКО ПОСЛЕ *** HOLE CARDS ***
+      if (foundHoleCards && trimmedLine && 
           (trimmedLine.includes(': folds') || 
            trimmedLine.includes(': calls') || 
            trimmedLine.includes(': raises') || 
            trimmedLine.includes(': bets') || 
-           trimmedLine.includes(': checks') ||
-           trimmedLine.includes('posts small blind') ||
-           trimmedLine.includes('posts big blind'))) {
+           trimmedLine.includes(': checks'))) {
         
         // Сохраняем оригинальную валюту из префлоп файла
         actions += trimmedLine + '\n';
