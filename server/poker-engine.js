@@ -677,10 +677,39 @@ class PokerEngine {
         throw new Error('You have already responded to this bet.');
       }
       
-      // Рассчитываем правильную сумму call
-      // Call = общая ставка оппонента на улице - наша текущая ставка на улице
-      const opponentTotal = this.getStreetTotal(otherPlayer, table.currentStreet);
-      const myTotal = this.getStreetTotal(currentPlayer, table.currentStreet);
+      // Рассчитываем правильную сумму call с учетом покерной логики
+      const calculateCorrectTotals = () => {
+        const allActions = [
+          ...currentPlayer.actions.filter(a => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call')),
+          ...otherPlayer.actions.filter(a => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
+        ].sort((a, b) => a.timestamp - b.timestamp);
+        
+        let currentMaxBet = 0;
+        let myTotal = 0;
+        let opponentTotal = 0;
+        
+        for (const action of allActions) {
+          const isMyAction = currentPlayer.actions.includes(action);
+          
+          if (action.action === 'bet') {
+            currentMaxBet = action.amount;
+            if (isMyAction) myTotal = action.amount;
+            else opponentTotal = action.amount;
+          } else if (action.action === 'raise') {
+            currentMaxBet += action.amount;
+            if (isMyAction) myTotal = currentMaxBet;
+            else opponentTotal = currentMaxBet;
+          } else if (action.action === 'call') {
+            // Call уравнивает ставку до текущего максимума
+            if (isMyAction) myTotal = currentMaxBet;
+            else opponentTotal = currentMaxBet;
+          }
+        }
+        
+        return { myTotal, opponentTotal };
+      };
+      
+      const { myTotal, opponentTotal } = calculateCorrectTotals();
       const expectedCallAmount = Math.min(opponentTotal - myTotal, currentPlayer.stack);
       
       if (amount !== expectedCallAmount) {

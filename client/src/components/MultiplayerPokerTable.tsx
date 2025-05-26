@@ -229,15 +229,61 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
     
     if (!currentPlayer || !otherPlayer) return 0;
     
-    // Рассчитываем общие ставки каждого игрока на текущей улице
+    // Правильный расчет общих ставок с учетом покерной логики
     const getPlayerStreetTotal = (player: any) => {
-      return player.actions
+      const streetActions = player.actions
         .filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
-        .reduce((total: number, action: any) => total + (action.amount || 0), 0);
+        .sort((a: any, b: any) => a.timestamp - b.timestamp);
+      
+      let totalBet = 0;
+      
+      for (const action of streetActions) {
+        if (action.action === 'bet') {
+          totalBet = action.amount; // Bet устанавливает новую ставку
+        } else if (action.action === 'raise') {
+          totalBet += action.amount; // Raise добавляет к текущей максимальной ставке
+        } else if (action.action === 'call') {
+          // Call не изменяет общую ставку игрока, он уже учтен в amount
+          totalBet += action.amount;
+        }
+      }
+      
+      return totalBet;
     };
     
-    const opponentTotal = getPlayerStreetTotal(otherPlayer);
-    const myTotal = getPlayerStreetTotal(currentPlayer);
+    // Альтернативный метод: отслеживаем максимальную ставку на улице
+    const calculateCorrectTotals = () => {
+      const allActions = [
+        ...currentPlayer.actions.filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call')),
+        ...otherPlayer.actions.filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
+      ].sort((a: any, b: any) => a.timestamp - b.timestamp);
+      
+      let currentMaxBet = 0;
+      let myTotal = 0;
+      let opponentTotal = 0;
+      
+      for (const action of allActions) {
+        const isMyAction = currentPlayer.actions.includes(action);
+        
+        if (action.action === 'bet') {
+          currentMaxBet = action.amount;
+          if (isMyAction) myTotal = action.amount;
+          else opponentTotal = action.amount;
+        } else if (action.action === 'raise') {
+          currentMaxBet += action.amount;
+          if (isMyAction) myTotal = currentMaxBet;
+          else opponentTotal = currentMaxBet;
+        } else if (action.action === 'call') {
+          // Call уравнивает ставку до текущего максимума
+          if (isMyAction) myTotal = currentMaxBet;
+          else opponentTotal = currentMaxBet;
+        }
+      }
+      
+      return { myTotal, opponentTotal };
+    };
+    
+    const { myTotal, opponentTotal } = calculateCorrectTotals();
     
     // Call amount = разница между ставками, но не больше нашего стека
     const callAmount = Math.max(0, opponentTotal - myTotal);
