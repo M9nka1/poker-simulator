@@ -953,9 +953,33 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
                 
                 <button
                   onClick={() => {
-                    const callAmount = getCallAmount();
-                    const raiseAmount = selectedBetAmount || (callAmount + calculateBetSize('half'));
-                    makeAction('raise', raiseAmount);
+                    const currentPlayer = table.players.find(p => p.id === currentPlayerId);
+                    const otherPlayer = table.players.find(p => p.id !== currentPlayerId);
+                    
+                    if (!currentPlayer || !otherPlayer) return;
+                    
+                    // Рассчитываем текущие ставки на улице
+                    const myTotal = currentPlayer.actions
+                      .filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
+                      .reduce((total: number, action: any) => total + (action.amount || 0), 0);
+                    
+                    const opponentTotal = otherPlayer.actions
+                      .filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
+                      .reduce((total: number, action: any) => total + (action.amount || 0), 0);
+                    
+                    // Определяем желаемую общую ставку
+                    const desiredTotalBet = selectedBetAmount || (opponentTotal + calculateBetSize('half'));
+                    
+                    // Рассчитываем размер raise (доплату к максимальной ставке)
+                    const maxBetOnStreet = Math.max(myTotal, opponentTotal);
+                    const raiseAmount = Math.max(0, desiredTotalBet - maxBetOnStreet);
+                    
+                    // Ограничиваем стеком (сервер тоже это сделает, но лучше показать правильную сумму)
+                    const actualCost = desiredTotalBet - myTotal;
+                    const limitedRaiseAmount = actualCost > currentPlayer.stack ? 
+                      Math.max(0, currentPlayer.stack - (maxBetOnStreet - myTotal)) : raiseAmount;
+                    
+                    makeAction('raise', limitedRaiseAmount);
                   }}
                   disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
                   className="btn btn-success"

@@ -425,9 +425,14 @@ class PokerEngine {
       const maxBetOnStreet = this.getMaxBetOnStreet(table, table.currentStreet);
       const newTotalBet = maxBetOnStreet + amount;
       actualCost = newTotalBet - alreadySpent;
-      totalBetAmount = actualCost; // Сохраняем реальную потраченную сумму
       
-
+      // Ограничиваем actualCost стеком игрока (all-in protection)
+      if (actualCost > player.stack) {
+        actualCost = player.stack;
+        console.log(`⚠️ Raise limited by stack: requested ${newTotalBet - alreadySpent}, limited to ${actualCost}`);
+      }
+      
+      totalBetAmount = actualCost; // Сохраняем реальную потраченную сумму
     }
 
     const actionData = {
@@ -655,9 +660,23 @@ class PokerEngine {
     const otherPlayer = table.players.find(p => p.id !== playerId);
     if (!otherPlayer || !currentPlayer) return;
     
-    // Проверяем, что у игрока достаточно денег
-    if ((action === 'bet' || action === 'raise' || action === 'call') && amount > currentPlayer.stack) {
+    // Проверяем, что у игрока достаточно денег для bet и call
+    if ((action === 'bet' || action === 'call') && amount > currentPlayer.stack) {
       throw new Error(`Insufficient funds. You have €${currentPlayer.stack}, but trying to bet €${amount}`);
+    }
+    
+    // Для raise проверяем реальную стоимость действия
+    if (action === 'raise') {
+      const alreadySpent = this.getStreetTotal(currentPlayer, table.currentStreet);
+      const maxBetOnStreet = this.getMaxBetOnStreet(table, table.currentStreet);
+      const newTotalBet = maxBetOnStreet + amount;
+      const actualCost = newTotalBet - alreadySpent;
+      
+      // Разрешаем raise даже если actualCost > stack (будет ограничен до all-in)
+      // Но проверяем, что у игрока есть хотя бы что-то для ставки
+      if (currentPlayer.stack <= 0) {
+        throw new Error(`Cannot raise with empty stack.`);
+      }
     }
     
     // Получаем все действия на текущей улице в хронологическом порядке
