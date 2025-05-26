@@ -405,7 +405,34 @@ class HandHistoryGenerator {
           actions += `${action.playerName}: bets ${this.currency}${action.amount.toFixed(2)}\n`;
           break;
         case 'call':
-          actions += `${action.playerName}: calls ${this.currency}${action.amount.toFixed(2)}\n`;
+          // Для call нужно показать сумму доплаты до максимальной ставки
+          // Рассчитываем текущие ставки всех игроков на улице до этого call
+          const previousActionsForCall = allActions.slice(0, index);
+          const playerTotalsForCall = {};
+          
+          // Инициализируем totals для всех игроков
+          table.players.forEach(player => {
+            playerTotalsForCall[player.id] = 0;
+          });
+          
+          // Рассчитываем ставки до call
+          for (const prevAction of previousActionsForCall) {
+            if (prevAction.action === 'bet' || prevAction.action === 'raise' || prevAction.action === 'call') {
+              playerTotalsForCall[prevAction.playerId] += prevAction.amount;
+            }
+          }
+          
+          // Добавляем текущий call
+          playerTotalsForCall[action.playerId] += action.amount;
+          
+          // Максимальная ставка на улице (должна быть у оппонента)
+          const maxBetOnStreet = Math.max(...Object.values(playerTotalsForCall));
+          
+          // Call amount = максимальная ставка - ставка игрока до call
+          const playerTotalBeforeCall = playerTotalsForCall[action.playerId] - action.amount;
+          const callAmount = maxBetOnStreet - playerTotalBeforeCall;
+          
+          actions += `${action.playerName}: calls ${this.currency}${callAmount.toFixed(2)}\n`;
           break;
         case 'raise':
           // Для raise нужно показать "raises $X to $Y"

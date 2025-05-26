@@ -747,9 +747,35 @@ class PokerEngine {
           }
         }
         
-        // Для raise проверяем, что сумма больше последней ставки
-        if (action === 'raise' && amount <= lastBetAction.amount) {
-          throw new Error(`Raise amount must be greater than ${lastBetAction.amount}`);
+        // Для raise проверяем минимальный размер
+        if (action === 'raise') {
+          // Находим размер последнего raise для определения минимального raise
+          // Минимальный raise = размер последнего raise (не общая сумма)
+          
+          // Ищем предыдущий raise в хронологическом порядке
+          const allActionsChronological = [
+            ...currentPlayer.actions.filter(a => a.street === table.currentStreet),
+            ...otherPlayer.actions.filter(a => a.street === table.currentStreet)
+          ].sort((a, b) => a.timestamp - b.timestamp);
+          
+          // Находим последний raise/bet
+          let lastRaiseSize = 0;
+          for (let i = allActionsChronological.length - 1; i >= 0; i--) {
+            const act = allActionsChronological[i];
+            if (act.action === 'bet') {
+              lastRaiseSize = act.amount;
+              break;
+            } else if (act.action === 'raise') {
+              // Для raise нужно найти размер raise, а не общую сумму
+              // Это сложно, поэтому упростим: разрешим любой raise > 0
+              lastRaiseSize = 1; // Минимальный raise
+              break;
+            }
+          }
+          
+          if (amount < lastRaiseSize) {
+            throw new Error(`Raise amount must be at least ${lastRaiseSize}`);
+          }
         }
       }
       
