@@ -387,7 +387,8 @@ class HandHistoryGenerator {
       streetActions.forEach(action => {
         allActions.push({
           ...action,
-          playerName: player.name
+          playerName: player.name,
+          playerId: player.id
         });
       });
     });
@@ -395,19 +396,30 @@ class HandHistoryGenerator {
     // Sort actions by timestamp (chronological order)
     allActions.sort((a, b) => a.timestamp - b.timestamp);
     
-    allActions.forEach(action => {
+    allActions.forEach((action, index) => {
       switch (action.action) {
         case 'check':
           actions += `${action.playerName}: checks\n`;
           break;
         case 'bet':
-          actions += `${action.playerName}: bets ${this.currency}${action.amount}\n`;
+          actions += `${action.playerName}: bets ${this.currency}${action.amount.toFixed(2)}\n`;
           break;
         case 'call':
-          actions += `${action.playerName}: calls ${this.currency}${action.amount}\n`;
+          actions += `${action.playerName}: calls ${this.currency}${action.amount.toFixed(2)}\n`;
           break;
         case 'raise':
-          actions += `${action.playerName}: raises ${this.currency}${action.amount}\n`;
+          // Для raise нужно показать "raises $X to $Y"
+          // Находим предыдущую ставку на улице для расчета "to" суммы
+          const previousBetActions = allActions.slice(0, index)
+            .filter(a => a.action === 'bet' || a.action === 'raise');
+          
+          let totalBetAmount = action.amount;
+          if (previousBetActions.length > 0) {
+            const lastBet = previousBetActions[previousBetActions.length - 1];
+            totalBetAmount = lastBet.amount + action.amount;
+          }
+          
+          actions += `${action.playerName}: raises ${this.currency}${action.amount.toFixed(2)} to ${this.currency}${totalBetAmount.toFixed(2)}\n`;
           break;
         case 'fold':
           actions += `${action.playerName}: folds\n`;
