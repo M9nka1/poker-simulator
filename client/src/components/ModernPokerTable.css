@@ -341,16 +341,28 @@
   font-weight: bold;
   box-shadow: 0 0 20px var(--accent-color);
   animation: pulse 1.5s infinite;
+  z-index: 10;
+}
+
+.turn-timer span {
+  position: relative;
+  z-index: 12;
+  text-align: center;
+  line-height: 1;
+  pointer-events: none;
 }
 
 .timer-ring {
   position: absolute;
+  top: -5px;
+  left: -5px;
   width: 70px;
   height: 70px;
   border: 3px solid transparent;
   border-top: 3px solid var(--accent-color);
   border-radius: 50%;
   animation: spin 2s linear infinite;
+  z-index: 11;
 }
 
 @keyframes spin {

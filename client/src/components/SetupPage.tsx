@@ -703,6 +703,14 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
           >
             🧪 Тест карт
           </button>
+          
+          <button
+            className="btn btn-purple"
+            onClick={() => window.location.hash = '#card-position'}
+            style={{ fontSize: '1.1rem', padding: '12px 24px', backgroundColor: '#9C27B0' }}
+          >
+            🎯 Настройка карт
+          </button>
 
         </div>
         
