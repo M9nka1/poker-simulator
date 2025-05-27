@@ -45,6 +45,10 @@ interface LayoutSettings {
   playerCardHeight: number;
   playerCardPadding: number;
   
+  // Player Card Sizing
+  playerCardMinWidth: number;
+  playerCardMinHeight: number;
+  
   // Hole Cards
   holeCardWidth: number;
   holeCardHeight: number;
@@ -94,6 +98,10 @@ const defaultSettings: LayoutSettings = {
   playerCardWidth: 250,
   playerCardHeight: 120,
   playerCardPadding: 15,
+  
+  // Player Card Sizing
+  playerCardMinWidth: 180,
+  playerCardMinHeight: 100,
   
   // Hole Cards
   holeCardWidth: 35,
@@ -430,7 +438,7 @@ const LayoutDebugger: React.FC = () => {
               <input
                 type="range"
                 min="10"
-                max="100"
+                max="200"
                 value={settings.actionPanelBottom}
                 onChange={(e) => updateSetting('actionPanelBottom', parseInt(e.target.value))}
               />
@@ -488,6 +496,26 @@ const LayoutDebugger: React.FC = () => {
                 max="20"
                 value={settings.holeCardGap}
                 onChange={(e) => updateSetting('holeCardGap', parseInt(e.target.value))}
+              />
+            </div>
+            <div className="setting-item">
+              <label>Player Card Min Width: {settings.playerCardMinWidth}px</label>
+              <input
+                type="range"
+                min="150"
+                max="300"
+                value={settings.playerCardMinWidth}
+                onChange={(e) => updateSetting('playerCardMinWidth', parseInt(e.target.value))}
+              />
+            </div>
+            <div className="setting-item">
+              <label>Player Card Min Height: {settings.playerCardMinHeight}px</label>
+              <input
+                type="range"
+                min="80"
+                max="150"
+                value={settings.playerCardMinHeight}
+                onChange={(e) => updateSetting('playerCardMinHeight', parseInt(e.target.value))}
               />
             </div>
           </div>
@@ -559,8 +587,8 @@ const LayoutDebugger: React.FC = () => {
             top: `${settings.opponentZoneTop}px`,
             left: '50%',
             transform: 'translateX(-50%)',
-            width: `${settings.playerCardWidth}px`,
-            height: `${settings.opponentZoneHeight}px`,
+            width: `${settings.playerCardMinWidth}px`,
+            height: `${settings.playerCardMinHeight}px`,
             background: 'rgba(255, 255, 255, 0.1)',
             border: selectedElement === 'opponent' ? '2px solid #00ff88' : '1px solid rgba(255, 255, 255, 0.2)',
             borderRadius: '20px',
@@ -683,8 +711,8 @@ const LayoutDebugger: React.FC = () => {
             bottom: `${settings.currentPlayerZoneBottom}px`,
             left: '50%',
             transform: 'translateX(-50%)',
-            width: `${settings.playerCardWidth}px`,
-            height: `${settings.currentPlayerZoneHeight}px`,
+            width: `${settings.playerCardMinWidth}px`,
+            height: `${settings.playerCardMinHeight}px`,
             background: 'rgba(255, 255, 255, 0.1)',
             border: selectedElement === 'current' ? '2px solid #00ff88' : '1px solid rgba(255, 255, 255, 0.2)',
             borderRadius: '20px',
