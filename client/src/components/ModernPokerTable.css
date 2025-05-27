@@ -257,7 +257,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
   transition: all 0.3s ease;
   z-index: 10;
 }
@@ -316,21 +316,17 @@
 
 .player-info {
   text-align: center;
-  margin-bottom: 15px;
+  margin-bottom: 0;
 }
 
 .player-name {
-  margin: 0 0 5px 0;
+  margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.player-position {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin-bottom: 5px;
-}
+
 
 .player-stack {
   font-size: 1rem;
@@ -342,7 +338,7 @@
 .player-card .hole-cards {
   display: flex;
   gap: 9px;
-  margin-top: 10px;
+  margin-top: 5px;
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;

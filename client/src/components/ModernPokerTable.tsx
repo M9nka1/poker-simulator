@@ -354,7 +354,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                 
                 <div className="player-info">
                   <h3 className="player-name">{opponent.name}</h3>
-                  <div className="player-position">{opponent.position === 'BTN' ? 'BTN/IP' : 'BB/OOP'}</div>
                   <div className="player-stack">€{opponent.stack}</div>
                 </div>
 
@@ -481,7 +480,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                 
                 <div className="player-info">
                   <h3 className="player-name">{myPlayer.name}</h3>
-                  <div className="player-position">{myPlayer.position === 'BTN' ? 'BTN/IP' : 'BB/OOP'}</div>
                   <div className="player-stack">€{myPlayer.stack}</div>
                 </div>
 
