@@ -19,14 +19,7 @@
   box-sizing: border-box;
 }
 
-/* Оптимизация для малых экранов */
-.responsive-container.small-screen {
-  /* Дополнительные стили для малых экранов */
-}
-
-.responsive-container.mobile-screen {
-  /* Дополнительные стили для мобильных экранов */
-}
+/* Оптимизация для малых экранов - стили могут быть добавлены по необходимости */
 
 /* Индикатор масштаба в режиме разработки */
 .scale-indicator {
@@ -52,25 +45,7 @@
   max-width: none;
 }
 
-/* Оптимизация шрифтов для разных масштабов */
-.responsive-container[data-scale^="0.4"] {
-  /* Очень маленький масштаб */
-}
-
-.responsive-container[data-scale^="0.5"],
-.responsive-container[data-scale^="0.6"] {
-  /* Маленький масштаб */
-}
-
-.responsive-container[data-scale^="0.7"],
-.responsive-container[data-scale^="0.8"],
-.responsive-container[data-scale^="0.9"] {
-  /* Средний масштаб */
-}
-
-.responsive-container[data-scale^="1."] {
-  /* Большой масштаб */
-}
+/* Оптимизация шрифтов для разных масштабов - стили могут быть добавлены по необходимости */
 
 /* Анимации для изменения размера */
 @keyframes scaleIn {
