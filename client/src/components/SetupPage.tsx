@@ -695,6 +695,14 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
           >
             🎴 Редактор карт
           </button>
+          
+          <button
+            className="btn btn-warning"
+            onClick={() => window.location.hash = '#card-test'}
+            style={{ fontSize: '1.1rem', padding: '12px 24px' }}
+          >
+            🧪 Тест карт
+          </button>
 
         </div>
         

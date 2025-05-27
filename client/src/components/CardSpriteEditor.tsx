@@ -15,28 +15,28 @@ const CardSpriteEditor: React.FC = () => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [scale, setScale] = useState(0.5);
   const [gridLines, setGridLines] = useState<GridLine[]>([
-    // Вертикальные линии (колонки карт)
-    { id: 'v1', type: 'vertical', position: 0, color: '#ff0000', label: 'Левый край' },
-    { id: 'v2', type: 'vertical', position: 369, color: '#ff0000', label: 'Колонка 1' },
-    { id: 'v3', type: 'vertical', position: 738, color: '#ff0000', label: 'Колонка 2' },
-    { id: 'v4', type: 'vertical', position: 1107, color: '#ff0000', label: 'Колонка 3' },
-    { id: 'v5', type: 'vertical', position: 1476, color: '#ff0000', label: 'Колонка 4' },
-    { id: 'v6', type: 'vertical', position: 1845, color: '#ff0000', label: 'Колонка 5' },
-    { id: 'v7', type: 'vertical', position: 2214, color: '#ff0000', label: 'Колонка 6' },
-    { id: 'v8', type: 'vertical', position: 2583, color: '#ff0000', label: 'Колонка 7' },
-    { id: 'v9', type: 'vertical', position: 2952, color: '#ff0000', label: 'Колонка 8' },
-    { id: 'v10', type: 'vertical', position: 3321, color: '#ff0000', label: 'Колонка 9' },
-    { id: 'v11', type: 'vertical', position: 3690, color: '#ff0000', label: 'Колонка 10' },
-    { id: 'v12', type: 'vertical', position: 4059, color: '#ff0000', label: 'Колонка 11' },
-    { id: 'v13', type: 'vertical', position: 4428, color: '#ff0000', label: 'Колонка 12' },
-    { id: 'v14', type: 'vertical', position: 4797, color: '#ff0000', label: 'Правый край' },
+    // Вертикальные линии (колонки карт) - точные координаты
+    { id: 'v1', type: 'vertical', position: 68, color: '#ff0000', label: 'Левый край' },
+    { id: 'v2', type: 'vertical', position: 427, color: '#ff0000', label: 'Колонка 1' },
+    { id: 'v3', type: 'vertical', position: 786, color: '#ff0000', label: 'Колонка 2' },
+    { id: 'v4', type: 'vertical', position: 1145, color: '#ff0000', label: 'Колонка 3' },
+    { id: 'v5', type: 'vertical', position: 1504, color: '#ff0000', label: 'Колонка 4' },
+    { id: 'v6', type: 'vertical', position: 1863, color: '#ff0000', label: 'Колонка 5' },
+    { id: 'v7', type: 'vertical', position: 2222, color: '#ff0000', label: 'Колонка 6' },
+    { id: 'v8', type: 'vertical', position: 2581, color: '#ff0000', label: 'Колонка 7' },
+    { id: 'v9', type: 'vertical', position: 2940, color: '#ff0000', label: 'Колонка 8' },
+    { id: 'v10', type: 'vertical', position: 3299, color: '#ff0000', label: 'Колонка 9' },
+    { id: 'v11', type: 'vertical', position: 3658, color: '#ff0000', label: 'Колонка 10' },
+    { id: 'v12', type: 'vertical', position: 4017, color: '#ff0000', label: 'Колонка 11' },
+    { id: 'v13', type: 'vertical', position: 4376, color: '#ff0000', label: 'Колонка 12' },
+    { id: 'v14', type: 'vertical', position: 4735, color: '#ff0000', label: 'Правый край' },
     
-    // Горизонтальные линии (ряды карт)
-    { id: 'h1', type: 'horizontal', position: 0, color: '#00ff00', label: 'Верхний край' },
-    { id: 'h2', type: 'horizontal', position: 614, color: '#00ff00', label: 'Ряд 1' },
-    { id: 'h3', type: 'horizontal', position: 1228, color: '#00ff00', label: 'Ряд 2' },
-    { id: 'h4', type: 'horizontal', position: 1842, color: '#00ff00', label: 'Ряд 3' },
-    { id: 'h5', type: 'horizontal', position: 2456, color: '#00ff00', label: 'Нижний край' },
+    // Горизонтальные линии (ряды карт) - точные координаты
+    { id: 'h1', type: 'horizontal', position: 93, color: '#00ff00', label: 'Верхний край' },
+    { id: 'h2', type: 'horizontal', position: 663, color: '#00ff00', label: 'Ряд 1' },
+    { id: 'h3', type: 'horizontal', position: 1233, color: '#00ff00', label: 'Ряд 2' },
+    { id: 'h4', type: 'horizontal', position: 1803, color: '#00ff00', label: 'Ряд 3' },
+    { id: 'h5', type: 'horizontal', position: 2373, color: '#00ff00', label: 'Нижний край' },
   ]);
 
   const [selectedLine] = useState<string | null>(null);
