@@ -100,11 +100,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 20px;
+  padding: 10px 20px;
   margin-bottom: 15px;
   position: relative;
   flex-shrink: 0;
-  min-height: 60px;
+  height: 80px;
 }
 
 .header-left {
@@ -249,9 +249,9 @@
 /* Player Card Styles */
 .player-card {
   position: relative;
-  padding: 20px;
+  padding: 15px;
   margin: 10px;
-  min-width: 200px;
+  min-width: 250px;
   min-height: 120px;
   display: flex;
   flex-direction: column;
@@ -340,7 +340,7 @@
 /* Карты игрока внутри блока */
 .player-card .hole-cards {
   display: flex;
-  gap: 8px;
+  gap: 9px;
   margin-top: 10px;
   justify-content: center;
   align-items: center;
@@ -349,8 +349,8 @@
 
 .player-card .hole-cards .rank-card,
 .player-card .hole-cards .rank-card-image {
-  width: 40px !important;
-  height: 56px !important;
+  width: 55px !important;
+  height: 70px !important;
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   transition: transform 0.2s ease;
@@ -448,12 +448,12 @@
   justify-content: center;
   align-items: center;
   flex: 1;
-  min-height: 300px;
+  min-height: 421px;
   position: relative;
 }
 
 .poker-felt {
-  width: 90%;
+  width: 80%;
   max-width: 900px;
   height: 60%;
   min-height: 400px;
@@ -486,13 +486,17 @@
 .pot-display {
   padding: 20px 40px;
   text-align: center;
-  min-width: 180px;
+  min-width: 150px;
+  height: 80px;
   background: var(--glass-bg);
   backdrop-filter: blur(10px);
   border: 1px solid var(--glass-border);
   border-radius: 20px;
   box-shadow: 0 8px 32px var(--shadow-color);
   margin: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .pot-label {
@@ -514,7 +518,7 @@
 
 .board-cards {
   display: flex;
-  gap: 20px;
+  gap: 18px;
   align-items: center;
   background: var(--glass-bg);
   backdrop-filter: blur(15px);
@@ -530,10 +534,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 80px;
-  min-height: 101px;
-  width: 80px;
-  height: 101px;
+  min-width: 67px;
+  min-height: 95px;
+  width: 67px;
+  height: 95px;
   transition: all 0.3s ease;
   background: rgba(255, 255, 255, 0.05);
   border: 2px dashed rgba(255, 255, 255, 0.2);
@@ -585,7 +589,7 @@
 /* Action Panel */
 .action-panel {
   position: fixed;
-  bottom: 20px;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
   width: 90%;
@@ -597,7 +601,7 @@
   border: 1px solid var(--glass-border);
   border-radius: 20px;
   box-shadow: 0 8px 32px var(--shadow-color);
-  max-height: 300px;
+  max-height: 200px;
   overflow-y: auto;
 }
 
@@ -853,7 +857,7 @@
 /* Waiting Panel */
 .waiting-panel {
   position: fixed;
-  bottom: 20px;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
   width: 90%;
@@ -887,7 +891,7 @@
 /* New Hand Panel */
 .new-hand-panel {
   position: fixed;
-  bottom: 20px;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
   width: 90%;
