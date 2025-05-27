@@ -719,6 +719,14 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
           >
             ✨ Тест оптимизированных карт
           </button>
+          
+          <button
+            className="btn btn-debug"
+            onClick={() => window.location.hash = '#layout-debugger'}
+            style={{ fontSize: '1.1rem', padding: '12px 24px', backgroundColor: '#FF6B6B', color: 'white' }}
+          >
+            🔧 Отладка позиционирования
+          </button>
 
         </div>
         

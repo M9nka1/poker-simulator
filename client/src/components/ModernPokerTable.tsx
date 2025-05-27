@@ -312,8 +312,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
             </button>
           </div>
 
-
-
           {/* Card Size Toggle */}
           <button
             className="control-btn"
@@ -361,6 +359,18 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                   <div className="player-position">{opponent.position === 'BTN' ? 'BTN/IP' : 'BB/OOP'}</div>
                   <div className="player-stack">€{opponent.stack}</div>
                 </div>
+
+                {/* Карты игрока внутри блока */}
+                <div className="hole-cards">
+                  {opponent.holeCards.map((card, index) => (
+                    <RankCard 
+                      key={`${opponent.id}-hole-${index}`} 
+                      card={card} 
+                      size={cardSize}
+                      useImages={useCardImages}
+                    />
+                  ))}
+                </div>
                 
                 {opponent.id === table.currentPlayer && (
                   <div className="turn-timer">
@@ -368,17 +378,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                     <span>ХОД</span>
                   </div>
                 )}
-              </div>
-              
-              <div className="hole-cards">
-                {opponent.holeCards.map((card, index) => (
-                  <RankCard 
-                    key={`${opponent.id}-hole-${index}`} 
-                    card={card} 
-                    size={cardSize}
-                    useImages={useCardImages}
-                  />
-                ))}
               </div>
               
               {opponentBet > 0 && (
@@ -473,17 +472,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                 </div>
               )}
               
-              <div className="hole-cards">
-                {myPlayer.holeCards.map((card, index) => (
-                  <RankCard 
-                    key={`${myPlayer.id}-hole-${index}`} 
-                    card={card} 
-                    size={cardSize}
-                    useImages={useCardImages}
-                  />
-                ))}
-              </div>
-              
               <div className="player-card glass-morphism">
                 <div className="player-avatar">
                   <div className="avatar-circle">
@@ -497,6 +485,18 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                   <h3 className="player-name">{myPlayer.name}</h3>
                   <div className="player-position">{myPlayer.position === 'BTN' ? 'BTN/IP' : 'BB/OOP'}</div>
                   <div className="player-stack">€{myPlayer.stack}</div>
+                </div>
+
+                {/* Карты игрока внутри блока */}
+                <div className="hole-cards">
+                  {myPlayer.holeCards.map((card, index) => (
+                    <RankCard 
+                      key={`${myPlayer.id}-hole-${index}`} 
+                      card={card} 
+                      size={cardSize}
+                      useImages={useCardImages}
+                    />
+                  ))}
                 </div>
                 
                 {myPlayer.id === table.currentPlayer && (

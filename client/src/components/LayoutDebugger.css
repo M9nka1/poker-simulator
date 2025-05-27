@@ -1,0 +1,235 @@
+/* Layout Debugger Styles */
+
+.layout-debugger {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: white;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.control-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 400px;
+  height: 100vh;
+  background: rgba(26, 26, 26, 0.95);
+  backdrop-filter: blur(10px);
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  overflow-y: auto;
+  z-index: 2000;
+  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.control-header {
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.control-header h2 {
+  margin: 0 0 15px 0;
+  font-size: 1.5rem;
+  color: #00ff88;
+}
+
+.control-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.control-buttons button,
+.import-btn {
+  padding: 8px 12px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.control-buttons button:hover,
+.import-btn:hover {
+  background: #00ff88;
+  color: #0a0a0a;
+  transform: translateY(-2px);
+}
+
+.import-btn {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.settings-grid {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.setting-group {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.setting-group h3 {
+  margin: 0 0 15px 0;
+  font-size: 1.1rem;
+  color: #00ff88;
+  border-bottom: 1px solid rgba(0, 255, 136, 0.3);
+  padding-bottom: 8px;
+}
+
+.setting-item {
+  margin-bottom: 15px;
+}
+
+.setting-item label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+  color: #ccc;
+  font-weight: 500;
+}
+
+.setting-item input[type="range"] {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  outline: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.setting-item input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #00ff88;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 255, 136, 0.4);
+  transition: all 0.3s ease;
+}
+
+.setting-item input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(0, 255, 136, 0.6);
+}
+
+.setting-item input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #00ff88;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0, 255, 136, 0.4);
+}
+
+.preview-area {
+  margin-left: 420px;
+  padding: 20px;
+  min-height: 100vh;
+  background: #111;
+}
+
+/* Grid overlay animation */
+.grid-overlay {
+  animation: gridPulse 4s ease-in-out infinite;
+}
+
+@keyframes gridPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+
+/* Debug element highlighting */
+.debug-header:hover,
+.debug-opponent:hover,
+.debug-table-center:hover,
+.debug-current-player:hover,
+.debug-action-panel:hover {
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.5) !important;
+  transform: scale(1.02) !important;
+  transition: all 0.3s ease !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+  .control-panel {
+    width: 350px;
+  }
+  
+  .preview-area {
+    margin-left: 370px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .control-panel {
+    position: relative;
+    width: 100%;
+    height: auto;
+    max-height: 50vh;
+  }
+  
+  .preview-area {
+    margin-left: 0;
+    padding: 10px;
+  }
+  
+  .preview-area > div {
+    transform: scale(0.8);
+    transform-origin: top center;
+  }
+}
+
+/* Scrollbar styling */
+.control-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.control-panel::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.control-panel::-webkit-scrollbar-thumb {
+  background: #00ff88;
+  border-radius: 4px;
+}
+
+.control-panel::-webkit-scrollbar-thumb:hover {
+  background: #00cc6a;
+}
+
+/* Button animations */
+.control-buttons button {
+  position: relative;
+  overflow: hidden;
+}
+
+.control-buttons button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.control-buttons button:active::before {
+  width: 300px;
+  height: 300px;
+} 
