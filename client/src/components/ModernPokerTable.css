@@ -16,10 +16,11 @@
   
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   width: 100%;
-  height: 100%;
+  min-height: 100vh;
   background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
   color: var(--text-primary);
   padding: 20px;
+  padding-bottom: 280px; /* Место для action panel */
   box-sizing: border-box;
   position: relative;
   overflow: visible;
@@ -588,8 +589,8 @@
 
 /* Action Panel */
 .action-panel {
-  position: fixed;
-  bottom: 16px;
+  position: absolute;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   width: 90%;
@@ -601,8 +602,8 @@
   border: 1px solid var(--glass-border);
   border-radius: 20px;
   box-shadow: 0 8px 32px var(--shadow-color);
-  max-height: 200px;
-  overflow-y: auto;
+  min-height: 200px;
+  overflow-y: visible;
 }
 
 .bet-sizing-panel {
@@ -856,8 +857,8 @@
 
 /* Waiting Panel */
 .waiting-panel {
-  position: fixed;
-  bottom: 16px;
+  position: absolute;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   width: 90%;
@@ -890,8 +891,8 @@
 
 /* New Hand Panel */
 .new-hand-panel {
-  position: fixed;
-  bottom: 16px;
+  position: absolute;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   width: 90%;
@@ -949,150 +950,157 @@
   }
 }
 
-/* Responsive Design - теперь управляется через ResponsiveContainer */
-.responsive-container.small-screen .modern-poker-table {
-  padding: 10px;
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modern-poker-table {
+    padding: 10px;
+    padding-bottom: 250px;
+  }
+
+  .modern-header {
+    flex-direction: column;
+    gap: 15px;
+    padding: 10px 15px;
+    min-height: 50px;
+  }
+
+  .header-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .game-container {
+    gap: 15px;
+  }
+
+  .player-card {
+    min-width: 200px;
+    padding: 12px 15px;
+  }
+
+  .poker-felt {
+    padding: 25px 30px;
+    min-height: 300px;
+    width: 95%;
+    height: 55%;
+  }
+
+  .board-cards {
+    gap: 10px;
+    padding: 12px 15px;
+    margin: 3px;
+  }
+
+  .board-card-slot {
+    min-width: 60px;
+    min-height: 76px;
+    width: 60px;
+    height: 76px;
+  }
+
+  .action-panel {
+    padding: 12px 15px;
+    min-height: 180px;
+    width: 95%;
+    bottom: 10px;
+  }
+
+  .action-buttons {
+    gap: 8px;
+  }
+
+  .action-btn {
+    min-width: 80px;
+    padding: 12px 15px;
+    font-size: 0.9rem;
+  }
+
+  .sizing-buttons {
+    gap: 6px;
+  }
+
+  .sizing-btn {
+    min-width: 60px;
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
 }
 
-.responsive-container.small-screen .modern-header {
-  flex-direction: column;
-  gap: 15px;
-  padding: 10px 15px;
-  min-height: 50px;
-}
+@media (max-width: 480px) {
+  .modern-poker-table {
+    padding-bottom: 220px;
+  }
 
-.responsive-container.small-screen .header-controls {
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-}
+  .table-title {
+    font-size: 1.3rem;
+  }
 
-.responsive-container.small-screen .game-container {
-  gap: 15px;
-}
+  .player-card {
+    min-width: 180px;
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+    padding: 10px 12px;
+  }
 
-.responsive-container.small-screen .player-card {
-  min-width: 200px;
-  padding: 12px 15px;
-}
+  .avatar-circle {
+    width: 45px;
+    height: 45px;
+    font-size: 1.1rem;
+  }
 
-.responsive-container.small-screen .poker-felt {
-  padding: 25px 30px;
-  min-height: 300px;
-  width: 95%;
-  height: 55%;
-}
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
 
-.responsive-container.small-screen .board-cards {
-  gap: 10px;
-  padding: 12px 15px;
-  margin: 3px;
-}
+  .action-btn {
+    width: 100%;
+    max-width: 180px;
+    padding: 10px 15px;
+    font-size: 0.85rem;
+  }
 
-.responsive-container.small-screen .board-card-slot {
-  min-width: 60px;
-  min-height: 76px;
-  width: 60px;
-  height: 76px;
-}
+  .sizing-buttons {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
 
-.responsive-container.small-screen .action-panel {
-  padding: 12px 15px;
-  max-height: 200px;
-  width: 95%;
-  bottom: 10px;
-  position: absolute;
-}
+  .poker-felt {
+    padding: 15px 20px;
+    min-height: 250px;
+    width: 98%;
+    height: 50%;
+  }
 
-.responsive-container.small-screen .action-buttons {
-  gap: 8px;
-}
+  .board-cards {
+    gap: 6px;
+    padding: 10px 12px;
+    margin: 2px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 
-.responsive-container.small-screen .action-btn {
-  min-width: 80px;
-  padding: 12px 15px;
-  font-size: 0.9rem;
-}
+  .board-card-slot {
+    min-width: 48px;
+    min-height: 61px;
+    width: 48px;
+    height: 61px;
+    padding: 2px;
+  }
 
-.responsive-container.small-screen .sizing-buttons {
-  gap: 6px;
-}
+  .pot-display {
+    padding: 12px 20px;
+    min-width: 100px;
+    margin: 3px;
+  }
 
-.responsive-container.small-screen .sizing-btn {
-  min-width: 60px;
-  padding: 8px 10px;
-  font-size: 0.8rem;
-}
-
-.responsive-container.mobile-screen .table-title {
-  font-size: 1.3rem;
-}
-
-.responsive-container.mobile-screen .player-card {
-  min-width: 180px;
-  flex-direction: column;
-  text-align: center;
-  gap: 8px;
-  padding: 10px 12px;
-}
-
-.responsive-container.mobile-screen .avatar-circle {
-  width: 45px;
-  height: 45px;
-  font-size: 1.1rem;
-}
-
-.responsive-container.mobile-screen .action-buttons {
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.responsive-container.mobile-screen .action-btn {
-  width: 100%;
-  max-width: 180px;
-  padding: 10px 15px;
-  font-size: 0.85rem;
-}
-
-.responsive-container.mobile-screen .sizing-buttons {
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.responsive-container.mobile-screen .poker-felt {
-  padding: 15px 20px;
-  min-height: 250px;
-  width: 98%;
-  height: 50%;
-}
-
-.responsive-container.mobile-screen .board-cards {
-  gap: 6px;
-  padding: 10px 12px;
-  margin: 2px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.responsive-container.mobile-screen .board-card-slot {
-  min-width: 48px;
-  min-height: 61px;
-  width: 48px;
-  height: 61px;
-  padding: 2px;
-}
-
-.responsive-container.mobile-screen .pot-display {
-  padding: 12px 20px;
-  min-width: 100px;
-  margin: 3px;
-}
-
-.responsive-container.mobile-screen .action-panel {
-  padding: 10px 12px;
-  max-height: 180px;
-  width: 98%;
-  bottom: 5px;
-  position: absolute;
+  .action-panel {
+    padding: 10px 12px;
+    min-height: 160px;
+    width: 98%;
+    bottom: 5px;
+  }
 } 
