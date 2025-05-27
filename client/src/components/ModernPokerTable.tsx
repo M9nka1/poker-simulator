@@ -509,8 +509,8 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
         })()}
       </div>
 
-      {/* Action Panel */}
-      {isMyTurn && (
+      {/* Action Panel - показываем всегда когда игрок подключен */}
+      {currentPlayerId && !table.handComplete && (
         <div className="action-panel glass-morphism">
           {/* Bet Sizing */}
           <div className="bet-sizing-panel">
@@ -564,6 +564,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                     key={type}
                     className={`sizing-btn ${isSelected ? 'selected' : ''}`}
                     onClick={() => setSelectedBetAmount(finalAmount)}
+                    disabled={!isMyTurn}
                   >
                     <span className="sizing-label">{label}</span>
                     <span className="sizing-amount">€{finalAmount}</span>
@@ -575,86 +576,100 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
 
           {/* Action Buttons */}
           <div className="action-buttons">
-            {canCheck() && (
+            {isMyTurn ? (
               <>
-                <button
-                  className="action-btn check-btn neumorphism"
-                  onClick={() => makeAction('check')}
-                  disabled={isLoading}
-                >
-                  <span className="btn-icon">✋</span>
-                  <span className="btn-text">ЧЕК</span>
-                </button>
+                {canCheck() && (
+                  <>
+                    <button
+                      className="action-btn check-btn neumorphism"
+                      onClick={() => makeAction('check')}
+                      disabled={isLoading}
+                    >
+                      <span className="btn-icon">✋</span>
+                      <span className="btn-text">ЧЕК</span>
+                    </button>
+                    
+                    <button
+                      className="action-btn bet-btn neumorphism"
+                      onClick={() => makeAction('bet', selectedBetAmount || calculateBetSize('half'))}
+                      disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
+                    >
+                      <span className="btn-icon">💰</span>
+                      <span className="btn-text">БЕТ</span>
+                      <span className="btn-amount">€{selectedBetAmount || calculateBetSize('half')}</span>
+                    </button>
+                  </>
+                )}
                 
-                <button
-                  className="action-btn bet-btn neumorphism"
-                  onClick={() => makeAction('bet', selectedBetAmount || calculateBetSize('half'))}
-                  disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
-                >
-                  <span className="btn-icon">💰</span>
-                  <span className="btn-text">БЕТ</span>
-                  <span className="btn-amount">€{selectedBetAmount || calculateBetSize('half')}</span>
-                </button>
+                {canCall() && (
+                  <>
+                    <button
+                      className="action-btn fold-btn neumorphism"
+                      onClick={() => makeAction('fold')}
+                      disabled={isLoading}
+                    >
+                      <span className="btn-icon">🗂️</span>
+                      <span className="btn-text">ФОЛД</span>
+                    </button>
+                    
+                    <button
+                      className="action-btn call-btn neumorphism"
+                      onClick={() => makeAction('call', getCallAmount())}
+                      disabled={isLoading}
+                    >
+                      <span className="btn-icon">{getCallAmount() === myPlayerData?.stack ? '🔥' : '📞'}</span>
+                      <span className="btn-text">{getCallAmount() === myPlayerData?.stack ? 'ALL-IN' : 'КОЛЛ'}</span>
+                      <span className="btn-amount">€{getCallAmount()}</span>
+                    </button>
+                    
+                    <button
+                      className="action-btn raise-btn neumorphism"
+                      onClick={() => {
+                        const callAmount = getCallAmount();
+                        const hasOpponentBet = callAmount > 0;
+                        
+                        let actionType: string;
+                        let actionAmount: number;
+                        
+                        if (!hasOpponentBet) {
+                          actionType = 'bet';
+                          actionAmount = selectedBetAmount || calculateBetSize('half');
+                        } else {
+                          const desiredAmount = selectedBetAmount || (callAmount + calculateBetSize('half'));
+                          
+                          if (desiredAmount === callAmount) {
+                            actionType = 'call';
+                            actionAmount = callAmount;
+                          } else if (desiredAmount > callAmount) {
+                            actionType = 'raise';
+                            actionAmount = desiredAmount - callAmount;
+                          } else {
+                            actionType = 'call';
+                            actionAmount = callAmount;
+                          }
+                        }
+                        
+                        makeAction(actionType, actionAmount);
+                      }}
+                      disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
+                    >
+                      <span className="btn-icon">🚀</span>
+                      <span className="btn-text">{getCallAmount() > 0 ? 'РЕЙЗ' : 'БЕТ'}</span>
+                      <span className="btn-amount">€{selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half'))}</span>
+                    </button>
+                  </>
+                )}
               </>
-            )}
-            
-            {canCall() && (
-              <>
-                <button
-                  className="action-btn fold-btn neumorphism"
-                  onClick={() => makeAction('fold')}
-                  disabled={isLoading}
-                >
-                  <span className="btn-icon">🗂️</span>
-                  <span className="btn-text">ФОЛД</span>
-                </button>
-                
-                <button
-                  className="action-btn call-btn neumorphism"
-                  onClick={() => makeAction('call', getCallAmount())}
-                  disabled={isLoading}
-                >
-                  <span className="btn-icon">{getCallAmount() === myPlayerData?.stack ? '🔥' : '📞'}</span>
-                  <span className="btn-text">{getCallAmount() === myPlayerData?.stack ? 'ALL-IN' : 'КОЛЛ'}</span>
-                  <span className="btn-amount">€{getCallAmount()}</span>
-                </button>
-                
-                <button
-                  className="action-btn raise-btn neumorphism"
-                  onClick={() => {
-                    const callAmount = getCallAmount();
-                    const hasOpponentBet = callAmount > 0;
-                    
-                    let actionType: string;
-                    let actionAmount: number;
-                    
-                    if (!hasOpponentBet) {
-                      actionType = 'bet';
-                      actionAmount = selectedBetAmount || calculateBetSize('half');
-                    } else {
-                      const desiredAmount = selectedBetAmount || (callAmount + calculateBetSize('half'));
-                      
-                      if (desiredAmount === callAmount) {
-                        actionType = 'call';
-                        actionAmount = callAmount;
-                      } else if (desiredAmount > callAmount) {
-                        actionType = 'raise';
-                        actionAmount = desiredAmount - callAmount;
-                      } else {
-                        actionType = 'call';
-                        actionAmount = callAmount;
-                      }
-                    }
-                    
-                    makeAction(actionType, actionAmount);
-                  }}
-                  disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
-                >
-                  <span className="btn-icon">🚀</span>
-                  <span className="btn-text">{getCallAmount() > 0 ? 'РЕЙЗ' : 'БЕТ'}</span>
-                  <span className="btn-amount">€{selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half'))}</span>
-                </button>
-              </>
+            ) : (
+              <div className="waiting-turn">
+                <div className="waiting-spinner"></div>
+                <span>
+                  {currentPlayerData ? 
+                    `Ход игрока: ${currentPlayerData.name}` : 
+                    'Ожидание хода...'
+                  }
+                </span>
+              </div>
             )}
           </div>
           
@@ -664,6 +679,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               <button
                 className="clear-btn"
                 onClick={() => setSelectedBetAmount(0)}
+                disabled={!isMyTurn}
               >
                 ✕
               </button>
@@ -672,19 +688,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
         </div>
       )}
 
-      {!isMyTurn && !table.handComplete && (
-        <div className="waiting-panel glass-morphism">
-          <div className="waiting-content">
-            <div className="waiting-spinner"></div>
-            <span>
-              {currentPlayerData ? 
-                `Ход игрока: ${currentPlayerData.name}` : 
-                'Ожидание хода...'
-              }
-            </span>
-          </div>
-        </div>
-      )}
+
 
       {/* New Hand Button */}
       {table.handComplete && (

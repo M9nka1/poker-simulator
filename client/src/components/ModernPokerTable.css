@@ -20,7 +20,7 @@
   background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
   color: var(--text-primary);
   padding: 20px;
-  padding-bottom: 280px; /* Место для action panel */
+  padding-bottom: 320px; /* Место для action panel */
   box-sizing: border-box;
   position: relative;
   overflow: visible;
@@ -101,11 +101,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 20px;
+  padding: 19px 20px;
   margin-bottom: 15px;
   position: relative;
   flex-shrink: 0;
-  height: 80px;
+  height: 50px;
 }
 
 .header-left {
@@ -350,8 +350,8 @@
 
 .player-card .hole-cards .rank-card,
 .player-card .hole-cards .rank-card-image {
-  width: 55px !important;
-  height: 70px !important;
+  width: 36px !important;
+  height: 50px !important;
   border-radius: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   transition: transform 0.2s ease;
@@ -454,10 +454,10 @@
 }
 
 .poker-felt {
-  width: 80%;
+  width: 81%;
   max-width: 900px;
   height: 60%;
-  min-height: 400px;
+  min-height: 455px;
   background: 
     linear-gradient(135deg, rgba(13, 79, 60, 0.3), rgba(0, 0, 0, 0.4)),
     url('../assets/table.png') center/contain no-repeat;
@@ -519,7 +519,7 @@
 
 .board-cards {
   display: flex;
-  gap: 18px;
+  gap: 16px;
   align-items: center;
   background: var(--glass-bg);
   backdrop-filter: blur(15px);
@@ -535,10 +535,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 67px;
-  min-height: 95px;
-  width: 67px;
-  height: 95px;
+  min-width: 64px;
+  min-height: 86px;
+  width: 64px;
+  height: 86px;
   transition: all 0.3s ease;
   background: rgba(255, 255, 255, 0.05);
   border: 2px dashed rgba(255, 255, 255, 0.2);
@@ -590,7 +590,7 @@
 /* Action Panel */
 .action-panel {
   position: absolute;
-  bottom: 20px;
+  bottom: 100px;
   left: 50%;
   transform: translateX(-50%);
   width: 90%;
@@ -602,7 +602,7 @@
   border: 1px solid var(--glass-border);
   border-radius: 20px;
   box-shadow: 0 8px 32px var(--shadow-color);
-  min-height: 200px;
+  min-height: 196px;
   overflow-y: visible;
 }
 
@@ -855,10 +855,21 @@
   transform: scale(1.1);
 }
 
+.waiting-turn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
 /* Waiting Panel */
 .waiting-panel {
   position: absolute;
-  bottom: 20px;
+  bottom: 100px;
   left: 50%;
   transform: translateX(-50%);
   width: 90%;
@@ -892,7 +903,7 @@
 /* New Hand Panel */
 .new-hand-panel {
   position: absolute;
-  bottom: 20px;
+  bottom: 100px;
   left: 50%;
   transform: translateX(-50%);
   width: 90%;
