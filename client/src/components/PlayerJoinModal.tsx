@@ -4,7 +4,7 @@ interface PlayerJoinModalProps {
   sessionId: string;
   tableId: number;
   playerNames: string[];
-  onJoin: (playerId: number, playerName: string) => void;
+  onJoin: (playerId: number, playerName: string, tableStyle?: string) => void;
   onCancel: () => void;
 }
 
@@ -19,11 +19,12 @@ const PlayerJoinModal: React.FC<PlayerJoinModalProps> = ({
   const [playerName, setPlayerName] = useState<string>('');
   const [customName, setCustomName] = useState<string>('');
   const [useCustomName, setUseCustomName] = useState<boolean>(false);
+  const [tableStyle, setTableStyle] = useState<string>('classic');
 
   const handleJoin = () => {
     const finalName = useCustomName ? customName.trim() : playerName;
     if (finalName) {
-      onJoin(selectedPlayer, finalName);
+      onJoin(selectedPlayer, finalName, tableStyle);
     }
   };
 
@@ -157,6 +158,83 @@ const PlayerJoinModal: React.FC<PlayerJoinModalProps> = ({
             }}>
               Имена игроков не найдены в файле. Используйте собственное имя.
             </p>
+          )}
+        </div>
+
+        <div style={{ marginBottom: '25px' }}>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: '15px',
+            fontWeight: 'bold'
+          }}>
+            🎨 Стиль покерного стола:
+          </label>
+          
+          <div style={{ 
+            display: 'flex', 
+            gap: '15px',
+            marginBottom: '20px'
+          }}>
+            <button
+              onClick={() => setTableStyle('classic')}
+              style={{
+                flex: 1,
+                padding: '15px',
+                borderRadius: '10px',
+                border: tableStyle === 'classic' ? '3px solid #4CAF50' : '2px solid #34495e',
+                backgroundColor: tableStyle === 'classic' ? 'rgba(76,175,80,0.2)' : '#34495e',
+                color: 'white',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                transition: 'all 0.3s ease',
+                textAlign: 'center'
+              }}
+            >
+              🎯 Классический<br />
+              <small style={{ opacity: 0.8, fontSize: '12px' }}>Традиционный дизайн</small>
+            </button>
+            
+            <button
+              onClick={() => setTableStyle('modern')}
+              style={{
+                flex: 1,
+                padding: '15px',
+                borderRadius: '10px',
+                border: tableStyle === 'modern' ? '3px solid #4CAF50' : '2px solid #34495e',
+                backgroundColor: tableStyle === 'modern' ? 'rgba(76,175,80,0.2)' : '#34495e',
+                color: 'white',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                transition: 'all 0.3s ease',
+                textAlign: 'center'
+              }}
+            >
+              ✨ Современный<br />
+              <small style={{ opacity: 0.8, fontSize: '12px' }}>Глассморфизм + темы</small>
+            </button>
+          </div>
+          
+          {tableStyle === 'modern' && (
+            <div style={{
+              padding: '12px',
+              background: 'rgba(33,150,243,0.1)',
+              border: '1px solid rgba(33,150,243,0.3)',
+              borderRadius: '8px',
+              fontSize: '0.8rem',
+              color: 'rgba(255,255,255,0.9)',
+              marginBottom: '15px'
+            }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '5px', color: '#2196F3' }}>
+                🌟 Особенности современного стиля:
+              </div>
+              <div style={{ fontSize: '0.75rem', lineHeight: '1.4' }}>
+                • 3 цветовые темы (темная, светлая, неоновая)<br />
+                • Эффекты глассморфизма и неоморфизма<br />
+                • Плавные анимации и адаптивный дизайн
+              </div>
+            </div>
           )}
         </div>
 
