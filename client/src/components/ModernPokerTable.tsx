@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import RankCard from './RankCard';
 import PlayerJoinModal from './PlayerJoinModal';
+import ResponsiveContainer from './ResponsiveContainer';
 import { websocketService, PlayerInfo } from '../services/websocket';
 import './ModernPokerTable.css';
 
@@ -273,7 +274,8 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
   }
 
   return (
-    <div className={`modern-poker-table theme-${colorTheme}`}>
+    <ResponsiveContainer>
+      <div className={`modern-poker-table theme-${colorTheme}`}>
       {/* Header with Controls */}
       <div className="modern-header glass-morphism">
         <div className="header-left">
@@ -700,6 +702,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
         </div>
       )}
     </div>
+    </ResponsiveContainer>
   );
 };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import MultiplayerPokerTable from './MultiplayerPokerTable';
+import ResponsiveContainer from './ResponsiveContainer';
 
 interface TablePageProps {
   sessionId: string;
@@ -231,13 +232,25 @@ const TablePage: React.FC<TablePageProps> = ({
 
       {/* Покерный стол */}
       <div style={{ flex: 1 }}>
-        <MultiplayerPokerTable
-          table={table}
-          sessionId={sessionId!}
-          playerNames={playerNames}
-          onHandComplete={handleHandComplete}
-          tableStyle={tableStyle}
-        />
+        {tableStyle === 'modern' ? (
+          <ResponsiveContainer>
+            <MultiplayerPokerTable
+              table={table}
+              sessionId={sessionId!}
+              playerNames={playerNames}
+              onHandComplete={handleHandComplete}
+              tableStyle={tableStyle}
+            />
+          </ResponsiveContainer>
+        ) : (
+          <MultiplayerPokerTable
+            table={table}
+            sessionId={sessionId!}
+            playerNames={playerNames}
+            onHandComplete={handleHandComplete}
+            tableStyle={tableStyle}
+          />
+        )}
       </div>
 
       {/* Статистика стола */}

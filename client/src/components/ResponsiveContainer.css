@@ -1,0 +1,100 @@
+/* Responsive Container Styles */
+
+.responsive-container {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  background: var(--primary-bg, #0a0a0a);
+}
+
+.responsive-content {
+  position: relative;
+  overflow: visible;
+  transition: transform 0.3s ease-out;
+}
+
+/* Плавные переходы для масштабирования */
+.responsive-container * {
+  box-sizing: border-box;
+}
+
+/* Оптимизация для малых экранов */
+.responsive-container.small-screen {
+  /* Дополнительные стили для малых экранов */
+}
+
+.responsive-container.mobile-screen {
+  /* Дополнительные стили для мобильных экранов */
+}
+
+/* Индикатор масштаба в режиме разработки */
+.scale-indicator {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  z-index: 9999;
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Адаптивные стили для элементов внутри контейнера */
+.responsive-container .modern-poker-table {
+  /* Убираем фиксированные размеры */
+  min-height: auto;
+  max-width: none;
+}
+
+/* Оптимизация шрифтов для разных масштабов */
+.responsive-container[data-scale^="0.4"] {
+  /* Очень маленький масштаб */
+}
+
+.responsive-container[data-scale^="0.5"],
+.responsive-container[data-scale^="0.6"] {
+  /* Маленький масштаб */
+}
+
+.responsive-container[data-scale^="0.7"],
+.responsive-container[data-scale^="0.8"],
+.responsive-container[data-scale^="0.9"] {
+  /* Средний масштаб */
+}
+
+.responsive-container[data-scale^="1."] {
+  /* Большой масштаб */
+}
+
+/* Анимации для изменения размера */
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.responsive-content {
+  animation: scaleIn 0.3s ease-out;
+}
+
+/* Оптимизация производительности */
+.responsive-container {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.responsive-content {
+  will-change: transform;
+  transform: translateZ(0);
+} 
