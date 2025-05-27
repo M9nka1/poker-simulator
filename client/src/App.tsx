@@ -4,6 +4,7 @@ import SetupPage from './components/SetupPage';
 import GamePage from './components/GamePage';
 import JoinSessionPage from './components/JoinSessionPage';
 import TablePage from './components/TablePage';
+import CardSpriteEditor from './components/CardSpriteEditor';
 
 export interface GameSession {
   sessionId: string;
@@ -14,7 +15,7 @@ export interface GameSession {
 }
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'setup' | 'game' | 'join' | 'table'>('setup');
+  const [currentPage, setCurrentPage] = useState<'setup' | 'game' | 'join' | 'table' | 'sprite-editor'>('setup');
   const [gameSession, setGameSession] = useState<GameSession | null>(null);
   const [tableParams, setTableParams] = useState<any>(null);
 
@@ -22,7 +23,9 @@ function App() {
   useEffect(() => {
     const checkHash = () => {
       const hash = window.location.hash;
-      if (hash.startsWith('#table?')) {
+      if (hash === '#sprite-editor') {
+        setCurrentPage('sprite-editor');
+      } else if (hash.startsWith('#table?')) {
         // Парсим параметры из hash
         const params = new URLSearchParams(hash.substring(7)); // убираем '#table?'
         const sessionId = params.get('sessionId');
@@ -74,6 +77,11 @@ function App() {
   // Если это окно отдельного стола
   if (currentPage === 'table' && tableParams) {
     return <TablePage {...tableParams} />;
+  }
+
+  // Если это редактор sprite sheet
+  if (currentPage === 'sprite-editor') {
+    return <CardSpriteEditor />;
   }
 
   return (

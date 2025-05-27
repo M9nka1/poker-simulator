@@ -688,6 +688,13 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
             🎮 Присоединиться к игре
           </button>
           
+          <button
+            className="btn btn-info"
+            onClick={() => window.location.hash = '#sprite-editor'}
+            style={{ fontSize: '1.1rem', padding: '12px 24px' }}
+          >
+            🎴 Редактор карт
+          </button>
 
         </div>
         
