@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import MultiplayerPokerTable from './MultiplayerPokerTable';
-import ResponsiveContainer from './ResponsiveContainer';
+import ModernPokerTable from './ModernPokerTable';
 
 interface TablePageProps {
   sessionId: string;
@@ -233,15 +233,12 @@ const TablePage: React.FC<TablePageProps> = ({
       {/* Покерный стол */}
       <div style={{ flex: 1 }}>
         {tableStyle === 'modern' ? (
-          <ResponsiveContainer>
-            <MultiplayerPokerTable
-              table={table}
-              sessionId={sessionId!}
-              playerNames={playerNames}
-              onHandComplete={handleHandComplete}
-              tableStyle={tableStyle}
-            />
-          </ResponsiveContainer>
+          <ModernPokerTable
+            table={table}
+            sessionId={sessionId!}
+            playerNames={playerNames}
+            onHandComplete={handleHandComplete}
+          />
         ) : (
           <MultiplayerPokerTable
             table={table}

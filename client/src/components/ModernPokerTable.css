@@ -588,7 +588,7 @@
 
 /* Action Panel */
 .action-panel {
-  position: absolute;
+  position: fixed;
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
@@ -856,7 +856,7 @@
 
 /* Waiting Panel */
 .waiting-panel {
-  position: absolute;
+  position: fixed;
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
@@ -890,7 +890,7 @@
 
 /* New Hand Panel */
 .new-hand-panel {
-  position: absolute;
+  position: fixed;
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
