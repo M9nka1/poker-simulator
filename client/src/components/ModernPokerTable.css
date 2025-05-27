@@ -480,11 +480,50 @@
 
 .board-card-slot {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 112px;
   transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.board-card-slot:empty::before {
+  content: '?';
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 2rem;
+  font-weight: bold;
 }
 
 .board-card-slot:hover {
   transform: translateY(-5px);
+  border-color: var(--accent-color);
+  box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+}
+
+.board-card-slot .rank-card,
+.board-card-slot .rank-card-hidden,
+.board-card-slot .rank-card-sprite,
+.board-card-slot .rank-card-image {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain;
+  margin: 0 !important;
+}
+
+.board-card-slot .rank-card-image img {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain;
 }
 
 .hand-result {
@@ -872,6 +911,11 @@
     margin: 5px;
   }
   
+  .board-card-slot {
+    width: 60px;
+    height: 84px;
+  }
+  
   .action-panel {
     padding: 20px;
   }
@@ -940,6 +984,12 @@
     margin: 3px;
     flex-wrap: wrap;
     justify-content: center;
+  }
+  
+  .board-card-slot {
+    width: 45px;
+    height: 63px;
+    padding: 2px;
   }
   
   .pot-display {
