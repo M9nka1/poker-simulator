@@ -22,7 +22,7 @@
   padding: 20px;
   box-sizing: border-box;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
 }
@@ -588,7 +588,7 @@
 
 /* Action Panel */
 .action-panel {
-  position: fixed;
+  position: absolute;
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
@@ -856,7 +856,7 @@
 
 /* Waiting Panel */
 .waiting-panel {
-  position: fixed;
+  position: absolute;
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
@@ -890,7 +890,7 @@
 
 /* New Hand Panel */
 .new-hand-panel {
-  position: fixed;
+  position: absolute;
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
@@ -1001,6 +1001,7 @@
   max-height: 200px;
   width: 95%;
   bottom: 10px;
+  position: absolute;
 }
 
 .responsive-container.small-screen .action-buttons {
@@ -1093,4 +1094,5 @@
   max-height: 180px;
   width: 98%;
   bottom: 5px;
+  position: absolute;
 } 
