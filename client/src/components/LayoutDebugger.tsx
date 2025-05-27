@@ -57,23 +57,23 @@ interface LayoutSettings {
 
 const defaultSettings: LayoutSettings = {
   // Header
-  headerHeight: 80,
-  headerPadding: 20,
+  headerHeight: 50,
+  headerPadding: 10,
   
   // Game Container
   gameContainerPadding: 20,
   gameContainerGap: 20,
   
   // Player Zones
-  opponentZoneTop: 100,
-  opponentZoneHeight: 150,
-  currentPlayerZoneBottom: 200,
+  opponentZoneTop: 88,
+  opponentZoneHeight: 143,
+  currentPlayerZoneBottom: 350,
   currentPlayerZoneHeight: 150,
   
   // Table Center
-  tableCenterTop: 280,
-  tableCenterHeight: 300,
-  tableCenterWidth: 80,
+  tableCenterTop: 238,
+  tableCenterHeight: 265,
+  tableCenterWidth: 82,
   
   // Poker Felt
   feltPadding: 40,
@@ -81,8 +81,8 @@ const defaultSettings: LayoutSettings = {
   
   // Board Cards
   boardCardsGap: 15,
-  boardCardWidth: 60,
-  boardCardHeight: 84,
+  boardCardWidth: 62,
+  boardCardHeight: 92,
   
   // Pot Display
   potDisplayTop: 20,
@@ -90,9 +90,9 @@ const defaultSettings: LayoutSettings = {
   potDisplayHeight: 80,
   
   // Action Panel
-  actionPanelBottom: 20,
-  actionPanelHeight: 200,
-  actionPanelWidth: 90,
+  actionPanelBottom: 121,
+  actionPanelHeight: 150,
+  actionPanelWidth: 89,
   
   // Player Cards
   playerCardWidth: 250,
@@ -100,13 +100,13 @@ const defaultSettings: LayoutSettings = {
   playerCardPadding: 15,
   
   // Player Card Sizing
-  playerCardMinWidth: 180,
-  playerCardMinHeight: 100,
+  playerCardMinWidth: 188,
+  playerCardMinHeight: 80,
   
   // Hole Cards
-  holeCardWidth: 35,
-  holeCardHeight: 49,
-  holeCardGap: 8,
+  holeCardWidth: 36,
+  holeCardHeight: 52,
+  holeCardGap: 9,
 };
 
 const LayoutDebugger: React.FC = () => {
