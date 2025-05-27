@@ -30,13 +30,14 @@ function App() {
         const playerNames = params.get('playerNames') 
           ? JSON.parse(decodeURIComponent(params.get('playerNames')!)) 
           : [];
-        // betSizes теперь настраиваются на столе, не передаются через URL
+        const tableStyle = params.get('tableStyle') || 'classic';
 
         if (sessionId && tableId) {
           setTableParams({
             sessionId,
             tableId: parseInt(tableId),
-            playerNames
+            playerNames,
+            tableStyle
           });
           setCurrentPage('table');
         }

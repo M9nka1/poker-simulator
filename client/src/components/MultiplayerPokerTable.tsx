@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import RankCard from './RankCard';
 import PlayerJoinModal from './PlayerJoinModal';
+import ModernPokerTable from './ModernPokerTable';
 import { websocketService, PlayerInfo } from '../services/websocket';
 import './MultiplayerPokerTable.css';
 
@@ -48,6 +49,7 @@ interface MultiplayerPokerTableProps {
     allIn: boolean;
   };
   onHandComplete: (handHistory: string) => void;
+  tableStyle?: string;
 }
 
 const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({ 
@@ -61,7 +63,8 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
     pot: true,
     allIn: true
   }, 
-  onHandComplete 
+  onHandComplete,
+  tableStyle = 'classic'
 }) => {
   const [table, setTable] = useState<TableData>(initialTable);
   const [isLoading, setIsLoading] = useState(false);
@@ -244,7 +247,10 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
       return { myTotal, opponentTotal };
     };
     
-    const { myTotal, opponentTotal } = calculateCorrectTotals();
+    const { opponentTotal } = calculateCorrectTotals();
+    const myTotal = currentPlayer.actions
+      .filter((a: any) => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
+      .reduce((total: number, action: any) => total + (action.amount || 0), 0);
     
     // Call amount = разница между ставками, но не больше нашего стека
     const callAmount = Math.max(0, opponentTotal - myTotal);
@@ -287,6 +293,18 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
         playerNames={playerNames}
         onJoin={handleJoinSession}
         onCancel={() => setShowJoinModal(false)}
+      />
+    );
+  }
+
+  // Если выбран современный стиль, используем ModernPokerTable
+  if (tableStyle === 'modern') {
+    return (
+      <ModernPokerTable
+        table={table}
+        sessionId={sessionId}
+        playerNames={playerNames}
+        onHandComplete={onHandComplete}
       />
     );
   }

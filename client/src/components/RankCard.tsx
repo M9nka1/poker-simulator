@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getCardStyles } from '../utils/cardSprites';
 
 interface Card {
   rank: string;
@@ -91,7 +92,49 @@ const RankCard: React.FC<RankCardProps> = ({
     }
   };
 
-  // Генерируем путь к изображению карты
+  // Получаем стили для sprite sheet карты
+  const getSpriteCardStyles = () => {
+    try {
+      // Конвертируем наш формат в формат sprite sheet
+      const suitMap: { [key: string]: string } = {
+        's': 'spades',
+        'h': 'hearts',  
+        'd': 'diamonds',
+        'c': 'clubs'
+      };
+      
+      const rankMap: { [key: string]: string } = {
+        'T': '10'
+      };
+      
+      const mappedRank = rankMap[card.rank] || card.rank;
+      const mappedSuit = suitMap[card.suit];
+      
+      if (!mappedSuit) {
+        throw new Error(`Unknown suit: ${card.suit}`);
+      }
+      
+      const { width, height } = getSizePixels();
+      return getCardStyles(mappedSuit as any, mappedRank as any, width, height);
+    } catch (error) {
+      console.warn('Error getting sprite card styles:', error);
+      return null;
+    }
+  };
+
+  // Получаем размеры в пикселях
+  const getSizePixels = () => {
+    switch (size) {
+      case 'small':
+        return { width: 32, height: 45 };
+      case 'large':
+        return { width: 60, height: 85 };
+      default: // medium
+        return { width: 45, height: 65 };
+    }
+  };
+
+  // Генерируем путь к изображению карты (fallback)
   const getCardImagePath = () => {
     // Формат: /cards/AS.png, /cards/KH.png, etc.
     const suitMap: { [key: string]: string } = {
@@ -147,36 +190,56 @@ const RankCard: React.FC<RankCardProps> = ({
     );
   }
 
-  // Если используем изображения и нет ошибки загрузки
-  if (useImages && !imageError) {
-    return (
-      <div
-        className="rank-card-image"
-        style={{
-          ...sizeStyles,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-          margin: '2px',
-          transition: 'all 0.2s ease',
-          cursor: 'default'
-        }}
-      >
-        <img
-          src={getCardImagePath()}
-          alt={`${card.rank}${card.suit}`}
-          onError={() => setImageError(true)}
+  // Если используем изображения - пробуем sprite sheet сначала
+  if (useImages) {
+    const spriteStyles = getSpriteCardStyles();
+    
+    // Если sprite sheet доступен, используем его
+    if (spriteStyles && !imageError) {
+      return (
+        <div
+          className="rank-card-sprite"
           style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'contain',
-            borderRadius: sizeStyles.borderRadius,
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            ...spriteStyles,
+            margin: '2px',
+            transition: 'all 0.2s ease',
+            cursor: 'default'
           }}
         />
-      </div>
-    );
+      );
+    }
+    
+    // Fallback на отдельные файлы
+    if (!imageError) {
+      return (
+        <div
+          className="rank-card-image"
+          style={{
+            ...sizeStyles,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+            margin: '2px',
+            transition: 'all 0.2s ease',
+            cursor: 'default'
+          }}
+        >
+          <img
+            src={getCardImagePath()}
+            alt={`${card.rank}${card.suit}`}
+            onError={() => setImageError(true)}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              borderRadius: sizeStyles.borderRadius,
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}
+          />
+        </div>
+      );
+    }
   }
 
   // Fallback на стандартный стиль (если не используем изображения или ошибка загрузки)

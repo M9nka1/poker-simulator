@@ -25,6 +25,7 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
     percentage: 5.0,
     cap: 3.0
   });
+  const [tableStyle, setTableStyle] = useState<'classic' | 'modern'>('classic');
   
   interface HandSelection {
     hand: string;
@@ -289,7 +290,7 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
     const tableUrl = new URL(`${baseUrl}`);
     
     // Добавляем параметры в hash для передачи в новое окно
-    tableUrl.hash = `table?sessionId=${sessionId}&tableId=${tableId}&playerNames=${encodeURIComponent(JSON.stringify(playerNames))}`;
+    tableUrl.hash = `table?sessionId=${sessionId}&tableId=${tableId}&playerNames=${encodeURIComponent(JSON.stringify(playerNames))}&tableStyle=${tableStyle}`;
     
     // Настройки окна для полноэкранного режима без элементов браузера
     const windowFeatures = [
@@ -519,6 +520,107 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
             </div>
           </div>
         </div>
+
+        <div className="form-group">
+          <label>🎨 Стиль покерного стола</label>
+          <div style={{
+            display: 'flex',
+            gap: '15px',
+            marginTop: '10px',
+            flexWrap: 'wrap'
+          }}>
+            <div 
+              className={`table-style-option ${tableStyle === 'classic' ? 'selected' : ''}`}
+              onClick={() => setTableStyle('classic')}
+              style={{
+                flex: '1',
+                minWidth: '200px',
+                padding: '15px',
+                border: tableStyle === 'classic' ? '2px solid #4CAF50' : '2px solid rgba(255,255,255,0.3)',
+                borderRadius: '10px',
+                background: tableStyle === 'classic' ? 'rgba(76,175,80,0.1)' : 'rgba(255,255,255,0.05)',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                textAlign: 'center'
+              }}
+            >
+              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🎯</div>
+              <h4 style={{ 
+                color: tableStyle === 'classic' ? '#4CAF50' : '#FFA726',
+                margin: '0 0 8px 0',
+                fontSize: '1.1rem'
+              }}>
+                Классический стиль
+              </h4>
+              <p style={{ 
+                color: 'rgba(255,255,255,0.8)', 
+                fontSize: '0.9rem',
+                margin: '0',
+                lineHeight: '1.4'
+              }}>
+                Традиционный дизайн покерного стола с привычным интерфейсом и зелёным фоном
+              </p>
+            </div>
+
+            <div 
+              className={`table-style-option ${tableStyle === 'modern' ? 'selected' : ''}`}
+              onClick={() => setTableStyle('modern')}
+              style={{
+                flex: '1',
+                minWidth: '200px',
+                padding: '15px',
+                border: tableStyle === 'modern' ? '2px solid #4CAF50' : '2px solid rgba(255,255,255,0.3)',
+                borderRadius: '10px',
+                background: tableStyle === 'modern' ? 'rgba(76,175,80,0.1)' : 'rgba(255,255,255,0.05)',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                textAlign: 'center'
+              }}
+            >
+              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>✨</div>
+              <h4 style={{ 
+                color: tableStyle === 'modern' ? '#4CAF50' : '#FFA726',
+                margin: '0 0 8px 0',
+                fontSize: '1.1rem'
+              }}>
+                Современный стиль
+              </h4>
+              <p style={{ 
+                color: 'rgba(255,255,255,0.8)', 
+                fontSize: '0.9rem',
+                margin: '0',
+                lineHeight: '1.4'
+              }}>
+                Современный дизайн с глассморфизмом, неоморфизмом и тремя цветовыми темами
+              </p>
+            </div>
+          </div>
+          
+          {tableStyle === 'modern' && (
+            <div style={{
+              marginTop: '15px',
+              padding: '12px',
+              background: 'rgba(33,150,243,0.1)',
+              border: '1px solid rgba(33,150,243,0.3)',
+              borderRadius: '8px',
+              fontSize: '0.9rem',
+              color: 'rgba(255,255,255,0.9)'
+            }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#2196F3' }}>
+                🌟 Особенности современного стиля:
+              </div>
+              <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.5' }}>
+                <li>🌙 Темная тема (по умолчанию)</li>
+                <li>☀️ Светлая тема</li>
+                <li>⚡ Неоновая тема</li>
+                <li>🔮 Эффекты глассморфизма</li>
+                <li>🎨 Неоморфные элементы</li>
+                <li>✨ Плавные анимации</li>
+                <li>📱 Адаптивный дизайн</li>
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="setup-section">
@@ -585,6 +687,8 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
           >
             🎮 Присоединиться к игре
           </button>
+          
+
         </div>
         
         {(handRanges.player1.length === 0 || handRanges.player2.length === 0) && (

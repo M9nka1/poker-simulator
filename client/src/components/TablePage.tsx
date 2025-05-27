@@ -5,6 +5,7 @@ interface TablePageProps {
   sessionId: string;
   tableId: number;
   playerNames: string[];
+  tableStyle?: string;
 }
 
 interface TableData {
@@ -25,7 +26,8 @@ interface TableData {
 const TablePage: React.FC<TablePageProps> = ({ 
   sessionId, 
   tableId, 
-  playerNames
+  playerNames,
+  tableStyle = 'classic'
 }) => {
   const [table, setTable] = useState<TableData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -234,6 +236,7 @@ const TablePage: React.FC<TablePageProps> = ({
           sessionId={sessionId!}
           playerNames={playerNames}
           onHandComplete={handleHandComplete}
+          tableStyle={tableStyle}
         />
       </div>
 
