@@ -495,14 +495,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 60px;
-  min-height: 84px;
+  min-width: 80px;
+  min-height: 101px;
+  width: 80px;
+  height: 101px;
   transition: all 0.3s ease;
   background: rgba(255, 255, 255, 0.05);
   border: 2px dashed rgba(255, 255, 255, 0.2);
   border-radius: 12px;
   padding: 4px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* Убираем псевдоэлемент, который может мешать отображению карт */

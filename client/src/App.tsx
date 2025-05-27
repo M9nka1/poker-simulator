@@ -7,6 +7,7 @@ import TablePage from './components/TablePage';
 import CardSpriteEditor from './components/CardSpriteEditor';
 import CardTestPage from './components/CardTestPage';
 import CardPositionTuner from './components/CardPositionTuner';
+import OptimizedCardTest from './components/OptimizedCardTest';
 
 export interface GameSession {
   sessionId: string;
@@ -17,7 +18,7 @@ export interface GameSession {
 }
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'setup' | 'game' | 'join' | 'table' | 'sprite-editor' | 'card-test' | 'card-position'>('setup');
+  const [currentPage, setCurrentPage] = useState<'setup' | 'game' | 'join' | 'table' | 'sprite-editor' | 'card-test' | 'card-position' | 'optimized-card-test'>('setup');
   const [gameSession, setGameSession] = useState<GameSession | null>(null);
   const [tableParams, setTableParams] = useState<any>(null);
 
@@ -31,6 +32,8 @@ function App() {
         setCurrentPage('card-test');
       } else if (hash === '#card-position') {
         setCurrentPage('card-position');
+      } else if (hash === '#optimized-card-test') {
+        setCurrentPage('optimized-card-test');
       } else if (hash.startsWith('#table?')) {
         // Парсим параметры из hash
         const params = new URLSearchParams(hash.substring(7)); // убираем '#table?'
@@ -98,6 +101,11 @@ function App() {
   // Если это страница настройки позиционирования карт
   if (currentPage === 'card-position') {
     return <CardPositionTuner />;
+  }
+
+  // Если это страница тестирования оптимизированных карт
+  if (currentPage === 'optimized-card-test') {
+    return <OptimizedCardTest />;
   }
 
   return (

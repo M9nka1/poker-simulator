@@ -91,6 +91,18 @@ export function getCardBackgroundPosition(suit: Suit, rank: Rank): string {
   return `${percentX}% ${percentY}%`;
 }
 
+// Настройки позиционирования карт (оптимизированные)
+export const CARD_POSITIONING = {
+  // Стандартные размеры бокса для карт
+  boxSize: { width: 80, height: 101 },
+  // Размеры самой карты (больше бокса для лучшего качества)
+  cardSize: { width: 95, height: 133 },
+  // Смещение карты внутри бокса
+  offset: { x: 2, y: 0 },
+  // Масштаб карты
+  scale: 1.0
+};
+
 /**
  * Создает объект стилей для отображения карты
  */
@@ -112,6 +124,38 @@ export function getCardStyles(suit: Suit, rank: Rank, width: number = 100, heigh
     borderRadius: '8px',
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
     display: 'inline-block'
+  };
+}
+
+/**
+ * Создает объект стилей для отображения карты с оптимизированным позиционированием
+ */
+export function getOptimizedCardStyles(suit: Suit, rank: Rank, containerWidth?: number, containerHeight?: number): React.CSSProperties {
+  const backgroundPosition = getCardBackgroundPosition(suit, rank);
+  const position = getCardPosition(suit, rank);
+  
+  // Вычисляем размер background для корректного масштабирования
+  const scaleX = SPRITE_COORDINATES.imageWidth / position.width;
+  const scaleY = SPRITE_COORDINATES.imageHeight / position.height;
+  
+  return {
+    width: `${CARD_POSITIONING.cardSize.width}px`,
+    height: `${CARD_POSITIONING.cardSize.height}px`,
+    backgroundImage: `url(${cardsSprite})`,
+    backgroundPosition,
+    backgroundSize: `${scaleX * 100}% ${scaleY * 100}%`,
+    backgroundRepeat: 'no-repeat',
+    borderRadius: '8px',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+    display: 'inline-block',
+    transform: `translate(${CARD_POSITIONING.offset.x}px, ${CARD_POSITIONING.offset.y}px) scale(${CARD_POSITIONING.scale})`,
+    transformOrigin: 'center center',
+    position: 'absolute' as const,
+    top: '50%',
+    left: '50%',
+    marginTop: `-${CARD_POSITIONING.cardSize.height / 2}px`,
+    marginLeft: `-${CARD_POSITIONING.cardSize.width / 2}px`,
+    zIndex: 10
   };
 }
 
@@ -209,12 +253,15 @@ export function parseCard(cardString: string): Card {
 
 // Экспорт всех утилит как именованный объект
 const cardSprites = {
+  SPRITE_COORDINATES,
   SPRITE_DIMENSIONS,
+  CARD_POSITIONING,
   SUITS_ORDER,
   RANKS_ORDER,
   getCardPosition,
   getCardBackgroundPosition,
   getCardStyles,
+  getOptimizedCardStyles,
   extractCardImages,
   parseCard
 };

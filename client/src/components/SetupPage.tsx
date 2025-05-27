@@ -711,6 +711,14 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
           >
             🎯 Настройка карт
           </button>
+          
+          <button
+            className="btn btn-teal"
+            onClick={() => window.location.hash = '#optimized-card-test'}
+            style={{ fontSize: '1.1rem', padding: '12px 24px', backgroundColor: '#009688' }}
+          >
+            ✨ Тест оптимизированных карт
+          </button>
 
         </div>
         

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getCardStyles } from '../utils/cardSprites';
+import { getCardStyles, CARD_POSITIONING } from '../utils/cardSprites';
 
 interface Card {
   rank: string;
@@ -122,15 +122,24 @@ const RankCard: React.FC<RankCardProps> = ({
     }
   };
 
-  // Получаем размеры в пикселях
+  // Получаем размеры в пикселях с учетом оптимизированных настроек
   const getSizePixels = () => {
     switch (size) {
       case 'small':
-        return { width: 32, height: 45 };
+        return { 
+          width: Math.round(CARD_POSITIONING.boxSize.width * 0.4), 
+          height: Math.round(CARD_POSITIONING.boxSize.height * 0.4) 
+        };
       case 'large':
-        return { width: 60, height: 85 };
+        return { 
+          width: Math.round(CARD_POSITIONING.boxSize.width * 0.75), 
+          height: Math.round(CARD_POSITIONING.boxSize.height * 0.75) 
+        };
       default: // medium
-        return { width: 45, height: 65 };
+        return { 
+          width: Math.round(CARD_POSITIONING.boxSize.width * 0.56), 
+          height: Math.round(CARD_POSITIONING.boxSize.height * 0.56) 
+        };
     }
   };
 
