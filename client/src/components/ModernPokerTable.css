@@ -483,8 +483,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 80px;
-  height: 112px;
+  min-width: 60px;
+  min-height: 84px;
   transition: all 0.3s ease;
   background: rgba(255, 255, 255, 0.05);
   border: 2px dashed rgba(255, 255, 255, 0.2);
@@ -493,12 +493,7 @@
   box-sizing: border-box;
 }
 
-.board-card-slot:empty::before {
-  content: '?';
-  color: rgba(255, 255, 255, 0.3);
-  font-size: 2rem;
-  font-weight: bold;
-}
+/* Убираем псевдоэлемент, который может мешать отображению карт */
 
 .board-card-slot:hover {
   transform: translateY(-5px);
@@ -510,19 +505,16 @@
 .board-card-slot .rank-card-hidden,
 .board-card-slot .rank-card-sprite,
 .board-card-slot .rank-card-image {
-  max-width: 100% !important;
-  max-height: 100% !important;
-  width: auto !important;
-  height: auto !important;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
-  margin: 0 !important;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .board-card-slot .rank-card-image img {
-  max-width: 100% !important;
-  max-height: 100% !important;
-  width: auto !important;
-  height: auto !important;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
 }
 
@@ -912,8 +904,8 @@
   }
   
   .board-card-slot {
-    width: 60px;
-    height: 84px;
+    min-width: 50px;
+    min-height: 70px;
   }
   
   .action-panel {
@@ -987,8 +979,8 @@
   }
   
   .board-card-slot {
-    width: 45px;
-    height: 63px;
+    min-width: 40px;
+    min-height: 56px;
     padding: 2px;
   }
   
