@@ -192,49 +192,13 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
     };
   }, [sessionId, table.id, onHandComplete]);
 
-  const handleJoinSession = (playerId: number, playerName: string, tableStyle?: string) => {
+  const handleJoinSession = (playerId: number, playerName: string) => {
     const playerInfo: PlayerInfo = {
       playerId,
       playerName,
       sessionId,
       tableId: table.id
     };
-    
-    // Если выбран современный стиль, перенаправляем на современный стол
-    if (tableStyle === 'modern') {
-      // Открываем новое окно с современным стилем
-      const baseUrl = window.location.origin;
-      const tableUrl = new URL(`${baseUrl}`);
-      tableUrl.hash = `table?sessionId=${sessionId}&tableId=${table.id}&playerNames=${encodeURIComponent(JSON.stringify(playerNames))}&tableStyle=modern`;
-      
-      const windowFeatures = [
-        'width=1200',
-        'height=800',
-        'left=150',
-        'top=150',
-        'resizable=yes',
-        'scrollbars=no',
-        'status=no',
-        'menubar=no',
-        'toolbar=no',
-        'location=no'
-      ].join(',');
-      
-      const newWindow = window.open(
-        tableUrl.toString(),
-        `poker-table-modern-${sessionId}-${table.id}`,
-        windowFeatures
-      );
-      
-      if (newWindow) {
-        newWindow.focus();
-        // Закрываем текущее окно классического стола
-        window.close();
-      } else {
-        alert('Не удалось открыть новое окно. Проверьте настройки блокировки всплывающих окон в браузере.');
-      }
-      return;
-    }
     
     // Проверяем подключение WebSocket перед присоединением
     if (!websocketService.isWebSocketConnected()) {

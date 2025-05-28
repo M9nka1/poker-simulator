@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import MultiplayerPokerTable from './MultiplayerPokerTable';
 import ModernPokerTable from './ModernPokerTable';
 
 interface TablePageProps {
@@ -28,7 +27,7 @@ const TablePage: React.FC<TablePageProps> = ({
   sessionId, 
   tableId, 
   playerNames,
-  tableStyle = 'classic'
+  tableStyle = 'modern'
 }) => {
   const [table, setTable] = useState<TableData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -232,22 +231,12 @@ const TablePage: React.FC<TablePageProps> = ({
 
       {/* Покерный стол */}
       <div style={{ flex: 1 }}>
-        {tableStyle === 'modern' ? (
-          <ModernPokerTable
-            table={table}
-            sessionId={sessionId!}
-            playerNames={playerNames}
-            onHandComplete={handleHandComplete}
-          />
-        ) : (
-          <MultiplayerPokerTable
-            table={table}
-            sessionId={sessionId!}
-            playerNames={playerNames}
-            onHandComplete={handleHandComplete}
-            tableStyle={tableStyle}
-          />
-        )}
+        <ModernPokerTable
+          table={table}
+          sessionId={sessionId!}
+          playerNames={playerNames}
+          onHandComplete={handleHandComplete}
+        />
       </div>
 
       {/* Статистика стола */}
