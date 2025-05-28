@@ -225,7 +225,7 @@
   }
 }
 
-/* Player Turn Animation - анимация вращения вокруг блока игрока */
+/* Player Turn Animation - анимация бегущей линии по контуру блока игрока */
 .player-turn-animation {
   position: relative;
   animation: playerTurnGlow 2s ease-in-out infinite alternate;
@@ -234,18 +234,27 @@
 .player-turn-animation::before {
   content: '';
   position: absolute;
-  top: -8px;
-  left: -8px;
-  right: -8px;
-  bottom: -8px;
-  border: 3px solid var(--accent-color);
-  border-radius: 28px;
-  animation: rotateGlow 3s linear infinite;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border-radius: 20px;
+  background: conic-gradient(from 0deg, var(--accent-color), transparent, transparent, transparent);
+  animation: rotateGlow 2s linear infinite;
   z-index: -1;
-  background: transparent;
-  box-shadow: 
-    0 0 20px var(--accent-color),
-    inset 0 0 20px rgba(0, 255, 136, 0.1);
+}
+
+.player-turn-animation::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  border-radius: 18px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  z-index: -1;
 }
 
 @keyframes playerTurnGlow {
@@ -259,37 +268,19 @@
 
 @keyframes rotateGlow {
   0% {
-    transform: rotate(0deg);
-    border-top-color: var(--accent-color);
-    border-right-color: transparent;
-    border-bottom-color: transparent;
-    border-left-color: transparent;
+    background: conic-gradient(from 0deg, var(--accent-color), transparent, transparent, transparent);
   }
   25% {
-    border-top-color: transparent;
-    border-right-color: var(--accent-color);
-    border-bottom-color: transparent;
-    border-left-color: transparent;
+    background: conic-gradient(from 90deg, var(--accent-color), transparent, transparent, transparent);
   }
   50% {
-    transform: rotate(180deg);
-    border-top-color: transparent;
-    border-right-color: transparent;
-    border-bottom-color: var(--accent-color);
-    border-left-color: transparent;
+    background: conic-gradient(from 180deg, var(--accent-color), transparent, transparent, transparent);
   }
   75% {
-    border-top-color: transparent;
-    border-right-color: transparent;
-    border-bottom-color: transparent;
-    border-left-color: var(--accent-color);
+    background: conic-gradient(from 270deg, var(--accent-color), transparent, transparent, transparent);
   }
   100% {
-    transform: rotate(360deg);
-    border-top-color: var(--accent-color);
-    border-right-color: transparent;
-    border-bottom-color: transparent;
-    border-left-color: transparent;
+    background: conic-gradient(from 360deg, var(--accent-color), transparent, transparent, transparent);
   }
 }
 
@@ -347,19 +338,6 @@
   animation: pulse 2s infinite;
 }
 
-.you-indicator {
-  position: absolute;
-  bottom: -25px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--accent-color);
-  color: var(--primary-bg);
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 0.7rem;
-  font-weight: bold;
-}
-
 .player-info {
   text-align: center;
   margin-bottom: 0;
@@ -404,13 +382,13 @@
 }
 
 .bet-indicator {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   padding: 8px 16px;
   border-radius: 20px;
   z-index: 10;
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 20px var(--shadow-color);
 }
 
 .bet-amount {
@@ -1158,21 +1136,34 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 0px;
   position: relative;
 }
 
 .current-player-in-center {
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   align-items: center;
-  gap: 10px;
+  gap: 0px;
   position: relative;
 }
 
 .opponent-in-center.active-turn,
 .current-player-in-center.active-turn {
   animation: glow 2s ease-in-out infinite alternate;
+}
+
+/* Обновленные bet indicators */
+.opponent-in-center .bet-indicator {
+  position: relative;
+  margin-top: 5px;
+  margin-bottom: 0;
+}
+
+.current-player-in-center .bet-indicator {
+  position: relative;
+  margin-bottom: 5px;
+  margin-top: 0;
 }
 
 /* Контейнер для панели действий */

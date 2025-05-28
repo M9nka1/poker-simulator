@@ -87,7 +87,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
   const [streetStartPot, setStreetStartPot] = useState<number>(100); // Размер банка на начало текущей улицы
   const prevStreetRef = useRef<string>('');
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [handCount, setHandCount] = useState<number>(1);
   const [handHistories, setHandHistories] = useState<string[]>([]);
 
   useEffect(() => {
@@ -96,15 +95,13 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
   }, [initialTable]);
 
   // Отслеживаем изменение улицы торгов и сохраняем размер банка на начало
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // Проверяем если улица действительно изменилась
     if (prevStreetRef.current !== table.currentStreet) {
       setStreetStartPot(table.pot);
       prevStreetRef.current = table.currentStreet;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [table.currentStreet]);
+  }, [table.currentStreet, table.pot]);
 
   // Monitor WebSocket connection status
   useEffect(() => {
@@ -139,7 +136,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
       if (data.actionResult?.handComplete && data.actionResult?.handHistory) {
         onHandComplete(data.actionResult.handHistory);
         setHandHistories(prev => [...prev, data.actionResult.handHistory]);
-        setHandCount(prev => prev + 1);
+        setHandHistories(prev => prev.slice(0, 10)); // Ограничиваем количество сохраняемых рук
       }
     });
 
@@ -532,8 +529,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                     <div className="player-info">
                       <h3 className="player-name">{myPlayer.name}</h3>
                       <div className="player-stack">€{myPlayer.stack}</div>
-                      {myPlayer.connected && <div className="online-indicator"></div>}
-                      <div className="you-indicator">YOU</div>
                     </div>
                   </div>
                   
