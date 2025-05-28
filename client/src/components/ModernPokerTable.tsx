@@ -347,16 +347,10 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               return (
                 <div className={`opponent-in-center ${opponent.id === table.currentPlayer ? 'active-turn' : ''}`}>
                   <div className="player-card glass-morphism">
-                    <div className="player-avatar">
-                      <div className="avatar-circle">
-                        {opponent.name.charAt(0).toUpperCase()}
-                      </div>
-                      {opponent.connected && <div className="online-indicator"></div>}
-                    </div>
-                    
                     <div className="player-info">
                       <h3 className="player-name">{opponent.name}</h3>
                       <div className="player-stack">€{opponent.stack}</div>
+                      {opponent.connected && <div className="online-indicator"></div>}
                     </div>
 
                     <div className="hole-cards">
@@ -389,46 +383,64 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
 
             {/* Board Cards and Pot Display Container */}
             <div className="board-and-pot-container">
-              {/* Board Cards */}
-              <div className="board-container">
+              {/* Board Cards - фиксированная ширина для всех 5 карт */}
+              <div className="board-container-fixed">
                 <div className="board-cards">
                   {/* Флоп */}
-                  {table.board.flop.map((card, index) => (
-                    <div key={`flop-${index}`} className="board-card-slot">
+                  <div className="board-card-slot">
+                    {table.board.flop[0] && (
                       <RankCard 
-                        card={card} 
+                        card={table.board.flop[0]} 
                         size={cardSize}
                         useImages={useCardImages}
                       />
-                    </div>
-                  ))}
+                    )}
+                  </div>
+                  <div className="board-card-slot">
+                    {table.board.flop[1] && (
+                      <RankCard 
+                        card={table.board.flop[1]} 
+                        size={cardSize}
+                        useImages={useCardImages}
+                      />
+                    )}
+                  </div>
+                  <div className="board-card-slot">
+                    {table.board.flop[2] && (
+                      <RankCard 
+                        card={table.board.flop[2]} 
+                        size={cardSize}
+                        useImages={useCardImages}
+                      />
+                    )}
+                  </div>
                   
                   {/* Тёрн */}
-                  {table.board.turn && (table.currentStreet === 'turn' || table.currentStreet === 'river' || table.handComplete) && (
-                    <div className="board-card-slot">
+                  <div className="board-card-slot">
+                    {table.board.turn && (table.currentStreet === 'turn' || table.currentStreet === 'river' || table.handComplete) && (
                       <RankCard 
                         card={table.board.turn} 
                         size={cardSize}
                         useImages={useCardImages}
                       />
-                    </div>
-                  )}
+                    )}
+                  </div>
                   
                   {/* Ривер */}
-                  {table.board.river && (table.currentStreet === 'river' || table.handComplete) && (
-                    <div className="board-card-slot">
+                  <div className="board-card-slot">
+                    {table.board.river && (table.currentStreet === 'river' || table.handComplete) && (
                       <RankCard 
                         card={table.board.river} 
                         size={cardSize}
                         useImages={useCardImages}
                       />
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
               
-              {/* Pot Display - справа от карт */}
-              <div className="pot-container">
+              {/* Pot Display - фиксированная позиция справа */}
+              <div className="pot-container-fixed">
                 <div className="pot-display neumorphism">
                   <div className="pot-label">БАНК</div>
                   <div className="pot-amount">€{streetStartPot}</div>
@@ -453,17 +465,11 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               return (
                 <div className={`current-player-in-center ${myPlayer.id === table.currentPlayer ? 'active-turn' : ''}`}>
                   <div className="player-card glass-morphism">
-                    <div className="player-avatar">
-                      <div className="avatar-circle">
-                        {myPlayer.name.charAt(0).toUpperCase()}
-                      </div>
-                      {myPlayer.connected && <div className="online-indicator"></div>}
-                      <div className="you-indicator">YOU</div>
-                    </div>
-                    
                     <div className="player-info">
                       <h3 className="player-name">{myPlayer.name}</h3>
                       <div className="player-stack">€{myPlayer.stack}</div>
+                      {myPlayer.connected && <div className="online-indicator"></div>}
+                      <div className="you-indicator">YOU</div>
                     </div>
 
                     <div className="hole-cards">
