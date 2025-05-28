@@ -381,6 +381,13 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               >
                 📁 Export
               </button>
+              <button
+                className="control-btn"
+                onClick={() => window.close()}
+                title="Закрыть окно стола"
+              >
+                ❌ Закрыть
+              </button>
             </div>
 
             {/* Opponent Player - внутри TABLE CENTER */}
@@ -415,7 +422,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                     <div className="player-info">
                       <h3 className="player-name">{opponent.name}</h3>
                       <div className="player-stack">€{opponent.stack}</div>
-                      {opponent.connected && <div className="online-indicator"></div>}
                     </div>
                   </div>
                   

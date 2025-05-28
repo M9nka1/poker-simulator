@@ -165,70 +165,12 @@ const TablePage: React.FC<TablePageProps> = ({
 
   return (
     <div style={{
-      padding: '20px',
       minHeight: '100vh',
       display: 'flex',
       flexDirection: 'column',
       background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
       color: 'white'
     }}>
-      {/* Заголовок окна стола */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '20px',
-        background: 'rgba(255, 255, 255, 0.1)',
-        padding: '15px 20px',
-        borderRadius: '10px',
-        border: '1px solid rgba(255, 255, 255, 0.2)'
-      }}>
-        <div>
-          <h1 style={{ margin: '0', color: '#4CAF50', fontSize: '1.5rem' }}>
-            🎯 Покерный стол #{tableId}
-          </h1>
-          <p style={{ margin: '5px 0 0 0', opacity: 0.8, fontSize: '0.9rem' }}>
-            Сессия: {sessionId?.substring(0, 8)}... | Рук сыграно: {handHistories.length}
-          </p>
-        </div>
-        
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {handHistories.length > 0 && (
-            <button
-              onClick={exportHandHistories}
-              style={{
-                padding: '8px 16px',
-                fontSize: '0.9rem',
-                background: '#4CAF50',
-                color: 'white',
-                border: 'none',
-                borderRadius: '5px',
-                cursor: 'pointer'
-              }}
-              title={`Экспорт ${handHistories.length} рук`}
-            >
-              📤 Экспорт ({handHistories.length})
-            </button>
-          )}
-          
-          <button
-            onClick={() => window.close()}
-            style={{
-              padding: '8px 16px',
-              fontSize: '0.9rem',
-              background: '#FF5722',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: 'pointer'
-            }}
-            title="Закрыть окно стола"
-          >
-            ❌ Закрыть
-          </button>
-        </div>
-      </div>
-
       {/* Покерный стол */}
       <div style={{ flex: 1 }}>
         <ModernPokerTable
