@@ -117,6 +117,7 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
       setTable(data.table);
       setCurrentPlayerId(data.playerId);
       setConnectionStatus('Подключен');
+      setShowJoinModal(false); // Закрываем модальное окно при успешном подключении
     });
 
     websocketService.onMessage('table_update', (data) => {
@@ -144,16 +145,41 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
 
     websocketService.onMessage('error', (data) => {
       alert(`Ошибка: ${data.message}`);
+      setShowJoinModal(true); // Показываем модальное окно при ошибке
     });
 
-    // Check if already connected
-    const playerInfo = websocketService.getPlayerInfo();
-    if (playerInfo && playerInfo.sessionId === sessionId && playerInfo.tableId === table.id) {
-      setCurrentPlayerId(playerInfo.playerId);
-      setConnectionStatus('Подключен');
-    } else {
-      setShowJoinModal(true);
-    }
+    // Проверяем подключение WebSocket и существующую информацию об игроке
+    const checkConnectionAndShowModal = () => {
+      const playerInfo = websocketService.getPlayerInfo();
+      const isConnected = websocketService.isWebSocketConnected();
+      
+      if (playerInfo && playerInfo.sessionId === sessionId && playerInfo.tableId === table.id && isConnected) {
+        setCurrentPlayerId(playerInfo.playerId);
+        setConnectionStatus('Подключен');
+        setShowJoinModal(false);
+      } else {
+        // Ждем подключения WebSocket перед показом модального окна
+        if (isConnected) {
+          setShowJoinModal(true);
+        } else {
+          // Проверяем каждые 500мс до подключения
+          const checkInterval = setInterval(() => {
+            if (websocketService.isWebSocketConnected()) {
+              setShowJoinModal(true);
+              clearInterval(checkInterval);
+            }
+          }, 500);
+          
+          // Таймаут на случай если WebSocket не подключится
+          setTimeout(() => {
+            clearInterval(checkInterval);
+            setShowJoinModal(true);
+          }, 5000);
+        }
+      }
+    };
+
+    checkConnectionAndShowModal();
 
     return () => {
       // Cleanup message handlers
@@ -210,10 +236,18 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
       return;
     }
     
-    websocketService.joinSession(playerInfo);
+    // Проверяем подключение WebSocket перед присоединением
+    if (!websocketService.isWebSocketConnected()) {
+      alert('WebSocket не подключен. Попробуйте еще раз через несколько секунд.');
+      return;
+    }
+    
     setCurrentPlayerId(playerId);
-    setShowJoinModal(false);
     setConnectionStatus('Подключение...');
+    setShowJoinModal(false);
+    
+    // Присоединяемся к сессии
+    websocketService.joinSession(playerInfo);
   };
 
   const makeAction = (action: string, amount?: number) => {

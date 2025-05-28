@@ -118,8 +118,22 @@ function handleJoinSession(ws, { sessionId, tableId, playerId, playerName }) {
     return;
   }
   
-  // Store player connection
-  connectedPlayers.set(`${sessionId}-${tableId}-${playerId}`, {
+  const playerKey = `${sessionId}-${tableId}-${playerId}`;
+  
+  // Check if player is already connected and disconnect old connection
+  if (connectedPlayers.has(playerKey)) {
+    const oldConnection = connectedPlayers.get(playerKey);
+    console.log(`🔄 Player ${playerId} reconnecting, closing old connection`);
+    try {
+      oldConnection.ws.close();
+    } catch (error) {
+      console.log('Old connection already closed');
+    }
+    connectedPlayers.delete(playerKey);
+  }
+  
+  // Store new player connection
+  connectedPlayers.set(playerKey, {
     ws,
     sessionId,
     tableId,
@@ -148,7 +162,7 @@ function handleJoinSession(ws, { sessionId, tableId, playerId, playerName }) {
     playerId: playerId,
     playerName: playerName || `Player ${playerId}`,
     tableId: tableId
-  }, `${sessionId}-${tableId}-${playerId}`);
+  }, playerKey);
   
   console.log(`Player ${playerId} (${playerName}) joined session ${sessionId}, table ${tableId}`);
 }

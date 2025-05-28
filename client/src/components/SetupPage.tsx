@@ -36,6 +36,52 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
     player1: [] as HandSelection[],
     player2: [] as HandSelection[]
   });
+  
+  // Состояние для текстового ввода hand ranges
+  const [textRanges, setTextRanges] = useState({
+    player1: '',
+    player2: ''
+  });
+  
+  // Функция парсинга текстового формата hand ranges
+  const parseHandRange = (rangeText: string): HandSelection[] => {
+    if (!rangeText.trim()) return [];
+    
+    const hands: HandSelection[] = [];
+    const parts = rangeText.split(',');
+    
+    for (const part of parts) {
+      const trimmed = part.trim();
+      if (!trimmed) continue;
+      
+      // Проверяем есть ли процент (например: AA:0.3)
+      if (trimmed.includes(':')) {
+        const [hand, percentStr] = trimmed.split(':');
+        const percentage = parseFloat(percentStr);
+        if (hand && !isNaN(percentage) && percentage >= 0 && percentage <= 1) {
+          hands.push({ hand: hand.trim(), percentage });
+        }
+      } else {
+        // Если нет процента, используем 100%
+        hands.push({ hand: trimmed, percentage: 1.0 });
+      }
+    }
+    
+    return hands;
+  };
+  
+  // Функция применения текстового ввода к hand ranges
+  const applyTextRange = (player: 'player1' | 'player2') => {
+    const parsedHands = parseHandRange(textRanges[player]);
+    setHandRanges(prev => ({ ...prev, [player]: parsedHands }));
+  };
+  
+  // Функция очистки hand ranges
+  const clearHandRange = (player: 'player1' | 'player2') => {
+    setHandRanges(prev => ({ ...prev, [player]: [] }));
+    setTextRanges(prev => ({ ...prev, [player]: '' }));
+  };
+
   const [boardSettings, setBoardSettings] = useState({
     flopSettings: {
       random: true,
@@ -633,6 +679,71 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
 
       <div className="setup-section">
         <h2>🎴 Диапазон рук - Игрок 1</h2>
+        
+        {/* Текстовый ввод hand ranges */}
+        <div className="form-group" style={{ marginBottom: '20px' }}>
+          <label>📝 Текстовый ввод (формат: AA:0.3,KK,QQ:0.3,JJ,TT...)</label>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+            <textarea
+              value={textRanges.player1}
+              onChange={(e) => setTextRanges(prev => ({ ...prev, player1: e.target.value }))}
+              placeholder="AA:0.3,KK,QQ:0.3,JJ,TT,99,88,77,66,55,44,33,22,AK,AQ,AJ,AT,A9,A8,A7,A6,A5,A4,A3,A2,KQ,KJs,KJo:0.3,KTs,KTo:0.3,K9s,K9o:0.3,K8s,K8o:0.3,K7s,K7o:0.3,K6s:0.55,K6o:0.3,K5s:0.55,K5o:0.3,K4s:0.55,K4o,K3,K2,QJs,QJo:0.3,QTs,QTo:0.3,Q9,Q8s:0.55,Q8o,Q7s,Q7o:0.3,Q6s:0.55,Q6o:0.3,Q5s:0.55,Q5o:0.3,Q4s:0.55,Q4o:0.3,Q3s,Q3o:0.3,Q2,JTs,JTo:0.3,J9s,J9o:0.3,J8s:0.55,J8o:0.3,J7s,J7o:0.3,J6s:0.55,J6o:0.3,J5s:0.55,J5o:0.3,J4s:0.55,J4o,J3s,J3o:0.3,J2,T9,T8s:0.55,T8o,T7s:0.55,T7o,T6s:0.55,T6o,T5s:0.55,T5o,T4,T3,T2,98,97,96,95,94,93,92,87,86,85,84,83s:0.55,83o,82,76,75,74,73s:0.55,73o,72,65,64,63,62,54,53,52,43,42,32"
+              rows={4}
+              style={{
+                flex: 1,
+                padding: '10px',
+                background: 'rgba(255,255,255,0.1)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: '5px',
+                fontSize: '0.9rem',
+                resize: 'vertical'
+              }}
+            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <button
+                onClick={() => applyTextRange('player1')}
+                style={{
+                  padding: '8px 16px',
+                  background: '#4CAF50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                ✅ Применить
+              </button>
+              <button
+                onClick={() => clearHandRange('player1')}
+                style={{
+                  padding: '8px 16px',
+                  background: '#f44336',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                🗑️ Очистить
+              </button>
+            </div>
+          </div>
+          {textRanges.player1 && (
+            <div style={{ 
+              marginTop: '8px', 
+              fontSize: '0.8rem', 
+              color: 'rgba(255,255,255,0.7)' 
+            }}>
+              💡 Формат: рука или рука:процент (например: AA:0.3 = 30% от AA, KK = 100% от KK)
+            </div>
+          )}
+        </div>
+        
         <HandRangeMatrix
           selectedHands={handRanges.player1}
           onSelectionChange={handlePlayer1RangeChange}
@@ -644,6 +755,71 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
 
       <div className="setup-section">
         <h2>🎴 Диапазон рук - Игрок 2</h2>
+        
+        {/* Текстовый ввод hand ranges */}
+        <div className="form-group" style={{ marginBottom: '20px' }}>
+          <label>📝 Текстовый ввод (формат: AA:0.3,KK,QQ:0.3,JJ,TT...)</label>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+            <textarea
+              value={textRanges.player2}
+              onChange={(e) => setTextRanges(prev => ({ ...prev, player2: e.target.value }))}
+              placeholder="AA:0.3,KK,QQ:0.3,JJ,TT,99,88,77,66,55,44,33,22,AK,AQ,AJ,AT,A9,A8,A7,A6,A5,A4,A3,A2,KQ,KJs,KJo:0.3,KTs,KTo:0.3,K9s,K9o:0.3,K8s,K8o:0.3,K7s,K7o:0.3,K6s:0.55,K6o:0.3,K5s:0.55,K5o:0.3,K4s:0.55,K4o,K3,K2,QJs,QJo:0.3,QTs,QTo:0.3,Q9,Q8s:0.55,Q8o,Q7s,Q7o:0.3,Q6s:0.55,Q6o:0.3,Q5s:0.55,Q5o:0.3,Q4s:0.55,Q4o:0.3,Q3s,Q3o:0.3,Q2,JTs,JTo:0.3,J9s,J9o:0.3,J8s:0.55,J8o:0.3,J7s,J7o:0.3,J6s:0.55,J6o:0.3,J5s:0.55,J5o:0.3,J4s:0.55,J4o,J3s,J3o:0.3,J2,T9,T8s:0.55,T8o,T7s:0.55,T7o,T6s:0.55,T6o,T5s:0.55,T5o,T4,T3,T2,98,97,96,95,94,93,92,87,86,85,84,83s:0.55,83o,82,76,75,74,73s:0.55,73o,72,65,64,63,62,54,53,52,43,42,32"
+              rows={4}
+              style={{
+                flex: 1,
+                padding: '10px',
+                background: 'rgba(255,255,255,0.1)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: '5px',
+                fontSize: '0.9rem',
+                resize: 'vertical'
+              }}
+            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              <button
+                onClick={() => applyTextRange('player2')}
+                style={{
+                  padding: '8px 16px',
+                  background: '#4CAF50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                ✅ Применить
+              </button>
+              <button
+                onClick={() => clearHandRange('player2')}
+                style={{
+                  padding: '8px 16px',
+                  background: '#f44336',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                🗑️ Очистить
+              </button>
+            </div>
+          </div>
+          {textRanges.player2 && (
+            <div style={{ 
+              marginTop: '8px', 
+              fontSize: '0.8rem', 
+              color: 'rgba(255,255,255,0.7)' 
+            }}>
+              💡 Формат: рука или рука:процент (например: AA:0.3 = 30% от AA, KK = 100% от KK)
+            </div>
+          )}
+        </div>
+        
         <HandRangeMatrix
           selectedHands={handRanges.player2}
           onSelectionChange={handlePlayer2RangeChange}
