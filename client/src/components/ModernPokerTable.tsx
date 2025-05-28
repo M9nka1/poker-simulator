@@ -124,6 +124,56 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
     localStorage.setItem('poker-table-positions', JSON.stringify(elementPositions));
   }, [elementPositions]);
 
+  // Drag and Drop Functions
+  const toggleEditMode = useCallback(() => {
+    setIsEditMode(!isEditMode);
+    if (!isEditMode) {
+      // Entering edit mode - show help
+      setShowEditHelp(true);
+      setTimeout(() => setShowEditHelp(false), 5000); // Hide help after 5 seconds
+    } else {
+      // Exiting edit mode - save positions
+      console.log('Сохраненные позиции элементов:', elementPositions);
+      setShowEditHelp(false);
+    }
+  }, [isEditMode, elementPositions]);
+
+  const resetPositions = useCallback(() => {
+    const defaultPositions = {
+      'opponent-player': { x: 41.4, y: 12 },
+      'current-player': { x: 41.8, y: 66.5 },
+      'board-container': { x: 34.8, y: 42.4 },
+      'betting-panel': { x: 19.8, y: 79.1 },
+      'header-controls': { x: 2.5, y: 5 },
+      'new-hand-button': { x: 79.1, y: 90.9 }
+    };
+    
+    setElementPositions(defaultPositions);
+    localStorage.removeItem('poker-table-positions');
+    
+    // Show feedback to user
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(76, 175, 80, 0.95);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 20px;
+      z-index: 10002;
+      font-weight: bold;
+      box-shadow: 0 4px 20px rgba(76, 175, 80, 0.5);
+    `;
+    notification.textContent = '✅ Позиции сброшены к значениям по умолчанию';
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      document.body.removeChild(notification);
+    }, 2000);
+  }, []);
+
   useEffect(() => {
     setTable(initialTable);
     setSelectedBetAmount(0);
@@ -150,7 +200,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isEditMode]);
+  }, [isEditMode, toggleEditMode, resetPositions]);
 
   // Отслеживаем изменение улицы торгов и сохраняем размер банка на начало
   useEffect(() => {
@@ -279,7 +329,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
       websocketService.offMessage('player_disconnected');
       websocketService.offMessage('error');
     };
-  }, [sessionId, table.id, onHandComplete]);
+  }, [sessionId, table.id, onHandComplete, modalShown]);
 
   const handleJoinSession = (playerId: number, playerName: string) => {
     // Защита от повторных подключений
@@ -415,7 +465,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
     }));
 
   const currentPlayerData = table.players.find(p => p.id === table.currentPlayer);
-  const myPlayerData = table.players.find(p => p.id === currentPlayerId);
   const isMyTurn = currentPlayerId === table.currentPlayer && !table.handComplete;
 
   const exportHandHistories = () => {
@@ -534,55 +583,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
     
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  };
-
-  const toggleEditMode = () => {
-    setIsEditMode(!isEditMode);
-    if (!isEditMode) {
-      // Entering edit mode - show help
-      setShowEditHelp(true);
-      setTimeout(() => setShowEditHelp(false), 5000); // Hide help after 5 seconds
-    } else {
-      // Exiting edit mode - save positions
-      console.log('Сохраненные позиции элементов:', elementPositions);
-      setShowEditHelp(false);
-    }
-  };
-
-  const resetPositions = () => {
-    const defaultPositions = {
-      'opponent-player': { x: 41.4, y: 12 },
-      'current-player': { x: 41.8, y: 66.5 },
-      'board-container': { x: 34.8, y: 42.4 },
-      'betting-panel': { x: 19.8, y: 79.1 },
-      'header-controls': { x: 2.5, y: 5 },
-      'new-hand-button': { x: 79.1, y: 90.9 }
-    };
-    
-    setElementPositions(defaultPositions);
-    localStorage.removeItem('poker-table-positions');
-    
-    // Show feedback to user
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(76, 175, 80, 0.95);
-      color: white;
-      padding: 15px 25px;
-      border-radius: 20px;
-      z-index: 10002;
-      font-weight: bold;
-      box-shadow: 0 4px 20px rgba(76, 175, 80, 0.5);
-    `;
-    notification.textContent = '✅ Позиции сброшены к значениям по умолчанию';
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-      document.body.removeChild(notification);
-    }, 2000);
   };
 
   const exportPositions = () => {
