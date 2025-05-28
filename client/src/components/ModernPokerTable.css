@@ -1367,11 +1367,11 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Combined Betting Action Panel - под нижним игроком */
+/* Combined Betting Action Panel - отдельно под столом */
 .combined-betting-action-panel {
   display: flex;
   justify-content: center;
-  margin-top: 0px; /* Убираем отступ сверху */
+  margin-top: 20px; /* Восстанавливаем отступ для отдельной панели */
   width: 100%;
 }
 

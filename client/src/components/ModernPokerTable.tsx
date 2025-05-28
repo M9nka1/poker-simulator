@@ -647,214 +647,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                       <span className="bet-amount">—</span>
                     </div>
                   )}
-
-                  {/* Combined Bet Sizing and Action Panel - прикреплена к игроку */}
-                  {!table.handComplete && (
-                    <div className="player-attached-panel">
-                      <div className="combined-panel glass-morphism">
-                        {/* Bet Sizing Section */}
-                        <div className="bet-sizing-section">
-                          <div className="sizing-buttons">
-                            {availableBetSizes.map(({ type, amount, label }) => {
-                              const callAmount = getCallAmount();
-                              const isRaise = callAmount > 0;
-                              let finalAmount: number = amount;
-                              
-                              if (isRaise && finalAmount <= 0) {
-                                return null;
-                              }
-                              
-                              const isSelected = selectedBetAmount === finalAmount;
-                              
-                              return (
-                                <button
-                                  key={type}
-                                  className={`sizing-btn ${isSelected ? 'selected' : ''}`}
-                                  onClick={() => setSelectedBetAmount(finalAmount)}
-                                  onWheel={(e) => handleWheelBetSize(e, finalAmount)}
-                                  disabled={!isMyTurn}
-                                >
-                                  <span className="sizing-label">{label}</span>
-                                  <span className="sizing-amount">€{finalAmount}</span>
-                                </button>
-                              );
-                            }).filter(Boolean)}
-                            
-                            {/* Кнопка ручного ввода */}
-                            <button
-                              className={`sizing-btn manual-input-btn ${showManualInput ? 'selected' : ''}`}
-                              onClick={() => {
-                                setShowManualInput(!showManualInput);
-                                if (!showManualInput) {
-                                  setManualBetAmount(selectedBetAmount.toString());
-                                }
-                              }}
-                              disabled={!isMyTurn}
-                              title="Ручной ввод ставки"
-                            >
-                              <span className="sizing-label">Ручной</span>
-                              <span className="sizing-amount">€{selectedBetAmount}</span>
-                            </button>
-
-                            {/* Кнопка настроек после кнопки ручного ввода */}
-                            <button
-                              className={`settings-btn ${showSizingSettings ? 'active' : ''}`}
-                              onClick={() => setShowSizingSettings(!showSizingSettings)}
-                              title="Настройки размеров ставок"
-                            >
-                              ⚙️
-                            </button>
-                          </div>
-                          
-                          {/* Панель ручного ввода */}
-                          {showManualInput && (
-                            <div className="manual-input-panel neumorphism">
-                              <input
-                                type="number"
-                                value={manualBetAmount}
-                                onChange={(e) => handleManualBetChange(e.target.value)}
-                                onWheel={(e) => handleWheelBetSize(e, parseInt(manualBetAmount) || 0)}
-                                placeholder="Введите сумму"
-                                className="manual-input"
-                                min="0"
-                                max={myPlayerData?.stack || 1000}
-                                disabled={!isMyTurn}
-                              />
-                              <button
-                                className="apply-btn"
-                                onClick={applyManualBet}
-                                disabled={!isMyTurn}
-                              >
-                                ✓
-                              </button>
-                            </div>
-                          )}
-
-                          {/* Настройки размеров ставок */}
-                          {showSizingSettings && (
-                            <div className="sizing-settings neumorphism">
-                              {Object.entries(customSizings).filter(([key]) => key !== 'allIn').map(([key, value]) => (
-                                <div key={key} className="sizing-control">
-                                  <label>{key === 'quarter' ? '1/4' : key === 'half' ? '1/2' : key === 'threeQuarter' ? '3/4' : 'Пот'}</label>
-                                  <input
-                                    type="range"
-                                    min="5"
-                                    max="200"
-                                    step="5"
-                                    value={value}
-                                    onChange={(e) => setCustomSizings(prev => ({
-                                      ...prev,
-                                      [key]: parseInt(e.target.value)
-                                    }))}
-                                    className="sizing-slider"
-                                  />
-                                  <span>{value}%</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Action Buttons Section */}
-                        <div className="action-section">
-                          <div className="action-buttons">
-                            {isMyTurn ? (
-                              <>
-                                {canCheck() && (
-                                  <>
-                                    <button
-                                      className="action-btn check-btn neumorphism"
-                                      onClick={() => makeAction('check')}
-                                      disabled={isLoading}
-                                    >
-                                      <span className="btn-text">ЧЕК</span>
-                                    </button>
-                                    
-                                    <button
-                                      className="action-btn bet-btn neumorphism"
-                                      onClick={() => makeAction('bet', selectedBetAmount || calculateBetSize('half'))}
-                                      onWheel={(e) => handleWheelBetSize(e, selectedBetAmount || calculateBetSize('half'))}
-                                      disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
-                                    >
-                                      <span className="btn-text">БЕТ</span>
-                                      <span className="btn-amount">€{selectedBetAmount || calculateBetSize('half')}</span>
-                                    </button>
-                                  </>
-                                )}
-                                
-                                {canCall() && (
-                                  <>
-                                    <button
-                                      className="action-btn fold-btn neumorphism"
-                                      onClick={() => makeAction('fold')}
-                                      disabled={isLoading}
-                                    >
-                                      <span className="btn-text">ФОЛД</span>
-                                    </button>
-                                    
-                                    <button
-                                      className="action-btn call-btn neumorphism"
-                                      onClick={() => makeAction('call', getCallAmount())}
-                                      disabled={isLoading}
-                                    >
-                                      <span className="btn-text">{getCallAmount() === myPlayerData?.stack ? 'ALL-IN' : 'КОЛЛ'}</span>
-                                      <span className="btn-amount">€{getCallAmount()}</span>
-                                    </button>
-                                    
-                                    <button
-                                      className="action-btn raise-btn neumorphism"
-                                      onClick={() => {
-                                        const callAmount = getCallAmount();
-                                        const hasOpponentBet = callAmount > 0;
-                                        
-                                        let actionType: string;
-                                        let actionAmount: number;
-                                        
-                                        if (!hasOpponentBet) {
-                                          actionType = 'bet';
-                                          actionAmount = selectedBetAmount || calculateBetSize('half');
-                                        } else {
-                                          const desiredAmount = selectedBetAmount || (callAmount + calculateBetSize('half'));
-                                          
-                                          if (desiredAmount === callAmount) {
-                                            actionType = 'call';
-                                            actionAmount = callAmount;
-                                          } else if (desiredAmount > callAmount) {
-                                            actionType = 'raise';
-                                            actionAmount = desiredAmount - callAmount;
-                                          } else {
-                                            actionType = 'call';
-                                            actionAmount = callAmount;
-                                          }
-                                        }
-                                        
-                                        makeAction(actionType, actionAmount);
-                                      }}
-                                      onWheel={(e) => handleWheelBetSize(e, selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half')))}
-                                      disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
-                                    >
-                                      <span className="btn-text">{getCallAmount() > 0 ? 'РЕЙЗ' : 'БЕТ'}</span>
-                                      <span className="btn-amount">€{selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half'))}</span>
-                                    </button>
-                                  </>
-                                )}
-                              </>
-                            ) : (
-                              <div className="waiting-turn">
-                                <div className="waiting-spinner"></div>
-                                <span>
-                                  {currentPlayerData ? 
-                                    `Ход игрока: ${currentPlayerData.name}` : 
-                                    'Ожидание хода...'
-                                  }
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               );
             })()}
@@ -884,6 +676,221 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
             </button>
           </div>
         )}
+
+        {/* Combined Bet Sizing and Action Panel - отдельно под столом */}
+        {(() => {
+          const myPlayer = table.players.find(p => p.id === currentPlayerId);
+          if (!myPlayer) return null;
+          
+          return (
+            <div className="combined-betting-action-panel">
+              {!table.handComplete && (
+                <div className="combined-panel glass-morphism">
+                  {/* Bet Sizing Section */}
+                  <div className="bet-sizing-section">
+                    <div className="sizing-buttons">
+                      {availableBetSizes.map(({ type, amount, label }) => {
+                        const callAmount = getCallAmount();
+                        const isRaise = callAmount > 0;
+                        let finalAmount: number = amount;
+                        
+                        if (isRaise && finalAmount <= 0) {
+                          return null;
+                        }
+                        
+                        const isSelected = selectedBetAmount === finalAmount;
+                        
+                        return (
+                          <button
+                            key={type}
+                            className={`sizing-btn ${isSelected ? 'selected' : ''}`}
+                            onClick={() => setSelectedBetAmount(finalAmount)}
+                            onWheel={(e) => handleWheelBetSize(e, finalAmount)}
+                            disabled={!isMyTurn}
+                          >
+                            <span className="sizing-label">{label}</span>
+                            <span className="sizing-amount">€{finalAmount}</span>
+                          </button>
+                        );
+                      }).filter(Boolean)}
+                      
+                      {/* Кнопка ручного ввода */}
+                      <button
+                        className={`sizing-btn manual-input-btn ${showManualInput ? 'selected' : ''}`}
+                        onClick={() => {
+                          setShowManualInput(!showManualInput);
+                          if (!showManualInput) {
+                            setManualBetAmount(selectedBetAmount.toString());
+                          }
+                        }}
+                        disabled={!isMyTurn}
+                        title="Ручной ввод ставки"
+                      >
+                        <span className="sizing-label">Ручной</span>
+                        <span className="sizing-amount">€{selectedBetAmount}</span>
+                      </button>
+
+                      {/* Кнопка настроек после кнопки ручного ввода */}
+                      <button
+                        className={`settings-btn ${showSizingSettings ? 'active' : ''}`}
+                        onClick={() => setShowSizingSettings(!showSizingSettings)}
+                        title="Настройки размеров ставок"
+                      >
+                        ⚙️
+                      </button>
+                    </div>
+                    
+                    {/* Панель ручного ввода */}
+                    {showManualInput && (
+                      <div className="manual-input-panel neumorphism">
+                        <input
+                          type="number"
+                          value={manualBetAmount}
+                          onChange={(e) => handleManualBetChange(e.target.value)}
+                          onWheel={(e) => handleWheelBetSize(e, parseInt(manualBetAmount) || 0)}
+                          placeholder="Введите сумму"
+                          className="manual-input"
+                          min="0"
+                          max={myPlayerData?.stack || 1000}
+                          disabled={!isMyTurn}
+                        />
+                        <button
+                          className="apply-btn"
+                          onClick={applyManualBet}
+                          disabled={!isMyTurn}
+                        >
+                          ✓
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Настройки размеров ставок */}
+                    {showSizingSettings && (
+                      <div className="sizing-settings neumorphism">
+                        {Object.entries(customSizings).filter(([key]) => key !== 'allIn').map(([key, value]) => (
+                          <div key={key} className="sizing-control">
+                            <label>{key === 'quarter' ? '1/4' : key === 'half' ? '1/2' : key === 'threeQuarter' ? '3/4' : 'Пот'}</label>
+                            <input
+                              type="range"
+                              min="5"
+                              max="200"
+                              step="5"
+                              value={value}
+                              onChange={(e) => setCustomSizings(prev => ({
+                                ...prev,
+                                [key]: parseInt(e.target.value)
+                              }))}
+                              className="sizing-slider"
+                            />
+                            <span>{value}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Buttons Section */}
+                  <div className="action-section">
+                    <div className="action-buttons">
+                      {isMyTurn ? (
+                        <>
+                          {canCheck() && (
+                            <>
+                              <button
+                                className="action-btn check-btn neumorphism"
+                                onClick={() => makeAction('check')}
+                                disabled={isLoading}
+                              >
+                                <span className="btn-text">ЧЕК</span>
+                              </button>
+                              
+                              <button
+                                className="action-btn bet-btn neumorphism"
+                                onClick={() => makeAction('bet', selectedBetAmount || calculateBetSize('half'))}
+                                onWheel={(e) => handleWheelBetSize(e, selectedBetAmount || calculateBetSize('half'))}
+                                disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
+                              >
+                                <span className="btn-text">БЕТ</span>
+                                <span className="btn-amount">€{selectedBetAmount || calculateBetSize('half')}</span>
+                              </button>
+                            </>
+                          )}
+                          
+                          {canCall() && (
+                            <>
+                              <button
+                                className="action-btn fold-btn neumorphism"
+                                onClick={() => makeAction('fold')}
+                                disabled={isLoading}
+                              >
+                                <span className="btn-text">ФОЛД</span>
+                              </button>
+                              
+                              <button
+                                className="action-btn call-btn neumorphism"
+                                onClick={() => makeAction('call', getCallAmount())}
+                                disabled={isLoading}
+                              >
+                                <span className="btn-text">{getCallAmount() === myPlayerData?.stack ? 'ALL-IN' : 'КОЛЛ'}</span>
+                                <span className="btn-amount">€{getCallAmount()}</span>
+                              </button>
+                              
+                              <button
+                                className="action-btn raise-btn neumorphism"
+                                onClick={() => {
+                                  const callAmount = getCallAmount();
+                                  const hasOpponentBet = callAmount > 0;
+                                  
+                                  let actionType: string;
+                                  let actionAmount: number;
+                                  
+                                  if (!hasOpponentBet) {
+                                    actionType = 'bet';
+                                    actionAmount = selectedBetAmount || calculateBetSize('half');
+                                  } else {
+                                    const desiredAmount = selectedBetAmount || (callAmount + calculateBetSize('half'));
+                                    
+                                    if (desiredAmount === callAmount) {
+                                      actionType = 'call';
+                                      actionAmount = callAmount;
+                                    } else if (desiredAmount > callAmount) {
+                                      actionType = 'raise';
+                                      actionAmount = desiredAmount - callAmount;
+                                    } else {
+                                      actionType = 'call';
+                                      actionAmount = callAmount;
+                                    }
+                                  }
+                                  
+                                  makeAction(actionType, actionAmount);
+                                }}
+                                onWheel={(e) => handleWheelBetSize(e, selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half')))}
+                                disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
+                              >
+                                <span className="btn-text">{getCallAmount() > 0 ? 'РЕЙЗ' : 'БЕТ'}</span>
+                                <span className="btn-amount">€{selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half'))}</span>
+                              </button>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <div className="waiting-turn">
+                          <div className="waiting-spinner"></div>
+                          <span>
+                            {currentPlayerData ? 
+                              `Ход игрока: ${currentPlayerData.name}` : 
+                              'Ожидание хода...'
+                            }
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
