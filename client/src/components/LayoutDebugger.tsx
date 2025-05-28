@@ -1,278 +1,432 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import './LayoutDebugger.css';
 
+interface Position {
+  x: number;
+  y: number;
+}
+
+interface ElementData {
+  id: string;
+  name: string;
+  position: Position;
+  size: { width: number; height: number };
+  color: string;
+  isDragging: boolean;
+}
+
 interface LayoutSettings {
-  // Header
-  headerHeight: number;
-  headerPadding: number;
-  
-  // Game Container
-  gameContainerPadding: number;
-  gameContainerGap: number;
-  
-  // Player Zones
-  opponentZoneTop: number;
-  opponentZoneHeight: number;
-  currentPlayerZoneBottom: number;
-  currentPlayerZoneHeight: number;
-  
-  // Table Center
-  tableCenterTop: number;
-  tableCenterHeight: number;
+  // Table Center (Poker Felt)
   tableCenterWidth: number;
+  tableCenterHeight: number;
+  tableCenterTop: number;
+  tableCenterLeft: number;
   
-  // Poker Felt
-  feltPadding: number;
-  feltBorderRadius: number;
+  // Players inside Table Center
+  opponentPlayerTop: number;
+  opponentPlayerLeft: number;
+  currentPlayerBottom: number;
+  currentPlayerLeft: number;
   
-  // Board Cards
-  boardCardsGap: number;
-  boardCardWidth: number;
-  boardCardHeight: number;
+  // Board and Pot Container
+  boardContainerTop: number;
+  boardContainerLeft: number;
+  boardContainerWidth: number;
   
-  // Pot Display
-  potDisplayTop: number;
-  potDisplayWidth: number;
-  potDisplayHeight: number;
+  // Betting Panel inside Table Center
+  bettingPanelTop: number;
+  bettingPanelLeft: number;
+  bettingPanelWidth: number;
+  bettingPanelHeight: number;
   
-  // Action Panel
-  actionPanelBottom: number;
-  actionPanelHeight: number;
-  actionPanelWidth: number;
+  // Header Controls
+  headerControlsTop: number;
+  headerControlsRight: number;
   
-  // Player Cards
-  playerCardWidth: number;
-  playerCardHeight: number;
-  playerCardPadding: number;
+  // New Hand Button (outside table)
+  newHandButtonBottom: number;
+  newHandButtonLeft: number;
   
-  // Player Card Sizing
-  playerCardMinWidth: number;
-  playerCardMinHeight: number;
-  
-  // Hole Cards
-  holeCardWidth: number;
-  holeCardHeight: number;
-  holeCardGap: number;
+  // Theme Controls
+  themeControlsTop: number;
+  themeControlsRight: number;
 }
 
 const defaultSettings: LayoutSettings = {
-  // Header
-  headerHeight: 50,
-  headerPadding: 10,
-  
-  // Game Container
-  gameContainerPadding: 20,
-  gameContainerGap: 20,
-  
-  // Player Zones
-  opponentZoneTop: 88,
-  opponentZoneHeight: 143,
-  currentPlayerZoneBottom: 350,
-  currentPlayerZoneHeight: 150,
-  
-  // Table Center
-  tableCenterTop: 238,
-  tableCenterHeight: 265,
+  // Table Center (82% width, centered)
   tableCenterWidth: 82,
+  tableCenterHeight: 530,
+  tableCenterTop: 20,
+  tableCenterLeft: 9, // (100-82)/2 = 9%
   
-  // Poker Felt
-  feltPadding: 40,
-  feltBorderRadius: 20,
+  // Players inside Table Center (relative to felt)
+  opponentPlayerTop: 60, // padding from top of felt
+  opponentPlayerLeft: 50, // centered
+  currentPlayerBottom: 60, // padding from bottom of felt
+  currentPlayerLeft: 50, // centered
   
-  // Board Cards
-  boardCardsGap: 15,
-  boardCardWidth: 62,
-  boardCardHeight: 92,
+  // Board and Pot Container (centered in felt)
+  boardContainerTop: 50, // middle of felt
+  boardContainerLeft: 50, // centered
+  boardContainerWidth: 400,
   
-  // Pot Display
-  potDisplayTop: 20,
-  potDisplayWidth: 150,
-  potDisplayHeight: 80,
+  // Betting Panel (below current player)
+  bettingPanelTop: 75, // below current player
+  bettingPanelLeft: 50, // centered
+  bettingPanelWidth: 700,
+  bettingPanelHeight: 100,
   
-  // Action Panel
-  actionPanelBottom: 121,
-  actionPanelHeight: 150,
-  actionPanelWidth: 89,
+  // Header Controls (top right of felt)
+  headerControlsTop: 20,
+  headerControlsRight: 20,
   
-  // Player Cards
-  playerCardWidth: 250,
-  playerCardHeight: 120,
-  playerCardPadding: 15,
+  // New Hand Button (outside table, bottom center)
+  newHandButtonBottom: 121,
+  newHandButtonLeft: 50,
   
-  // Player Card Sizing
-  playerCardMinWidth: 188,
-  playerCardMinHeight: 80,
-  
-  // Hole Cards
-  holeCardWidth: 36,
-  holeCardHeight: 52,
-  holeCardGap: 9,
+  // Theme Controls (top right corner)
+  themeControlsTop: 20,
+  themeControlsRight: 20,
 };
 
 const LayoutDebugger: React.FC = () => {
   const [settings, setSettings] = useState<LayoutSettings>(defaultSettings);
-  const [selectedElement, setSelectedElement] = useState<string>('');
+  const [elements, setElements] = useState<ElementData[]>([
+    {
+      id: 'table-center',
+      name: 'Poker Felt',
+      position: { x: 9, y: 20 },
+      size: { width: 82, height: 530 },
+      color: '#0d4f3c',
+      isDragging: false
+    },
+    {
+      id: 'opponent-player',
+      name: 'Opponent Player',
+      position: { x: 45, y: 80 },
+      size: { width: 200, height: 120 },
+      color: '#4CAF50',
+      isDragging: false
+    },
+    {
+      id: 'board-container',
+      name: 'Board & Pot',
+      position: { x: 35, y: 250 },
+      size: { width: 400, height: 120 },
+      color: '#2196F3',
+      isDragging: false
+    },
+    {
+      id: 'current-player',
+      name: 'Current Player',
+      position: { x: 45, y: 380 },
+      size: { width: 200, height: 120 },
+      color: '#FF9800',
+      isDragging: false
+    },
+    {
+      id: 'betting-panel',
+      name: 'Betting Panel',
+      position: { x: 25, y: 520 },
+      size: { width: 700, height: 100 },
+      color: '#9C27B0',
+      isDragging: false
+    },
+    {
+      id: 'header-controls',
+      name: 'Header Controls',
+      position: { x: 75, y: 40 },
+      size: { width: 200, height: 50 },
+      color: '#F44336',
+      isDragging: false
+    },
+    {
+      id: 'new-hand-button',
+      name: 'New Hand Button',
+      position: { x: 45, y: 650 },
+      size: { width: 200, height: 60 },
+      color: '#607D8B',
+      isDragging: false
+    }
+  ]);
+  
+  const [dragState, setDragState] = useState<{
+    isDragging: boolean;
+    elementId: string | null;
+    startPos: Position;
+    offset: Position;
+  }>({
+    isDragging: false,
+    elementId: null,
+    startPos: { x: 0, y: 0 },
+    offset: { x: 0, y: 0 }
+  });
+
   const [showGrid, setShowGrid] = useState(true);
   const [showMeasurements, setShowMeasurements] = useState(true);
+  const [showPokerTable, setShowPokerTable] = useState(true);
+  const [selectedElement, setSelectedElement] = useState<string>('');
+  
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Mock data for testing
-  const mockTable = {
-    id: 1,
-    pot: 288,
-    currentStreet: 'flop',
-    currentPlayer: 1,
-    handComplete: false,
-    winner: null,
-    players: [
-      {
-        id: 1,
-        name: 'Player 1',
-        stack: 890,
-        position: 'BTN',
-        connected: true,
-        holeCards: [
-          { rank: 'A', suit: 'hearts', display: 'A♥' },
-          { rank: 'K', suit: 'spades', display: 'K♠' }
-        ],
-        actions: []
-      },
-      {
-        id: 2,
-        name: 'Player 2',
-        stack: 832,
-        position: 'BB',
-        connected: true,
-        holeCards: [
-          { rank: 'Q', suit: 'diamonds', display: 'Q♦' },
-          { rank: 'J', suit: 'clubs', display: 'J♣' }
-        ],
-        actions: [{ action: 'bet', amount: 58, street: 'flop' }]
-      }
-    ],
-    board: {
-      flop: [
-        { rank: '9', suit: 'hearts', display: '9♥' },
-        { rank: '7', suit: 'spades', display: '7♠' },
-        { rank: '2', suit: 'diamonds', display: '2♦' }
-      ],
-      turn: null,
-      river: null
+  // Mouse event handlers for dragging
+  const handleMouseDown = useCallback((e: React.MouseEvent, elementId: string) => {
+    e.preventDefault();
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const element = elements.find(el => el.id === elementId);
+    if (!element) return;
+
+    const startPos = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+
+    const offset = {
+      x: startPos.x - (element.position.x * rect.width / 100),
+      y: startPos.y - (element.position.y * rect.height / 100)
+    };
+
+    setDragState({
+      isDragging: true,
+      elementId,
+      startPos,
+      offset
+    });
+
+    setElements(prev => prev.map(el => 
+      el.id === elementId ? { ...el, isDragging: true } : el
+    ));
+
+    setSelectedElement(elementId);
+  }, [elements]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragState.isDragging || !dragState.elementId || !containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const currentPos = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+
+    const newPosition = {
+      x: Math.max(0, Math.min(100, ((currentPos.x - dragState.offset.x) / rect.width) * 100)),
+      y: Math.max(0, Math.min(100, ((currentPos.y - dragState.offset.y) / rect.height) * 100))
+    };
+
+    setElements(prev => prev.map(el => 
+      el.id === dragState.elementId ? { ...el, position: newPosition } : el
+    ));
+  }, [dragState]);
+
+  const handleMouseUp = useCallback(() => {
+    if (dragState.isDragging) {
+      setElements(prev => prev.map(el => ({ ...el, isDragging: false })));
+      setDragState({
+        isDragging: false,
+        elementId: null,
+        startPos: { x: 0, y: 0 },
+        offset: { x: 0, y: 0 }
+      });
     }
-  };
+  }, [dragState.isDragging]);
 
-  const updateSetting = (key: keyof LayoutSettings, value: number) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
-  };
+  // Update settings when elements are moved
+  const updateSettingsFromElements = useCallback(() => {
+    const tableCenter = elements.find(el => el.id === 'table-center');
+    const opponent = elements.find(el => el.id === 'opponent-player');
+    const current = elements.find(el => el.id === 'current-player');
+    const board = elements.find(el => el.id === 'board-container');
+    const betting = elements.find(el => el.id === 'betting-panel');
+    const header = elements.find(el => el.id === 'header-controls');
+    const newHand = elements.find(el => el.id === 'new-hand-button');
 
-  const exportSettings = () => {
-    const settingsJson = JSON.stringify(settings, null, 2);
-    const blob = new Blob([settingsJson], { type: 'application/json' });
+    if (tableCenter && opponent && current && board && betting && header && newHand) {
+      setSettings({
+        tableCenterWidth: tableCenter.size.width,
+        tableCenterHeight: tableCenter.size.height,
+        tableCenterTop: tableCenter.position.y,
+        tableCenterLeft: tableCenter.position.x,
+        
+        opponentPlayerTop: opponent.position.y - tableCenter.position.y,
+        opponentPlayerLeft: opponent.position.x,
+        currentPlayerBottom: tableCenter.position.y + tableCenter.size.height - current.position.y,
+        currentPlayerLeft: current.position.x,
+        
+        boardContainerTop: board.position.y,
+        boardContainerLeft: board.position.x,
+        boardContainerWidth: board.size.width,
+        
+        bettingPanelTop: betting.position.y,
+        bettingPanelLeft: betting.position.x,
+        bettingPanelWidth: betting.size.width,
+        bettingPanelHeight: betting.size.height,
+        
+        headerControlsTop: header.position.y,
+        headerControlsRight: 100 - header.position.x - (header.size.width / 10),
+        
+        newHandButtonBottom: 100 - newHand.position.y - (newHand.size.height / 10),
+        newHandButtonLeft: newHand.position.x,
+        
+        themeControlsTop: 20,
+        themeControlsRight: 20,
+      });
+    }
+  }, [elements]);
+
+  // Export current layout
+  const exportLayout = () => {
+    updateSettingsFromElements();
+    const layoutData = {
+      settings,
+      elements: elements.map(el => ({
+        id: el.id,
+        name: el.name,
+        position: el.position,
+        size: el.size
+      }))
+    };
+    
+    const blob = new Blob([JSON.stringify(layoutData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'layout-settings.json';
+    a.download = 'poker-layout-v2.8.json';
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const importSettings = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const imported = JSON.parse(e.target?.result as string);
-          setSettings(imported);
-        } catch (error) {
-          alert('Ошибка при импорте настроек');
-        }
-      };
-      reader.readAsText(file);
-    }
-  };
-
-  const resetSettings = () => {
-    setSettings(defaultSettings);
-  };
-
+  // Generate CSS from current positions
   const generateCSS = () => {
+    updateSettingsFromElements();
+    
     const css = `
-/* Generated Layout CSS */
-.modern-header {
-  height: ${settings.headerHeight}px;
-  padding: ${settings.headerPadding}px;
-}
-
-.game-container {
-  padding: ${settings.gameContainerPadding}px;
-  gap: ${settings.gameContainerGap}px;
-}
-
-.player-zone.opponent {
-  top: ${settings.opponentZoneTop}px;
-  height: ${settings.opponentZoneHeight}px;
-}
-
-.player-zone.current-player {
-  bottom: ${settings.currentPlayerZoneBottom}px;
-  height: ${settings.currentPlayerZoneHeight}px;
-}
-
-.table-center {
-  top: ${settings.tableCenterTop}px;
-  height: ${settings.tableCenterHeight}px;
-  width: ${settings.tableCenterWidth}%;
-}
+/* Generated Poker Table Layout CSS v2.8 */
 
 .poker-felt {
-  padding: ${settings.feltPadding}px;
-  border-radius: ${settings.feltBorderRadius}px;
+  width: ${settings.tableCenterWidth}%;
+  height: ${settings.tableCenterHeight}px;
+  position: relative;
+  margin: ${settings.tableCenterTop}px auto;
 }
 
-.board-cards {
-  gap: ${settings.boardCardsGap}px;
+.opponent-in-center {
+  position: absolute;
+  top: ${settings.opponentPlayerTop}px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
-.board-card-slot {
-  width: ${settings.boardCardWidth}px;
-  height: ${settings.boardCardHeight}px;
+.current-player-in-center {
+  position: absolute;
+  bottom: ${settings.currentPlayerBottom}px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
-.pot-display {
-  top: ${settings.potDisplayTop}px;
-  width: ${settings.potDisplayWidth}px;
-  height: ${settings.potDisplayHeight}px;
+.board-and-pot-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: ${settings.boardContainerWidth}px;
 }
 
-.action-panel {
-  bottom: ${settings.actionPanelBottom}px;
-  height: ${settings.actionPanelHeight}px;
-  width: ${settings.actionPanelWidth}%;
+.betting-action-panel-in-table {
+  position: absolute;
+  bottom: ${settings.bettingPanelTop}px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: ${settings.bettingPanelWidth}px;
+  max-width: 90%;
 }
 
-.player-card {
-  width: ${settings.playerCardWidth}px;
-  height: ${settings.playerCardHeight}px;
-  padding: ${settings.playerCardPadding}px;
+.table-header-controls {
+  position: absolute;
+  top: ${settings.headerControlsTop}px;
+  right: ${settings.headerControlsRight}px;
 }
 
-.player-card .hole-cards .rank-card {
-  width: ${settings.holeCardWidth}px;
-  height: ${settings.holeCardHeight}px;
-}
-
-.player-card .hole-cards {
-  gap: ${settings.holeCardGap}px;
+.new-hand-panel {
+  position: absolute;
+  bottom: ${settings.newHandButtonBottom}px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 `;
-    
+
     const blob = new Blob([css], { type: 'text/css' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'layout-styles.css';
+    a.download = 'poker-layout-v2.8.css';
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // Reset to default positions
+  const resetLayout = () => {
+    setElements([
+      {
+        id: 'table-center',
+        name: 'Poker Felt',
+        position: { x: 9, y: 20 },
+        size: { width: 82, height: 530 },
+        color: '#0d4f3c',
+        isDragging: false
+      },
+      {
+        id: 'opponent-player',
+        name: 'Opponent Player',
+        position: { x: 45, y: 80 },
+        size: { width: 200, height: 120 },
+        color: '#4CAF50',
+        isDragging: false
+      },
+      {
+        id: 'board-container',
+        name: 'Board & Pot',
+        position: { x: 35, y: 250 },
+        size: { width: 400, height: 120 },
+        color: '#2196F3',
+        isDragging: false
+      },
+      {
+        id: 'current-player',
+        name: 'Current Player',
+        position: { x: 45, y: 380 },
+        size: { width: 200, height: 120 },
+        color: '#FF9800',
+        isDragging: false
+      },
+      {
+        id: 'betting-panel',
+        name: 'Betting Panel',
+        position: { x: 25, y: 520 },
+        size: { width: 700, height: 100 },
+        color: '#9C27B0',
+        isDragging: false
+      },
+      {
+        id: 'header-controls',
+        name: 'Header Controls',
+        position: { x: 75, y: 40 },
+        size: { width: 200, height: 50 },
+        color: '#F44336',
+        isDragging: false
+      },
+      {
+        id: 'new-hand-button',
+        name: 'New Hand Button',
+        position: { x: 45, y: 650 },
+        size: { width: 200, height: 60 },
+        color: '#607D8B',
+        isDragging: false
+      }
+    ]);
+    setSettings(defaultSettings);
   };
 
   return (
@@ -280,7 +434,7 @@ const LayoutDebugger: React.FC = () => {
       {/* Control Panel */}
       <div className="control-panel">
         <div className="control-header">
-          <h2>🔧 Layout Debugger</h2>
+          <h2>🔧 Layout Debugger v2.8 - Interactive</h2>
           <div className="control-buttons">
             <button onClick={() => setShowGrid(!showGrid)}>
               {showGrid ? '🔲' : '⬜'} Grid
@@ -288,549 +442,97 @@ const LayoutDebugger: React.FC = () => {
             <button onClick={() => setShowMeasurements(!showMeasurements)}>
               📏 Measurements
             </button>
-            <button onClick={exportSettings}>💾 Export</button>
-            <label className="import-btn">
-              📁 Import
-              <input type="file" accept=".json" onChange={importSettings} style={{display: 'none'}} />
-            </label>
-            <button onClick={resetSettings}>🔄 Reset</button>
+            <button onClick={() => setShowPokerTable(!showPokerTable)}>
+              🎯 Poker Table
+            </button>
+            <button onClick={exportLayout}>💾 Export Layout</button>
             <button onClick={generateCSS}>📄 Generate CSS</button>
+            <button onClick={resetLayout}>🔄 Reset</button>
           </div>
         </div>
 
-        {/* Settings Controls */}
-        <div className="settings-grid">
-          {/* Header Settings */}
-          <div className="setting-group">
-            <h3>Header</h3>
-            <div className="setting-item">
-              <label>Height: {settings.headerHeight}px</label>
-              <input
-                type="range"
-                min="50"
-                max="150"
-                value={settings.headerHeight}
-                onChange={(e) => updateSetting('headerHeight', parseInt(e.target.value))}
-              />
-            </div>
-            <div className="setting-item">
-              <label>Padding: {settings.headerPadding}px</label>
-              <input
-                type="range"
-                min="10"
-                max="50"
-                value={settings.headerPadding}
-                onChange={(e) => updateSetting('headerPadding', parseInt(e.target.value))}
-              />
+        {/* Element Info */}
+        {selectedElement && (
+          <div className="element-info">
+            <h3>Selected: {elements.find(el => el.id === selectedElement)?.name}</h3>
+            <div className="position-info">
+              <span>X: {elements.find(el => el.id === selectedElement)?.position.x.toFixed(1)}%</span>
+              <span>Y: {elements.find(el => el.id === selectedElement)?.position.y.toFixed(1)}%</span>
             </div>
           </div>
-
-          {/* Player Zones */}
-          <div className="setting-group">
-            <h3>Player Zones</h3>
-            <div className="setting-item">
-              <label>Opponent Top: {settings.opponentZoneTop}px</label>
-              <input
-                type="range"
-                min="50"
-                max="200"
-                value={settings.opponentZoneTop}
-                onChange={(e) => updateSetting('opponentZoneTop', parseInt(e.target.value))}
-              />
-            </div>
-            <div className="setting-item">
-              <label>Opponent Height: {settings.opponentZoneHeight}px</label>
-              <input
-                type="range"
-                min="100"
-                max="250"
-                value={settings.opponentZoneHeight}
-                onChange={(e) => updateSetting('opponentZoneHeight', parseInt(e.target.value))}
-              />
-            </div>
-            <div className="setting-item">
-              <label>Current Bottom: {settings.currentPlayerZoneBottom}px</label>
-              <input
-                type="range"
-                min="150"
-                max="350"
-                value={settings.currentPlayerZoneBottom}
-                onChange={(e) => updateSetting('currentPlayerZoneBottom', parseInt(e.target.value))}
-              />
-            </div>
-          </div>
-
-          {/* Table Center */}
-          <div className="setting-group">
-            <h3>Table Center</h3>
-            <div className="setting-item">
-              <label>Top: {settings.tableCenterTop}px</label>
-              <input
-                type="range"
-                min="200"
-                max="400"
-                value={settings.tableCenterTop}
-                onChange={(e) => updateSetting('tableCenterTop', parseInt(e.target.value))}
-              />
-            </div>
-            <div className="setting-item">
-              <label>Height: {settings.tableCenterHeight}px</label>
-              <input
-                type="range"
-                min="200"
-                max="500"
-                value={settings.tableCenterHeight}
-                onChange={(e) => updateSetting('tableCenterHeight', parseInt(e.target.value))}
-              />
-            </div>
-            <div className="setting-item">
-              <label>Width: {settings.tableCenterWidth}%</label>
-              <input
-                type="range"
-                min="60"
-                max="100"
-                value={settings.tableCenterWidth}
-                onChange={(e) => updateSetting('tableCenterWidth', parseInt(e.target.value))}
-              />
-            </div>
-          </div>
-
-          {/* Board Cards */}
-          <div className="setting-group">
-            <h3>Board Cards</h3>
-            <div className="setting-item">
-              <label>Gap: {settings.boardCardsGap}px</label>
-              <input
-                type="range"
-                min="5"
-                max="30"
-                value={settings.boardCardsGap}
-                onChange={(e) => updateSetting('boardCardsGap', parseInt(e.target.value))}
-              />
-            </div>
-            <div className="setting-item">
-              <label>Width: {settings.boardCardWidth}px</label>
-              <input
-                type="range"
-                min="40"
-                max="100"
-                value={settings.boardCardWidth}
-                onChange={(e) => updateSetting('boardCardWidth', parseInt(e.target.value))}
-              />
-            </div>
-            <div className="setting-item">
-              <label>Height: {settings.boardCardHeight}px</label>
-              <input
-                type="range"
-                min="56"
-                max="140"
-                value={settings.boardCardHeight}
-                onChange={(e) => updateSetting('boardCardHeight', parseInt(e.target.value))}
-              />
-            </div>
-          </div>
-
-          {/* Action Panel */}
-          <div className="setting-group">
-            <h3>Action Panel</h3>
-            <div className="setting-item">
-              <label>Bottom: {settings.actionPanelBottom}px</label>
-              <input
-                type="range"
-                min="10"
-                max="200"
-                value={settings.actionPanelBottom}
-                onChange={(e) => updateSetting('actionPanelBottom', parseInt(e.target.value))}
-              />
-            </div>
-            <div className="setting-item">
-              <label>Height: {settings.actionPanelHeight}px</label>
-              <input
-                type="range"
-                min="150"
-                max="350"
-                value={settings.actionPanelHeight}
-                onChange={(e) => updateSetting('actionPanelHeight', parseInt(e.target.value))}
-              />
-            </div>
-            <div className="setting-item">
-              <label>Width: {settings.actionPanelWidth}%</label>
-              <input
-                type="range"
-                min="70"
-                max="100"
-                value={settings.actionPanelWidth}
-                onChange={(e) => updateSetting('actionPanelWidth', parseInt(e.target.value))}
-              />
-            </div>
-          </div>
-
-          {/* Player Cards */}
-          <div className="setting-group">
-            <h3>Player Cards</h3>
-            <div className="setting-item">
-              <label>Hole Card Width: {settings.holeCardWidth}px</label>
-              <input
-                type="range"
-                min="25"
-                max="60"
-                value={settings.holeCardWidth}
-                onChange={(e) => updateSetting('holeCardWidth', parseInt(e.target.value))}
-              />
-            </div>
-            <div className="setting-item">
-              <label>Hole Card Height: {settings.holeCardHeight}px</label>
-              <input
-                type="range"
-                min="35"
-                max="84"
-                value={settings.holeCardHeight}
-                onChange={(e) => updateSetting('holeCardHeight', parseInt(e.target.value))}
-              />
-            </div>
-            <div className="setting-item">
-              <label>Hole Card Gap: {settings.holeCardGap}px</label>
-              <input
-                type="range"
-                min="4"
-                max="20"
-                value={settings.holeCardGap}
-                onChange={(e) => updateSetting('holeCardGap', parseInt(e.target.value))}
-              />
-            </div>
-            <div className="setting-item">
-              <label>Player Card Min Width: {settings.playerCardMinWidth}px</label>
-              <input
-                type="range"
-                min="150"
-                max="300"
-                value={settings.playerCardMinWidth}
-                onChange={(e) => updateSetting('playerCardMinWidth', parseInt(e.target.value))}
-              />
-            </div>
-            <div className="setting-item">
-              <label>Player Card Min Height: {settings.playerCardMinHeight}px</label>
-              <input
-                type="range"
-                min="80"
-                max="150"
-                value={settings.playerCardMinHeight}
-                onChange={(e) => updateSetting('playerCardMinHeight', parseInt(e.target.value))}
-              />
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Preview Area */}
-      <div className="preview-area" style={{
-        position: 'relative',
-        width: '1200px',
-        height: '800px',
-        background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)',
-        margin: '20px auto',
-        overflow: 'hidden',
-        border: '2px solid #333'
-      }}>
+      {/* Interactive Layout Area */}
+      <div 
+        className={`layout-container ${showPokerTable ? 'with-poker-bg' : ''}`}
+        ref={containerRef}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
         {/* Grid Overlay */}
         {showGrid && (
-          <div className="grid-overlay" style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundImage: `
-              linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
-            `,
-            backgroundSize: '50px 50px',
-            pointerEvents: 'none',
-            zIndex: 1000
-          }} />
-        )}
-
-        {/* Header */}
-        <div 
-          className="debug-header"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: `${settings.headerHeight}px`,
-            padding: `${settings.headerPadding}px`,
-            background: 'rgba(255, 255, 255, 0.1)',
-            border: selectedElement === 'header' ? '2px solid #00ff88' : '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '20px',
-            margin: '10px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            cursor: 'pointer'
-          }}
-          onClick={() => setSelectedElement('header')}
-        >
-          <div style={{ color: 'white', fontSize: '1.5rem', fontWeight: 'bold' }}>
-            Стол #1
-          </div>
-          <div style={{ color: '#00ff88' }}>
-            🟢 Подключен
-          </div>
-        </div>
-
-        {/* Opponent Player */}
-        <div 
-          className="debug-opponent"
-          style={{
-            position: 'absolute',
-            top: `${settings.opponentZoneTop}px`,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: `${settings.playerCardMinWidth}px`,
-            height: `${settings.playerCardMinHeight}px`,
-            background: 'rgba(255, 255, 255, 0.1)',
-            border: selectedElement === 'opponent' ? '2px solid #00ff88' : '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '20px',
-            padding: `${settings.playerCardPadding}px`,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '10px',
-            cursor: 'pointer'
-          }}
-          onClick={() => setSelectedElement('opponent')}
-        >
-          <div style={{ color: 'white', fontSize: '1rem', fontWeight: 'bold' }}>
-            {mockTable.players[1].name}
-          </div>
-          <div style={{ color: '#00ff88' }}>
-            €{mockTable.players[1].stack}
-          </div>
-          <div style={{ 
-            display: 'flex', 
-            gap: `${settings.holeCardGap}px`,
-            marginTop: '10px'
-          }}>
-            {mockTable.players[1].holeCards.map((card, index) => (
-              <div
-                key={index}
-                style={{
-                  width: `${settings.holeCardWidth}px`,
-                  height: `${settings.holeCardHeight}px`,
-                  background: 'white',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.8rem',
-                  fontWeight: 'bold'
-                }}
-              >
-                {card.display}
-              </div>
+          <div className="grid-overlay">
+            {Array.from({ length: 21 }, (_, i) => (
+              <div key={`v-${i}`} className="grid-line vertical" style={{ left: `${i * 5}%` }} />
+            ))}
+            {Array.from({ length: 21 }, (_, i) => (
+              <div key={`h-${i}`} className="grid-line horizontal" style={{ top: `${i * 5}%` }} />
             ))}
           </div>
-        </div>
+        )}
 
-        {/* Table Center */}
-        <div 
-          className="debug-table-center"
-          style={{
-            position: 'absolute',
-            top: `${settings.tableCenterTop}px`,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: `${settings.tableCenterWidth}%`,
-            height: `${settings.tableCenterHeight}px`,
-            background: 'rgba(13, 79, 60, 0.3)',
-            border: selectedElement === 'table' ? '2px solid #00ff88' : '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: `${settings.feltBorderRadius}px`,
-            padding: `${settings.feltPadding}px`,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '20px',
-            cursor: 'pointer'
-          }}
-          onClick={() => setSelectedElement('table')}
-        >
-          {/* Pot Display */}
-          <div style={{
-            width: `${settings.potDisplayWidth}px`,
-            height: `${settings.potDisplayHeight}px`,
-            background: 'rgba(255, 255, 255, 0.1)',
-            borderRadius: '15px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white'
-          }}>
-            <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>БАНК</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#00ff88' }}>
-              €{mockTable.pot}
+        {/* Poker Table Background */}
+        {showPokerTable && (
+          <div className="poker-table-bg">
+            <div className="felt-texture"></div>
+          </div>
+        )}
+
+        {/* Draggable Elements */}
+        {elements.map((element) => (
+          <div
+            key={element.id}
+            className={`draggable-element ${element.isDragging ? 'dragging' : ''} ${selectedElement === element.id ? 'selected' : ''}`}
+            style={{
+              left: `${element.position.x}%`,
+              top: `${element.position.y}%`,
+              width: element.id === 'table-center' ? `${element.size.width}%` : `${element.size.width}px`,
+              height: `${element.size.height}px`,
+              backgroundColor: element.color + (element.id === 'table-center' ? '40' : '80'),
+              border: `2px solid ${element.color}`,
+              cursor: element.isDragging ? 'grabbing' : 'grab'
+            }}
+            onMouseDown={(e) => handleMouseDown(e, element.id)}
+            onClick={() => setSelectedElement(element.id)}
+          >
+            <div className="element-label">
+              {element.name}
             </div>
-          </div>
-
-          {/* Board Cards */}
-          <div style={{
-            display: 'flex',
-            gap: `${settings.boardCardsGap}px`,
-            background: 'rgba(255, 255, 255, 0.1)',
-            padding: '15px 20px',
-            borderRadius: '15px'
-          }}>
-            {mockTable.board.flop.map((card, index) => (
-              <div
-                key={index}
-                style={{
-                  width: `${settings.boardCardWidth}px`,
-                  height: `${settings.boardCardHeight}px`,
-                  background: 'white',
-                  borderRadius: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.9rem',
-                  fontWeight: 'bold'
-                }}
-              >
-                {card.display}
+            
+            {showMeasurements && (
+              <div className="element-measurements">
+                <span>X: {element.position.x.toFixed(1)}%</span>
+                <span>Y: {element.position.y.toFixed(1)}%</span>
               </div>
-            ))}
-          </div>
-        </div>
+            )}
 
-        {/* Current Player */}
-        <div 
-          className="debug-current-player"
-          style={{
-            position: 'absolute',
-            bottom: `${settings.currentPlayerZoneBottom}px`,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: `${settings.playerCardMinWidth}px`,
-            height: `${settings.playerCardMinHeight}px`,
-            background: 'rgba(255, 255, 255, 0.1)',
-            border: selectedElement === 'current' ? '2px solid #00ff88' : '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '20px',
-            padding: `${settings.playerCardPadding}px`,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '10px',
-            cursor: 'pointer'
-          }}
-          onClick={() => setSelectedElement('current')}
-        >
-          <div style={{ 
-            display: 'flex', 
-            gap: `${settings.holeCardGap}px`,
-            marginBottom: '10px'
-          }}>
-            {mockTable.players[0].holeCards.map((card, index) => (
-              <div
-                key={index}
-                style={{
-                  width: `${settings.holeCardWidth}px`,
-                  height: `${settings.holeCardHeight}px`,
-                  background: 'white',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.8rem',
-                  fontWeight: 'bold'
-                }}
-              >
-                {card.display}
+            {/* Special content for poker felt */}
+            {element.id === 'table-center' && showPokerTable && (
+              <div className="felt-content">
+                <div className="felt-border"></div>
+                <div className="felt-center-line"></div>
               </div>
-            ))}
+            )}
           </div>
-          <div style={{ color: 'white', fontSize: '1rem', fontWeight: 'bold' }}>
-            {mockTable.players[0].name} (YOU)
-          </div>
-          <div style={{ color: '#00ff88' }}>
-            €{mockTable.players[0].stack}
-          </div>
-        </div>
+        ))}
 
-        {/* Action Panel */}
-        <div 
-          className="debug-action-panel"
-          style={{
-            position: 'absolute',
-            bottom: `${settings.actionPanelBottom}px`,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: `${settings.actionPanelWidth}%`,
-            height: `${settings.actionPanelHeight}px`,
-            background: 'rgba(255, 255, 255, 0.1)',
-            border: selectedElement === 'actions' ? '2px solid #00ff88' : '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '20px',
-            padding: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '15px',
-            cursor: 'pointer'
-          }}
-          onClick={() => setSelectedElement('actions')}
-        >
-          <div style={{ color: 'white', fontSize: '1rem', fontWeight: 'bold', textAlign: 'center' }}>
-            Панель действий
-          </div>
-          <div style={{ 
-            display: 'flex', 
-            gap: '10px', 
-            justifyContent: 'center',
-            flexWrap: 'wrap'
-          }}>
-            <button style={{ 
-              padding: '10px 15px', 
-              borderRadius: '10px', 
-              border: 'none',
-              background: '#607d8b',
-              color: 'white',
-              fontSize: '0.9rem'
-            }}>
-              ЧЕК
-            </button>
-            <button style={{ 
-              padding: '10px 15px', 
-              borderRadius: '10px', 
-              border: 'none',
-              background: '#4caf50',
-              color: 'white',
-              fontSize: '0.9rem'
-            }}>
-              БЕТ €115
-            </button>
-          </div>
+        {/* Coordinate Display */}
+        <div className="coordinate-display">
+          <div>Layout Debugger v2.8 - Drag elements to reposition</div>
+          <div>Current elements: {elements.length}</div>
         </div>
-
-        {/* Measurements */}
-        {showMeasurements && (
-          <div style={{
-            position: 'absolute',
-            top: '10px',
-            right: '10px',
-            background: 'rgba(0, 0, 0, 0.8)',
-            color: 'white',
-            padding: '10px',
-            borderRadius: '8px',
-            fontSize: '12px',
-            fontFamily: 'monospace',
-            zIndex: 1001
-          }}>
-            <div>Selected: {selectedElement || 'none'}</div>
-            <div>Viewport: 1200×800</div>
-            <div>Action Panel Bottom: {settings.actionPanelBottom}px</div>
-            <div>Table Center Top: {settings.tableCenterTop}px</div>
-            <div>Gap: {settings.tableCenterTop + settings.tableCenterHeight + settings.actionPanelBottom}px</div>
-          </div>
-        )}
       </div>
     </div>
   );

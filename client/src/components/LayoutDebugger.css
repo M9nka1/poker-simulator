@@ -1,235 +1,393 @@
-/* Layout Debugger Styles */
-
+/* Layout Debugger v2.8 - Interactive */
 .layout-debugger {
-  min-height: 100vh;
-  background: #0a0a0a;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
   color: white;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
 }
 
+/* Control Panel */
 .control-panel {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 400px;
-  height: 100vh;
-  background: rgba(26, 26, 26, 0.95);
+  background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
-  border-right: 1px solid rgba(255, 255, 255, 0.2);
-  overflow-y: auto;
-  z-index: 2000;
-  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 15px 20px;
+  flex-shrink: 0;
 }
 
 .control-header {
-  padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
 }
 
 .control-header h2 {
-  margin: 0 0 15px 0;
-  font-size: 1.5rem;
+  margin: 0;
   color: #00ff88;
+  font-size: 1.5rem;
+  font-weight: bold;
 }
 
 .control-buttons {
   display: flex;
+  gap: 10px;
   flex-wrap: wrap;
-  gap: 8px;
 }
 
-.control-buttons button,
-.import-btn {
-  padding: 8px 12px;
+.control-buttons button {
+  padding: 8px 16px;
   border: none;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.1);
   color: white;
-  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.8rem;
   transition: all 0.3s ease;
+  font-size: 0.9rem;
+  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.control-buttons button:hover,
-.import-btn:hover {
-  background: #00ff88;
-  color: #0a0a0a;
+.control-buttons button:hover {
+  background: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
 }
 
-.import-btn {
-  display: inline-block;
-  text-decoration: none;
+.control-buttons button:active {
+  transform: translateY(0);
 }
 
-.settings-grid {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-}
-
-.setting-group {
-  background: rgba(255, 255, 255, 0.05);
+/* Element Info Panel */
+.element-info {
+  background: rgba(0, 255, 136, 0.1);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  border-radius: 10px;
   padding: 15px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 10px;
 }
 
-.setting-group h3 {
-  margin: 0 0 15px 0;
-  font-size: 1.1rem;
+.element-info h3 {
+  margin: 0 0 10px 0;
   color: #00ff88;
-  border-bottom: 1px solid rgba(0, 255, 136, 0.3);
-  padding-bottom: 8px;
+  font-size: 1.1rem;
 }
 
-.setting-item {
-  margin-bottom: 15px;
-}
-
-.setting-item label {
-  display: block;
-  margin-bottom: 5px;
+.position-info {
+  display: flex;
+  gap: 20px;
+  font-family: 'Courier New', monospace;
   font-size: 0.9rem;
-  color: #ccc;
-  font-weight: 500;
 }
 
-.setting-item input[type="range"] {
-  width: 100%;
-  height: 6px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.2);
-  outline: none;
-  -webkit-appearance: none;
-  cursor: pointer;
-}
-
-.setting-item input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #00ff88;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 255, 136, 0.4);
-  transition: all 0.3s ease;
-}
-
-.setting-item input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
-  box-shadow: 0 4px 12px rgba(0, 255, 136, 0.6);
-}
-
-.setting-item input[type="range"]::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #00ff88;
-  cursor: pointer;
-  border: none;
-  box-shadow: 0 2px 6px rgba(0, 255, 136, 0.4);
-}
-
-.preview-area {
-  margin-left: 420px;
-  padding: 20px;
-  min-height: 100vh;
-  background: #111;
-}
-
-/* Grid overlay animation */
-.grid-overlay {
-  animation: gridPulse 4s ease-in-out infinite;
-}
-
-@keyframes gridPulse {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.6; }
-}
-
-/* Debug element highlighting */
-.debug-header:hover,
-.debug-opponent:hover,
-.debug-table-center:hover,
-.debug-current-player:hover,
-.debug-action-panel:hover {
-  box-shadow: 0 0 20px rgba(0, 255, 136, 0.5) !important;
-  transform: scale(1.02) !important;
-  transition: all 0.3s ease !important;
-}
-
-/* Responsive adjustments */
-@media (max-width: 1400px) {
-  .control-panel {
-    width: 350px;
-  }
-  
-  .preview-area {
-    margin-left: 370px;
-  }
-}
-
-@media (max-width: 1200px) {
-  .control-panel {
-    position: relative;
-    width: 100%;
-    height: auto;
-    max-height: 50vh;
-  }
-  
-  .preview-area {
-    margin-left: 0;
-    padding: 10px;
-  }
-  
-  .preview-area > div {
-    transform: scale(0.8);
-    transform-origin: top center;
-  }
-}
-
-/* Scrollbar styling */
-.control-panel::-webkit-scrollbar {
-  width: 8px;
-}
-
-.control-panel::-webkit-scrollbar-track {
+.position-info span {
   background: rgba(255, 255, 255, 0.1);
-}
-
-.control-panel::-webkit-scrollbar-thumb {
-  background: #00ff88;
+  padding: 4px 8px;
   border-radius: 4px;
 }
 
-.control-panel::-webkit-scrollbar-thumb:hover {
-  background: #00cc6a;
-}
-
-/* Button animations */
-.control-buttons button {
+/* Layout Container */
+.layout-container {
+  flex: 1;
   position: relative;
+  margin: 20px;
+  border: 2px solid #333;
+  border-radius: 10px;
   overflow: hidden;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  user-select: none;
 }
 
-.control-buttons button::before {
+/* Poker Table Background */
+.layout-container.with-poker-bg {
+  background: linear-gradient(135deg, #0d4f3c 0%, #1a6b4f 50%, #0d4f3c 100%);
+}
+
+.poker-table-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.felt-texture {
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
+    linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.02) 50%, transparent 60%);
+  opacity: 0.3;
+}
+
+/* Grid Overlay */
+.grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.grid-line {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.grid-line.vertical {
+  width: 1px;
+  height: 100%;
+}
+
+.grid-line.horizontal {
+  height: 1px;
+  width: 100%;
+}
+
+/* Draggable Elements */
+.draggable-element {
+  position: absolute;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 100;
+  min-height: 40px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.draggable-element:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+}
+
+.draggable-element.dragging {
+  transform: scale(1.05) rotate(2deg);
+  z-index: 1000;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  cursor: grabbing !important;
+}
+
+.draggable-element.selected {
+  border-color: #00ff88 !important;
+  border-width: 3px !important;
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+}
+
+/* Element Labels */
+.element-label {
+  color: white;
+  font-weight: bold;
+  font-size: 0.9rem;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  margin-bottom: 5px;
+  pointer-events: none;
+}
+
+.element-measurements {
+  display: flex;
+  gap: 10px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 5px;
+  pointer-events: none;
+}
+
+.element-measurements span {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Special Poker Felt Content */
+.felt-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.felt-border {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+}
+
+.felt-center-line {
+  position: absolute;
+  top: 50%;
+  left: 20%;
+  right: 20%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-50%);
+}
+
+/* Coordinate Display */
+.coordinate-display {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  z-index: 1001;
+  pointer-events: none;
+}
+
+.coordinate-display div {
+  margin-bottom: 2px;
+}
+
+.coordinate-display div:last-child {
+  margin-bottom: 0;
+}
+
+/* Element Type Specific Styles */
+.draggable-element[style*="#0d4f3c"] {
+  /* Poker Felt - Table Center */
+  border-style: dashed !important;
+}
+
+.draggable-element[style*="#4CAF50"] {
+  /* Opponent Player - Green */
+  border-radius: 20px;
+}
+
+.draggable-element[style*="#FF9800"] {
+  /* Current Player - Orange */
+  border-radius: 20px;
+}
+
+.draggable-element[style*="#2196F3"] {
+  /* Board Container - Blue */
+  border-radius: 15px;
+}
+
+.draggable-element[style*="#9C27B0"] {
+  /* Betting Panel - Purple */
+  border-radius: 25px;
+}
+
+.draggable-element[style*="#F44336"] {
+  /* Header Controls - Red */
+  border-radius: 10px;
+}
+
+.draggable-element[style*="#607D8B"] {
+  /* New Hand Button - Blue Grey */
+  border-radius: 15px;
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .control-buttons {
+    flex-wrap: wrap;
+  }
+  
+  .control-buttons button {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .layout-debugger {
+    height: 100vh;
+  }
+  
+  .control-panel {
+    padding: 10px 15px;
+  }
+  
+  .control-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .control-header h2 {
+    font-size: 1.2rem;
+  }
+  
+  .layout-container {
+    margin: 10px;
+  }
+  
+  .element-label {
+    font-size: 0.8rem;
+  }
+  
+  .element-measurements {
+    font-size: 0.6rem;
+  }
+}
+
+/* Animation for smooth transitions */
+@keyframes elementSelect {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1.02); }
+}
+
+.draggable-element.selected {
+  animation: elementSelect 0.3s ease;
+}
+
+/* Hover effects for better UX */
+.draggable-element::before {
   content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.draggable-element:hover::before {
+  opacity: 1;
+}
+
+/* Loading state */
+.layout-container.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.layout-container.loading::after {
+  content: 'Loading...';
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 0;
-  height: 0;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
   transform: translate(-50%, -50%);
-  transition: width 0.6s, height 0.6s;
-}
-
-.control-buttons button:active::before {
-  width: 300px;
-  height: 300px;
+  color: white;
+  font-size: 1.2rem;
+  z-index: 2000;
 } 
