@@ -1,0 +1,141 @@
+[
+  {
+    "id": "btn-vs-bb-3bet",
+    "name": "BTN vs BB 3-bet",
+    "description": "Button открывает, Big Blind делает 3-bet",
+    "potSize": 37.5,
+    "blinds": { "small": 2.5, "big": 5 },
+    "actions": [
+      { "player": "BTN", "action": "raise", "amount": 12.5 },
+      { "player": "BB", "action": "3bet", "amount": 37.5 }
+    ]
+  },
+  {
+    "id": "utg-vs-btn-call",
+    "name": "UTG vs BTN Call",
+    "description": "UTG открывает, Button коллирует",
+    "potSize": 27.5,
+    "blinds": { "small": 2.5, "big": 5 },
+    "actions": [
+      { "player": "UTG", "action": "raise", "amount": 12.5 },
+      { "player": "BTN", "action": "call", "amount": 12.5 }
+    ]
+  },
+  {
+    "id": "sb-vs-bb-limp",
+    "name": "SB vs BB Limp",
+    "description": "Small Blind лимпает, Big Blind чекает",
+    "potSize": 10,
+    "blinds": { "small": 2.5, "big": 5 },
+    "actions": [
+      { "player": "SB", "action": "limp", "amount": 2.5 },
+      { "player": "BB", "action": "check", "amount": 0 }
+    ]
+  },
+  {
+    "id": "co-vs-btn-4bet",
+    "name": "CO vs BTN 4-bet",
+    "description": "CO открывает, BTN 3-bet, CO 4-bet",
+    "potSize": 100,
+    "blinds": { "small": 2.5, "big": 5 },
+    "actions": [
+      { "player": "CO", "action": "raise", "amount": 12.5 },
+      { "player": "BTN", "action": "3bet", "amount": 37.5 },
+      { "player": "CO", "action": "4bet", "amount": 87.5 }
+    ]
+  },
+  {
+    "id": "mp-vs-bb-squeeze",
+    "name": "MP vs BB Squeeze",
+    "description": "MP открывает, BTN коллирует, BB сквизит",
+    "potSize": 75,
+    "blinds": { "small": 2.5, "big": 5 },
+    "actions": [
+      { "player": "MP", "action": "raise", "amount": 12.5 },
+      { "player": "BTN", "action": "call", "amount": 12.5 },
+      { "player": "BB", "action": "squeeze", "amount": 62.5 }
+    ]
+  },
+  {
+    "id": "btn-vs-sb-iso",
+    "name": "BTN vs SB Isolation",
+    "description": "UTG лимпает, Button изолирует, SB коллирует",
+    "potSize": 32.5,
+    "blinds": { "small": 2.5, "big": 5 },
+    "actions": [
+      { "player": "UTG", "action": "limp", "amount": 5 },
+      { "player": "BTN", "action": "iso", "amount": 20 },
+      { "player": "SB", "action": "call", "amount": 17.5 }
+    ]
+  },
+  {
+    "id": "ep-vs-mp-3bet",
+    "name": "EP vs MP 3-bet",
+    "description": "Early Position открывает, Middle Position 3-bet",
+    "potSize": 42.5,
+    "blinds": { "small": 2.5, "big": 5 },
+    "actions": [
+      { "player": "EP", "action": "raise", "amount": 15 },
+      { "player": "MP", "action": "3bet", "amount": 42.5 }
+    ]
+  },
+  {
+    "id": "btn-steal-vs-bb-defend",
+    "name": "BTN Steal vs BB Defend",
+    "description": "Button стилит, Big Blind защищается",
+    "potSize": 22.5,
+    "blinds": { "small": 2.5, "big": 5 },
+    "actions": [
+      { "player": "BTN", "action": "steal", "amount": 10 },
+      { "player": "BB", "action": "defend", "amount": 10 }
+    ]
+  },
+  {
+    "id": "multiway-pot",
+    "name": "Multiway Pot (3 игрока)",
+    "description": "UTG открывает, MP и BTN коллируют",
+    "potSize": 40,
+    "blinds": { "small": 2.5, "big": 5 },
+    "actions": [
+      { "player": "UTG", "action": "raise", "amount": 12.5 },
+      { "player": "MP", "action": "call", "amount": 12.5 },
+      { "player": "BTN", "action": "call", "amount": 12.5 }
+    ]
+  },
+  {
+    "id": "sb-complete-vs-bb-check",
+    "name": "SB Complete vs BB Check",
+    "description": "Small Blind доплачивает, Big Blind чекает",
+    "potSize": 10,
+    "blinds": { "small": 2.5, "big": 5 },
+    "actions": [
+      { "player": "SB", "action": "complete", "amount": 2.5 },
+      { "player": "BB", "action": "check", "amount": 0 }
+    ]
+  },
+  {
+    "id": "btn-vs-bb-5bet",
+    "name": "BTN vs BB 5-bet",
+    "description": "BTN открывает, BB 3-bet, BTN 4-bet, BB 5-bet",
+    "potSize": 200,
+    "blinds": { "small": 2.5, "big": 5 },
+    "actions": [
+      { "player": "BTN", "action": "raise", "amount": 12.5 },
+      { "player": "BB", "action": "3bet", "amount": 37.5 },
+      { "player": "BTN", "action": "4bet", "amount": 87.5 },
+      { "player": "BB", "action": "5bet", "amount": 187.5 }
+    ]
+  },
+  {
+    "id": "cold-4bet-spot",
+    "name": "Cold 4-bet Spot",
+    "description": "UTG открывает, BTN 3-bet, SB cold 4-bet",
+    "potSize": 125,
+    "blinds": { "small": 2.5, "big": 5 },
+    "actions": [
+      { "player": "UTG", "action": "raise", "amount": 12.5 },
+      { "player": "BTN", "action": "3bet", "amount": 37.5 },
+      { "player": "SB", "action": "cold4bet", "amount": 112.5 }
+    ]
+  }
+] 
