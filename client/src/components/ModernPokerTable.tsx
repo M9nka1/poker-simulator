@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import RankCard from './RankCard';
 import PlayerJoinModal from './PlayerJoinModal';
 import { websocketService, PlayerInfo } from '../services/websocket';
@@ -261,7 +261,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
     setTimeout(() => setIsLoading(false), 1000);
   };
 
-  const calculateBetSize = (type: string): number => {
+  const calculateBetSize = useCallback((type: string): number => {
     const pot = table.pot || 100;
     const currentPlayerData = table.players.find(p => p.id === currentPlayerId);
     const maxStack = currentPlayerData?.stack || 1000;
@@ -277,7 +277,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
     }
     
     return Math.min(baseAmount, maxStack);
-  };
+  }, [table.pot, table.players, currentPlayerId, customSizings]);
 
   const getCallAmount = (): number => {
     if (!currentPlayerId) return 0;
@@ -351,7 +351,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
   // Функция для обработки колесика мыши
   const handleWheelBetSize = (event: React.WheelEvent, currentAmount: number) => {
     event.preventDefault();
-    const bigBlind = 20; // Размер большого блайнда
+    const bigBlind = 10; // Размер большого блайнда (исправлено с 20 на 10)
     const delta = event.deltaY > 0 ? -bigBlind : bigBlind;
     const newAmount = Math.max(0, currentAmount + delta);
     
@@ -364,6 +364,35 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
       setManualBetAmount(finalAmount.toString());
     }
   };
+
+  // Функция для обработки колесика мыши для всего окна
+  const handleGlobalWheel = useCallback((event: WheelEvent) => {
+    if (!isMyTurn) return; // Только в свой ход
+    
+    event.preventDefault();
+    const bigBlind = 10; // Размер большого блайнда
+    const delta = event.deltaY > 0 ? -bigBlind : bigBlind;
+    const currentAmount = selectedBetAmount || calculateBetSize('half');
+    const newAmount = Math.max(0, currentAmount + delta);
+    
+    const currentPlayerData = table.players.find(p => p.id === currentPlayerId);
+    const maxStack = currentPlayerData?.stack || 1000;
+    const finalAmount = Math.min(newAmount, maxStack);
+    
+    setSelectedBetAmount(finalAmount);
+    if (showManualInput) {
+      setManualBetAmount(finalAmount.toString());
+    }
+  }, [isMyTurn, selectedBetAmount, showManualInput, currentPlayerId, table.players, calculateBetSize]);
+
+  // Добавляем глобальный обработчик колесика мыши
+  useEffect(() => {
+    document.addEventListener('wheel', handleGlobalWheel, { passive: false });
+    
+    return () => {
+      document.removeEventListener('wheel', handleGlobalWheel);
+    };
+  }, [handleGlobalWheel]);
 
   // Функция для обработки ручного ввода
   const handleManualBetChange = (value: string) => {
@@ -442,6 +471,116 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                 ❌ Закрыть
               </button>
             </div>
+
+            {/* Bet Sizing Panel - прикреплена к Table Center */}
+            {(() => {
+              const myPlayer = table.players.find(p => p.id === currentPlayerId);
+              if (!myPlayer || table.handComplete) return null;
+              
+              return (
+                <div className="bet-sizing-panel-table-center">
+                  <div className="sizing-buttons">
+                    {availableBetSizes.map(({ type, amount, label }) => {
+                      const callAmount = getCallAmount();
+                      const isRaise = callAmount > 0;
+                      let finalAmount: number = amount;
+                      
+                      if (isRaise && finalAmount <= 0) {
+                        return null;
+                      }
+                      
+                      const isSelected = selectedBetAmount === finalAmount;
+                      
+                      return (
+                        <button
+                          key={type}
+                          className={`sizing-btn ${isSelected ? 'selected' : ''}`}
+                          onClick={() => setSelectedBetAmount(finalAmount)}
+                          onWheel={(e) => handleWheelBetSize(e, finalAmount)}
+                          disabled={!isMyTurn}
+                        >
+                          <span className="sizing-label">{label}</span>
+                          <span className="sizing-amount">€{finalAmount}</span>
+                        </button>
+                      );
+                    }).filter(Boolean)}
+                    
+                    {/* Кнопка ручного ввода */}
+                    <button
+                      className={`sizing-btn manual-input-btn ${showManualInput ? 'selected' : ''}`}
+                      onClick={() => {
+                        setShowManualInput(!showManualInput);
+                        if (!showManualInput) {
+                          setManualBetAmount(selectedBetAmount.toString());
+                        }
+                      }}
+                      disabled={!isMyTurn}
+                      title="Ручной ввод ставки"
+                    >
+                      <span className="sizing-label">Ручной</span>
+                      <span className="sizing-amount">€{selectedBetAmount}</span>
+                    </button>
+
+                    {/* Кнопка настроек после кнопки ручного ввода */}
+                    <button
+                      className={`settings-btn ${showSizingSettings ? 'active' : ''}`}
+                      onClick={() => setShowSizingSettings(!showSizingSettings)}
+                      title="Настройки размеров ставок"
+                    >
+                      ⚙️
+                    </button>
+                  </div>
+                  
+                  {/* Панель ручного ввода */}
+                  {showManualInput && (
+                    <div className="manual-input-panel neumorphism">
+                      <input
+                        type="number"
+                        value={manualBetAmount}
+                        onChange={(e) => handleManualBetChange(e.target.value)}
+                        onWheel={(e) => handleWheelBetSize(e, parseInt(manualBetAmount) || 0)}
+                        placeholder="Введите сумму"
+                        className="manual-input"
+                        min="0"
+                        max={myPlayerData?.stack || 1000}
+                        disabled={!isMyTurn}
+                      />
+                      <button
+                        className="apply-btn"
+                        onClick={applyManualBet}
+                        disabled={!isMyTurn}
+                      >
+                        ✓
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Настройки размеров ставок */}
+                  {showSizingSettings && (
+                    <div className="sizing-settings neumorphism">
+                      {Object.entries(customSizings).filter(([key]) => key !== 'allIn').map(([key, value]) => (
+                        <div key={key} className="sizing-control">
+                          <label>{key === 'quarter' ? '1/4' : key === 'half' ? '1/2' : key === 'threeQuarter' ? '3/4' : 'Пот'}</label>
+                          <input
+                            type="range"
+                            min="5"
+                            max="200"
+                            step="5"
+                            value={value}
+                            onChange={(e) => setCustomSizings(prev => ({
+                              ...prev,
+                              [key]: parseInt(e.target.value)
+                            }))}
+                            className="sizing-slider"
+                          />
+                          <span>{value}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Opponent Player - внутри TABLE CENTER */}
             {(() => {
@@ -629,109 +768,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
             <div className="action-panel-container">
               {!table.handComplete && (
                 <div className="inline-action-panel glass-morphism">
-                  {/* Bet Sizing */}
-                  <div className="bet-sizing-panel">
-                    <div className="sizing-header">
-                      <span className="sizing-title">Размеры ставок</span>
-                      <button
-                        className={`settings-btn ${showSizingSettings ? 'active' : ''}`}
-                        onClick={() => setShowSizingSettings(!showSizingSettings)}
-                      >
-                        ⚙️
-                      </button>
-                    </div>
-                    
-                    {showSizingSettings && (
-                      <div className="sizing-settings neumorphism">
-                        {Object.entries(customSizings).filter(([key]) => key !== 'allIn').map(([key, value]) => (
-                          <div key={key} className="sizing-control">
-                            <label>{key === 'quarter' ? '1/4' : key === 'half' ? '1/2' : key === 'threeQuarter' ? '3/4' : 'Пот'}</label>
-                            <input
-                              type="range"
-                              min="5"
-                              max="200"
-                              step="5"
-                              value={value}
-                              onChange={(e) => setCustomSizings(prev => ({
-                                ...prev,
-                                [key]: parseInt(e.target.value)
-                              }))}
-                              className="sizing-slider"
-                            />
-                            <span>{value}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    
-                    <div className="sizing-buttons">
-                      {availableBetSizes.map(({ type, amount, label }) => {
-                        const callAmount = getCallAmount();
-                        const isRaise = callAmount > 0;
-                        let finalAmount: number = amount;
-                        
-                        if (isRaise && finalAmount <= 0) {
-                          return null;
-                        }
-                        
-                        const isSelected = selectedBetAmount === finalAmount;
-                        
-                        return (
-                          <button
-                            key={type}
-                            className={`sizing-btn ${isSelected ? 'selected' : ''}`}
-                            onClick={() => setSelectedBetAmount(finalAmount)}
-                            onWheel={(e) => handleWheelBetSize(e, finalAmount)}
-                            disabled={!isMyTurn}
-                          >
-                            <span className="sizing-label">{label}</span>
-                            <span className="sizing-amount">€{finalAmount}</span>
-                          </button>
-                        );
-                      }).filter(Boolean)}
-                      
-                      {/* Кнопка ручного ввода */}
-                      <button
-                        className={`sizing-btn manual-input-btn ${showManualInput ? 'selected' : ''}`}
-                        onClick={() => {
-                          setShowManualInput(!showManualInput);
-                          if (!showManualInput) {
-                            setManualBetAmount(selectedBetAmount.toString());
-                          }
-                        }}
-                        disabled={!isMyTurn}
-                        title="Ручной ввод ставки"
-                      >
-                        <span className="sizing-label">Ручной</span>
-                        <span className="sizing-amount">€{selectedBetAmount}</span>
-                      </button>
-                    </div>
-                    
-                    {/* Панель ручного ввода */}
-                    {showManualInput && (
-                      <div className="manual-input-panel neumorphism">
-                        <input
-                          type="number"
-                          value={manualBetAmount}
-                          onChange={(e) => handleManualBetChange(e.target.value)}
-                          onWheel={(e) => handleWheelBetSize(e, parseInt(manualBetAmount) || 0)}
-                          placeholder="Введите сумму"
-                          className="manual-input"
-                          min="0"
-                          max={myPlayerData?.stack || 1000}
-                          disabled={!isMyTurn}
-                        />
-                        <button
-                          className="apply-btn"
-                          onClick={applyManualBet}
-                          disabled={!isMyTurn}
-                        >
-                          ✓
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
                   {/* Action Buttons */}
                   <div className="action-buttons">
                     {isMyTurn ? (
@@ -743,7 +779,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                               onClick={() => makeAction('check')}
                               disabled={isLoading}
                             >
-                              <span className="btn-icon">✋</span>
                               <span className="btn-text">ЧЕК</span>
                             </button>
                             
@@ -753,7 +788,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                               onWheel={(e) => handleWheelBetSize(e, selectedBetAmount || calculateBetSize('half'))}
                               disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
                             >
-                              <span className="btn-icon">💰</span>
                               <span className="btn-text">БЕТ</span>
                               <span className="btn-amount">€{selectedBetAmount || calculateBetSize('half')}</span>
                             </button>
@@ -767,7 +801,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                               onClick={() => makeAction('fold')}
                               disabled={isLoading}
                             >
-                              <span className="btn-icon">🗂️</span>
                               <span className="btn-text">ФОЛД</span>
                             </button>
                             
@@ -776,7 +809,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                               onClick={() => makeAction('call', getCallAmount())}
                               disabled={isLoading}
                             >
-                              <span className="btn-icon">{getCallAmount() === myPlayerData?.stack ? '🔥' : '📞'}</span>
                               <span className="btn-text">{getCallAmount() === myPlayerData?.stack ? 'ALL-IN' : 'КОЛЛ'}</span>
                               <span className="btn-amount">€{getCallAmount()}</span>
                             </button>
@@ -813,7 +845,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                               onWheel={(e) => handleWheelBetSize(e, selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half')))}
                               disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
                             >
-                              <span className="btn-icon">🚀</span>
                               <span className="btn-text">{getCallAmount() > 0 ? 'РЕЙЗ' : 'БЕТ'}</span>
                               <span className="btn-amount">€{selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half'))}</span>
                             </button>
