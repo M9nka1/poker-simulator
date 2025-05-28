@@ -92,7 +92,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
   useEffect(() => {
     // При смене улицы торгов сохраняем размер банка на начало новой улицы
     setStreetStartPot(table.pot);
-  }, [table.currentStreet]);
+  }, [table.currentStreet, table.pot]);
 
   // Monitor WebSocket connection status
   useEffect(() => {
@@ -524,15 +524,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
         {(() => {
           const myPlayer = table.players.find(p => p.id === currentPlayerId);
           if (!myPlayer) return null;
-          
-          const getPlayerBet = (player: Player) => {
-            if (!player) return 0;
-            return player.actions
-              .filter(a => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
-              .reduce((total, action) => total + (action.amount || 0), 0);
-          };
-          
-          const myBet = getPlayerBet(myPlayer);
           
           return (
             <div className={`player-zone current-player-with-actions ${myPlayer.id === table.currentPlayer ? 'active-turn' : ''}`}>

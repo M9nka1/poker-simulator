@@ -19,6 +19,7 @@ const PlayerJoinModal: React.FC<PlayerJoinModalProps> = ({
   const [playerName, setPlayerName] = useState<string>('');
   const [customName, setCustomName] = useState<string>('');
   const [useCustomName, setUseCustomName] = useState<boolean>(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [tableStyle, setTableStyle] = useState<string>('classic');
 
   const handleJoin = () => {
