@@ -83,10 +83,12 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
     pot: 100,
     allIn: 100
   });
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [colorTheme, setColorTheme] = useState<'dark' | 'light' | 'neon'>('dark');
   const [streetStartPot, setStreetStartPot] = useState<number>(100); // Размер банка на начало текущей улицы
   const prevStreetRef = useRef<string>('');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [handCount, setHandCount] = useState<number>(1);
+  const [handHistories, setHandHistories] = useState<string[]>([]);
 
   useEffect(() => {
     setTable(initialTable);
@@ -94,13 +96,15 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
   }, [initialTable]);
 
   // Отслеживаем изменение улицы торгов и сохраняем размер банка на начало
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // Проверяем если улица действительно изменилась
     if (prevStreetRef.current !== table.currentStreet) {
       setStreetStartPot(table.pot);
       prevStreetRef.current = table.currentStreet;
     }
-  }, [table.currentStreet, table.pot]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [table.currentStreet]);
 
   // Monitor WebSocket connection status
   useEffect(() => {
@@ -134,6 +138,8 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
       setSelectedBetAmount(0);
       if (data.actionResult?.handComplete && data.actionResult?.handHistory) {
         onHandComplete(data.actionResult.handHistory);
+        setHandHistories(prev => [...prev, data.actionResult.handHistory]);
+        setHandCount(prev => prev + 1);
       }
     });
 
@@ -311,6 +317,24 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
   const myPlayerData = table.players.find(p => p.id === currentPlayerId);
   const isMyTurn = currentPlayerId === table.currentPlayer && !table.handComplete;
 
+  const exportHandHistories = () => {
+    if (handHistories.length === 0) {
+      alert('Нет сыгранных рук для экспорта');
+      return;
+    }
+    
+    const content = handHistories.join('\n\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `poker-hands-${sessionId.substring(0, 8)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (showJoinModal) {
     return (
       <PlayerJoinModal
@@ -330,6 +354,40 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
         {/* Center Table Area with Players */}
         <div className="table-center">
           <div className="poker-felt glass-morphism">
+            {/* Header Controls в правом верхнем углу TABLE CENTER */}
+            <div className="table-header-controls">
+              <div className="theme-selector">
+                <button
+                  className={`theme-btn ${colorTheme === 'dark' ? 'active' : ''}`}
+                  onClick={() => setColorTheme('dark')}
+                  title="Темная тема"
+                >
+                  🌙
+                </button>
+                <button
+                  className={`theme-btn ${colorTheme === 'light' ? 'active' : ''}`}
+                  onClick={() => setColorTheme('light')}
+                  title="Светлая тема"
+                >
+                  ☀️
+                </button>
+                <button
+                  className={`theme-btn ${colorTheme === 'neon' ? 'active' : ''}`}
+                  onClick={() => setColorTheme('neon')}
+                  title="Неоновая тема"
+                >
+                  ⚡
+                </button>
+              </div>
+              <button
+                className="control-btn export-btn"
+                onClick={exportHandHistories}
+                title={`Экспорт Hand History (${handHistories.length} рук)`}
+              >
+                📁 Export
+              </button>
+            </div>
+
             {/* Opponent Player - внутри TABLE CENTER */}
             {(() => {
               const opponent = table.players.find(p => p.id !== currentPlayerId);
@@ -343,16 +401,11 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               };
               
               const opponentBet = getPlayerBet(opponent);
+              const isOpponentTurn = opponent.id === table.currentPlayer;
               
               return (
-                <div className={`opponent-in-center ${opponent.id === table.currentPlayer ? 'active-turn' : ''}`}>
-                  <div className="player-card glass-morphism">
-                    <div className="player-info">
-                      <h3 className="player-name">{opponent.name}</h3>
-                      <div className="player-stack">€{opponent.stack}</div>
-                      {opponent.connected && <div className="online-indicator"></div>}
-                    </div>
-
+                <div className={`opponent-in-center ${isOpponentTurn ? 'active-turn' : ''}`}>
+                  <div className={`player-card glass-morphism ${isOpponentTurn ? 'player-turn-animation' : ''}`}>
                     <div className="hole-cards">
                       {opponent.holeCards.map((card, index) => (
                         <RankCard 
@@ -364,12 +417,11 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                       ))}
                     </div>
                     
-                    {opponent.id === table.currentPlayer && (
-                      <div className="turn-timer">
-                        <div className="timer-ring"></div>
-                        <span>ХОД</span>
-                      </div>
-                    )}
+                    <div className="player-info">
+                      <h3 className="player-name">{opponent.name}</h3>
+                      <div className="player-stack">€{opponent.stack}</div>
+                      {opponent.connected && <div className="online-indicator"></div>}
+                    </div>
                   </div>
                   
                   {opponentBet > 0 && (
@@ -381,7 +433,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               );
             })()}
 
-            {/* Board Cards and Pot Display Container */}
+            {/* Board Cards and Pot Display Container - по центру */}
             <div className="board-and-pot-container">
               {/* Board Cards - фиксированная ширина для всех 5 карт */}
               <div className="board-container-fixed">
@@ -439,7 +491,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                 </div>
               </div>
               
-              {/* Pot Display - фиксированная позиция справа */}
+              {/* Pot Display - справа от карт */}
               <div className="pot-container-fixed">
                 <div className="pot-display neumorphism">
                   <div className="pot-label">БАНК</div>
@@ -461,17 +513,11 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               };
               
               const myBet = getPlayerBet(myPlayer);
+              const isMyPlayerTurn = myPlayer.id === table.currentPlayer;
               
               return (
-                <div className={`current-player-in-center ${myPlayer.id === table.currentPlayer ? 'active-turn' : ''}`}>
-                  <div className="player-card glass-morphism">
-                    <div className="player-info">
-                      <h3 className="player-name">{myPlayer.name}</h3>
-                      <div className="player-stack">€{myPlayer.stack}</div>
-                      {myPlayer.connected && <div className="online-indicator"></div>}
-                      <div className="you-indicator">YOU</div>
-                    </div>
-
+                <div className={`current-player-in-center ${isMyPlayerTurn ? 'active-turn' : ''}`}>
+                  <div className={`player-card glass-morphism ${isMyPlayerTurn ? 'player-turn-animation' : ''}`}>
                     <div className="hole-cards">
                       {myPlayer.holeCards.map((card, index) => (
                         <RankCard 
@@ -483,12 +529,12 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                       ))}
                     </div>
                     
-                    {myPlayer.id === table.currentPlayer && (
-                      <div className="turn-timer">
-                        <div className="timer-ring"></div>
-                        <span>ВАШ ХОД</span>
-                      </div>
-                    )}
+                    <div className="player-info">
+                      <h3 className="player-name">{myPlayer.name}</h3>
+                      <div className="player-stack">€{myPlayer.stack}</div>
+                      {myPlayer.connected && <div className="online-indicator"></div>}
+                      <div className="you-indicator">YOU</div>
+                    </div>
                   </div>
                   
                   {myBet > 0 && (

@@ -95,66 +95,15 @@
     -20px -20px 60px rgba(255, 255, 255, 0.1);
 }
 
-/* Header Styles */
-.modern-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 20px;
-  margin-bottom: 15px;
-  position: relative;
-  flex-shrink: 0;
-  height: 50px;
-}
-
-.header-left {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.table-title {
-  font-size: 2rem;
-  font-weight: 700;
-  margin: 0;
-  background: linear-gradient(135deg, var(--accent-color), #ffffff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.connection-indicator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.status-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  animation: pulse 2s infinite;
-}
-
-.status-dot.connected {
-  background: #4caf50;
-  box-shadow: 0 0 10px #4caf50;
-}
-
-.status-dot.disconnected {
-  background: #f44336;
-  box-shadow: 0 0 10px #f44336;
-}
-
-.status-text {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
-.header-controls {
+/* Table Header Controls в правом верхнем углу */
+.table-header-controls {
+  position: absolute;
+  top: 20px;
+  right: 20px;
   display: flex;
   align-items: center;
   gap: 15px;
+  z-index: 100;
 }
 
 .theme-selector {
@@ -164,6 +113,7 @@
   background: var(--glass-bg);
   border-radius: 15px;
   border: 1px solid var(--glass-border);
+  backdrop-filter: blur(20px);
 }
 
 .theme-btn {
@@ -186,20 +136,22 @@
   box-shadow: 0 0 15px var(--accent-color);
 }
 
-.control-btn {
+.control-btn,
+.export-btn {
   padding: 10px 15px;
   border: none;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-radius: 15px;
   color: var(--text-primary);
-  font-size: 1.2rem;
+  font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
 }
 
-.control-btn:hover {
+.control-btn:hover,
+.export-btn:hover {
   background: var(--accent-color);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px var(--shadow-color);
@@ -273,6 +225,74 @@
   }
 }
 
+/* Player Turn Animation - анимация вращения вокруг блока игрока */
+.player-turn-animation {
+  position: relative;
+  animation: playerTurnGlow 2s ease-in-out infinite alternate;
+}
+
+.player-turn-animation::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border: 3px solid var(--accent-color);
+  border-radius: 28px;
+  animation: rotateGlow 3s linear infinite;
+  z-index: -1;
+  background: transparent;
+  box-shadow: 
+    0 0 20px var(--accent-color),
+    inset 0 0 20px rgba(0, 255, 136, 0.1);
+}
+
+@keyframes playerTurnGlow {
+  from {
+    box-shadow: 0 0 20px var(--accent-color);
+  }
+  to {
+    box-shadow: 0 0 40px var(--accent-color), 0 0 60px var(--accent-color);
+  }
+}
+
+@keyframes rotateGlow {
+  0% {
+    transform: rotate(0deg);
+    border-top-color: var(--accent-color);
+    border-right-color: transparent;
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+  }
+  25% {
+    border-top-color: transparent;
+    border-right-color: var(--accent-color);
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+  }
+  50% {
+    transform: rotate(180deg);
+    border-top-color: transparent;
+    border-right-color: transparent;
+    border-bottom-color: var(--accent-color);
+    border-left-color: transparent;
+  }
+  75% {
+    border-top-color: transparent;
+    border-right-color: transparent;
+    border-bottom-color: transparent;
+    border-left-color: var(--accent-color);
+  }
+  100% {
+    transform: rotate(360deg);
+    border-top-color: var(--accent-color);
+    border-right-color: transparent;
+    border-bottom-color: transparent;
+    border-left-color: transparent;
+  }
+}
+
 /* Player Card Styles */
 .player-card {
   position: relative;
@@ -343,6 +363,7 @@
 .player-info {
   text-align: center;
   margin-bottom: 0;
+  position: relative;
 }
 
 .player-name {
@@ -381,105 +402,6 @@
 .player-card .hole-cards .rank-card-image:hover {
   transform: translateY(-3px);
 }
-
-.turn-timer {
-  position: absolute;
-  top: -15px;
-  right: -15px;
-  width: 80px;
-  height: 80px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: var(--glass-bg);
-  border: 2px solid var(--accent-color);
-  border-radius: 50%;
-  backdrop-filter: blur(10px);
-  animation: glow 2s ease-in-out infinite alternate;
-  z-index: 20;
-  font-size: 0.7rem;
-  font-weight: bold;
-  color: var(--text-primary);
-  text-align: center;
-  line-height: 1;
-}
-
-@keyframes glow {
-  from {
-    box-shadow: 0 0 20px var(--accent-color);
-  }
-  to {
-    box-shadow: 0 0 30px var(--accent-color), 0 0 40px var(--accent-color);
-  }
-}
-
-.timer-ring {
-  position: absolute;
-  top: -10px;
-  left: -10px;
-  width: 100px;
-  height: 100px;
-  border: 3px solid transparent;
-  border-top: 3px solid var(--accent-color);
-  border-right: 3px solid var(--accent-color);
-  border-radius: 50%;
-  animation: spin 2s linear infinite;
-  z-index: 11;
-}
-
-.timer-ring::before {
-  content: '';
-  position: absolute;
-  top: -3px;
-  left: -3px;
-  width: 100px;
-  height: 100px;
-  border: 2px solid transparent;
-  border-top: 2px solid rgba(0, 255, 136, 0.3);
-  border-radius: 50%;
-  animation: spin 3s linear infinite reverse;
-}
-
-@keyframes spin {
-  0% { 
-    transform: rotate(0deg);
-    opacity: 1;
-  }
-  25% { 
-    opacity: 0.8;
-  }
-  50% { 
-    opacity: 1;
-  }
-  75% { 
-    opacity: 0.8;
-  }
-  100% { 
-    transform: rotate(360deg);
-    opacity: 1;
-  }
-}
-
-@keyframes tableGlow {
-  0% { 
-    box-shadow: 
-      inset 0 0 100px rgba(0, 0, 0, 0.3),
-      0 0 50px rgba(0, 0, 0, 0.5);
-  }
-  50% { 
-    box-shadow: 
-      inset 0 0 120px rgba(0, 0, 0, 0.4),
-      0 0 60px rgba(0, 0, 0, 0.6);
-  }
-  100% { 
-    box-shadow: 
-      inset 0 0 100px rgba(0, 0, 0, 0.3),
-      0 0 50px rgba(0, 0, 0, 0.5);
-  }
-}
-
-/* Старые стили hole-cards убраны - теперь карты внутри player-card */
 
 .bet-indicator {
   position: absolute;
@@ -531,6 +453,24 @@
     inset 0 0 100px rgba(0, 0, 0, 0.3),
     0 0 50px rgba(0, 0, 0, 0.5);
   animation: tableGlow 4s ease-in-out infinite;
+}
+
+@keyframes tableGlow {
+  0% { 
+    box-shadow: 
+      inset 0 0 100px rgba(0, 0, 0, 0.3),
+      0 0 50px rgba(0, 0, 0, 0.5);
+  }
+  50% { 
+    box-shadow: 
+      inset 0 0 120px rgba(0, 0, 0, 0.4),
+      0 0 60px rgba(0, 0, 0, 0.6);
+  }
+  100% { 
+    box-shadow: 
+      inset 0 0 100px rgba(0, 0, 0, 0.3),
+      0 0 50px rgba(0, 0, 0, 0.5);
+  }
 }
 
 .pot-container {
@@ -621,8 +561,6 @@
   box-sizing: border-box;
   overflow: hidden;
 }
-
-/* Убираем псевдоэлемент, который может мешать отображению карт */
 
 .board-card-slot:hover {
   transform: translateY(-5px);
@@ -955,6 +893,11 @@
   animation: spin 1s linear infinite;
 }
 
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* New Hand Panel */
 .new-hand-panel {
   position: absolute;
@@ -1022,6 +965,13 @@
     padding: 10px;
   }
   
+  .table-header-controls {
+    top: 10px;
+    right: 10px;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
   .player-and-actions-container {
     flex-direction: column;
     align-items: center;
@@ -1032,19 +982,6 @@
     min-width: 280px;
     max-width: 100%;
     padding: 12px;
-  }
-
-  .modern-header {
-    flex-direction: column;
-    gap: 15px;
-    padding: 10px 15px;
-    min-height: 50px;
-  }
-
-  .header-controls {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
   }
 
   .game-container {
@@ -1102,22 +1039,12 @@
     padding: 5px;
   }
 
-  .table-title {
-    font-size: 1.3rem;
-  }
-
   .player-card {
     min-width: 180px;
     flex-direction: column;
     text-align: center;
     gap: 8px;
     padding: 10px 12px;
-  }
-
-  .avatar-circle {
-    width: 45px;
-    height: 45px;
-    font-size: 1.1rem;
   }
 
   .action-buttons {
