@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import RankCard from './RankCard';
 import PlayerJoinModal from './PlayerJoinModal';
 import { websocketService, PlayerInfo } from '../services/websocket';
@@ -67,10 +67,13 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedBetAmount, setSelectedBetAmount] = useState<number>(0);
   const useCardImages = true; // В современном стиле всегда используются настоящие изображения карт
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [cardSize, setCardSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [showJoinModal, setShowJoinModal] = useState<boolean>(false);
   const [currentPlayerId, setCurrentPlayerId] = useState<number | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [connectionStatus, setConnectionStatus] = useState<string>('Подключение...');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [showSizingSettings, setShowSizingSettings] = useState<boolean>(false);
   const [customSizings, setCustomSizings] = useState<{[key: string]: number}>({
@@ -80,8 +83,10 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
     pot: 100,
     allIn: 100
   });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [colorTheme, setColorTheme] = useState<'dark' | 'light' | 'neon'>('dark');
   const [streetStartPot, setStreetStartPot] = useState<number>(100); // Размер банка на начало текущей улицы
+  const prevStreetRef = useRef<string>('');
 
   useEffect(() => {
     setTable(initialTable);
@@ -90,10 +95,12 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
 
   // Отслеживаем изменение улицы торгов и сохраняем размер банка на начало
   useEffect(() => {
-    // При смене улицы торгов сохраняем размер банка на начало новой улицы
-    // Не обновляем если банк просто увеличивается в ходе торгов на той же улице
-    setStreetStartPot(table.pot);
-  }, [table.currentStreet]); // Убираем table.pot из зависимостей
+    // Проверяем если улица действительно изменилась
+    if (prevStreetRef.current !== table.currentStreet) {
+      setStreetStartPot(table.pot);
+      prevStreetRef.current = table.currentStreet;
+    }
+  }, [table.currentStreet, table.pot]);
 
   // Monitor WebSocket connection status
   useEffect(() => {
