@@ -509,9 +509,9 @@
 
 .poker-felt {
   width: 82%;
-  max-width: 900px;
+  max-width: 1800px;
   height: 60%;
-  min-height: 265px;
+  min-height: 530px;
   background: 
     linear-gradient(135deg, rgba(13, 79, 60, 0.3), rgba(0, 0, 0, 0.4)),
     url('../assets/table.png') center/contain no-repeat;
@@ -521,9 +521,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0px;
-  padding: 40px 50px;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 60px 100px;
   position: relative;
   border: 3px solid var(--glass-border);
   border-radius: 20px;
@@ -1216,4 +1216,33 @@
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+}
+
+/* Стили для игроков внутри TABLE CENTER */
+.opponent-in-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+}
+
+.current-player-in-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+}
+
+.opponent-in-center.active-turn,
+.current-player-in-center.active-turn {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+/* Контейнер для панели действий */
+.action-panel-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
 } 

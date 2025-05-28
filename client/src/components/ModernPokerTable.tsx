@@ -91,8 +91,9 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
   // Отслеживаем изменение улицы торгов и сохраняем размер банка на начало
   useEffect(() => {
     // При смене улицы торгов сохраняем размер банка на начало новой улицы
+    // Не обновляем если банк просто увеличивается в ходе торгов на той же улице
     setStreetStartPot(table.pot);
-  }, [table.currentStreet, table.pot]);
+  }, [table.currentStreet]); // Убираем table.pot из зависимостей
 
   // Monitor WebSocket connection status
   useEffect(() => {
@@ -317,107 +318,12 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
 
   return (
     <div className={`modern-poker-table theme-${colorTheme}`}>
-      {/* Header with Controls */}
-      <div className="modern-header glass-morphism">
-        <div className="header-left">
-          <h2 className="table-title">Стол #{table.id}</h2>
-          <div className="connection-indicator">
-            <div className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`}></div>
-            <span className="status-text">{connectionStatus}</span>
-          </div>
-        </div>
-        
-        <div className="header-controls">
-          {/* Theme Selector */}
-          <div className="theme-selector">
-            <button 
-              className={`theme-btn ${colorTheme === 'dark' ? 'active' : ''}`}
-              onClick={() => setColorTheme('dark')}
-              title="Темная тема"
-            >
-              🌙
-            </button>
-            <button 
-              className={`theme-btn ${colorTheme === 'light' ? 'active' : ''}`}
-              onClick={() => setColorTheme('light')}
-              title="Светлая тема"
-            >
-              ☀️
-            </button>
-            <button 
-              className={`theme-btn ${colorTheme === 'neon' ? 'active' : ''}`}
-              onClick={() => setColorTheme('neon')}
-              title="Неоновая тема"
-            >
-              ⚡
-            </button>
-          </div>
-
-          {/* Card Size Toggle */}
-          <button
-            className="control-btn"
-            onClick={() => {
-              const sizes: ('small' | 'medium' | 'large')[] = ['small', 'medium', 'large'];
-              const currentIndex = sizes.indexOf(cardSize);
-              const nextIndex = (currentIndex + 1) % sizes.length;
-              setCardSize(sizes[nextIndex]);
-            }}
-            title="Размер карт"
-          >
-            📏
-          </button>
-        </div>
-      </div>
-
       {/* Main Game Area */}
       <div className="game-container">
-        {/* Opponent Player */}
-        {(() => {
-          const opponent = table.players.find(p => p.id !== currentPlayerId);
-          if (!opponent) return null;
-          
-          return (
-            <div className={`player-zone opponent ${opponent.id === table.currentPlayer ? 'active-turn' : ''}`}>
-              <div className="player-card glass-morphism">
-                <div className="player-avatar">
-                  <div className="avatar-circle">
-                    {opponent.name.charAt(0).toUpperCase()}
-                  </div>
-                  {opponent.connected && <div className="online-indicator"></div>}
-                </div>
-                
-                <div className="player-info">
-                  <h3 className="player-name">{opponent.name}</h3>
-                  <div className="player-stack">€{opponent.stack}</div>
-                </div>
-
-                {/* Карты игрока внутри блока */}
-                <div className="hole-cards">
-                  {opponent.holeCards.map((card, index) => (
-                    <RankCard 
-                      key={`${opponent.id}-hole-${index}`} 
-                      card={card} 
-                      size={cardSize}
-                      useImages={useCardImages}
-                    />
-                  ))}
-                </div>
-                
-                {opponent.id === table.currentPlayer && (
-                  <div className="turn-timer">
-                    <div className="timer-ring"></div>
-                    <span>ХОД</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Center Table Area */}
+        {/* Center Table Area with Players */}
         <div className="table-center">
           <div className="poker-felt glass-morphism">
-            {/* Upper Bet Indicator */}
+            {/* Opponent Player - внутри TABLE CENTER */}
             {(() => {
               const opponent = table.players.find(p => p.id !== currentPlayerId);
               if (!opponent) return null;
@@ -431,13 +337,49 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               
               const opponentBet = getPlayerBet(opponent);
               
-              return opponentBet > 0 ? (
-                <div className="upper-bet-indicator glass-morphism">
-                  <span className="bet-amount">€{opponentBet}</span>
+              return (
+                <div className={`opponent-in-center ${opponent.id === table.currentPlayer ? 'active-turn' : ''}`}>
+                  <div className="player-card glass-morphism">
+                    <div className="player-avatar">
+                      <div className="avatar-circle">
+                        {opponent.name.charAt(0).toUpperCase()}
+                      </div>
+                      {opponent.connected && <div className="online-indicator"></div>}
+                    </div>
+                    
+                    <div className="player-info">
+                      <h3 className="player-name">{opponent.name}</h3>
+                      <div className="player-stack">€{opponent.stack}</div>
+                    </div>
+
+                    <div className="hole-cards">
+                      {opponent.holeCards.map((card, index) => (
+                        <RankCard 
+                          key={`${opponent.id}-hole-${index}`} 
+                          card={card} 
+                          size={cardSize}
+                          useImages={useCardImages}
+                        />
+                      ))}
+                    </div>
+                    
+                    {opponent.id === table.currentPlayer && (
+                      <div className="turn-timer">
+                        <div className="timer-ring"></div>
+                        <span>ХОД</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {opponentBet > 0 && (
+                    <div className="bet-indicator glass-morphism">
+                      <span className="bet-amount">€{opponentBet}</span>
+                    </div>
+                  )}
                 </div>
-              ) : null;
+              );
             })()}
-            
+
             {/* Board Cards and Pot Display Container */}
             <div className="board-and-pot-container">
               {/* Board Cards */}
@@ -487,7 +429,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               </div>
             </div>
             
-            {/* Lower Bet Indicator */}
+            {/* Current Player - внутри TABLE CENTER */}
             {(() => {
               const myPlayer = table.players.find(p => p.id === currentPlayerId);
               if (!myPlayer) return null;
@@ -501,11 +443,48 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               
               const myBet = getPlayerBet(myPlayer);
               
-              return myBet > 0 ? (
-                <div className="lower-bet-indicator glass-morphism">
-                  <span className="bet-amount">€{myBet}</span>
+              return (
+                <div className={`current-player-in-center ${myPlayer.id === table.currentPlayer ? 'active-turn' : ''}`}>
+                  <div className="player-card glass-morphism">
+                    <div className="player-avatar">
+                      <div className="avatar-circle">
+                        {myPlayer.name.charAt(0).toUpperCase()}
+                      </div>
+                      {myPlayer.connected && <div className="online-indicator"></div>}
+                      <div className="you-indicator">YOU</div>
+                    </div>
+                    
+                    <div className="player-info">
+                      <h3 className="player-name">{myPlayer.name}</h3>
+                      <div className="player-stack">€{myPlayer.stack}</div>
+                    </div>
+
+                    <div className="hole-cards">
+                      {myPlayer.holeCards.map((card, index) => (
+                        <RankCard 
+                          key={`${myPlayer.id}-hole-${index}`} 
+                          card={card} 
+                          size={cardSize}
+                          useImages={useCardImages}
+                        />
+                      ))}
+                    </div>
+                    
+                    {myPlayer.id === table.currentPlayer && (
+                      <div className="turn-timer">
+                        <div className="timer-ring"></div>
+                        <span>ВАШ ХОД</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {myBet > 0 && (
+                    <div className="bet-indicator glass-morphism">
+                      <span className="bet-amount">€{myBet}</span>
+                    </div>
+                  )}
                 </div>
-              ) : null;
+              );
             })()}
             
             {/* Hand Result */}
@@ -520,228 +499,190 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
           </div>
         </div>
 
-        {/* Current Player with Action Panel */}
+        {/* Action Panel - отдельно внизу */}
         {(() => {
           const myPlayer = table.players.find(p => p.id === currentPlayerId);
           if (!myPlayer) return null;
           
           return (
-            <div className={`player-zone current-player-with-actions ${myPlayer.id === table.currentPlayer ? 'active-turn' : ''}`}>
-              <div className="player-and-actions-container">
-                {/* Player Card */}
-                <div className="player-card glass-morphism">
-                  <div className="player-avatar">
-                    <div className="avatar-circle">
-                      {myPlayer.name.charAt(0).toUpperCase()}
-                    </div>
-                    {myPlayer.connected && <div className="online-indicator"></div>}
-                    <div className="you-indicator">YOU</div>
-                  </div>
-                  
-                  <div className="player-info">
-                    <h3 className="player-name">{myPlayer.name}</h3>
-                    <div className="player-stack">€{myPlayer.stack}</div>
-                  </div>
-
-                  {/* Карты игрока внутри блока */}
-                  <div className="hole-cards">
-                    {myPlayer.holeCards.map((card, index) => (
-                      <RankCard 
-                        key={`${myPlayer.id}-hole-${index}`} 
-                        card={card} 
-                        size={cardSize}
-                        useImages={useCardImages}
-                      />
-                    ))}
-                  </div>
-                  
-                  {myPlayer.id === table.currentPlayer && (
-                    <div className="turn-timer">
-                      <div className="timer-ring"></div>
-                      <span>ВАШ ХОД</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Action Panel - справа от блока игрока */}
-                {!table.handComplete && (
-                  <div className="inline-action-panel glass-morphism">
-                    {/* Bet Sizing */}
-                    <div className="bet-sizing-panel">
-                      <div className="sizing-header">
-                        <span className="sizing-title">Размеры ставок</span>
-                        <button
-                          className={`settings-btn ${showSizingSettings ? 'active' : ''}`}
-                          onClick={() => setShowSizingSettings(!showSizingSettings)}
-                        >
-                          ⚙️
-                        </button>
-                      </div>
-                      
-                      {showSizingSettings && (
-                        <div className="sizing-settings neumorphism">
-                          {Object.entries(customSizings).filter(([key]) => key !== 'allIn').map(([key, value]) => (
-                            <div key={key} className="sizing-control">
-                              <label>{key === 'quarter' ? '1/4' : key === 'half' ? '1/2' : key === 'threeQuarter' ? '3/4' : 'Пот'}</label>
-                              <input
-                                type="range"
-                                min="5"
-                                max="200"
-                                step="5"
-                                value={value}
-                                onChange={(e) => setCustomSizings(prev => ({
-                                  ...prev,
-                                  [key]: parseInt(e.target.value)
-                                }))}
-                                className="sizing-slider"
-                              />
-                              <span>{value}%</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
-                      <div className="sizing-buttons">
-                        {availableBetSizes.map(({ type, amount, label }) => {
-                          const callAmount = getCallAmount();
-                          const isRaise = callAmount > 0;
-                          let finalAmount: number = amount;
-                          
-                          if (isRaise && finalAmount <= 0) {
-                            return null;
-                          }
-                          
-                          const isSelected = selectedBetAmount === finalAmount;
-                          
-                          return (
-                            <button
-                              key={type}
-                              className={`sizing-btn ${isSelected ? 'selected' : ''}`}
-                              onClick={() => setSelectedBetAmount(finalAmount)}
-                              disabled={!isMyTurn}
-                            >
-                              <span className="sizing-label">{label}</span>
-                              <span className="sizing-amount">€{finalAmount}</span>
-                            </button>
-                          );
-                        }).filter(Boolean)}
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="action-buttons">
-                      {isMyTurn ? (
-                        <>
-                          {canCheck() && (
-                            <>
-                              <button
-                                className="action-btn check-btn neumorphism"
-                                onClick={() => makeAction('check')}
-                                disabled={isLoading}
-                              >
-                                <span className="btn-icon">✋</span>
-                                <span className="btn-text">ЧЕК</span>
-                              </button>
-                              
-                              <button
-                                className="action-btn bet-btn neumorphism"
-                                onClick={() => makeAction('bet', selectedBetAmount || calculateBetSize('half'))}
-                                disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
-                              >
-                                <span className="btn-icon">💰</span>
-                                <span className="btn-text">БЕТ</span>
-                                <span className="btn-amount">€{selectedBetAmount || calculateBetSize('half')}</span>
-                              </button>
-                            </>
-                          )}
-                          
-                          {canCall() && (
-                            <>
-                              <button
-                                className="action-btn fold-btn neumorphism"
-                                onClick={() => makeAction('fold')}
-                                disabled={isLoading}
-                              >
-                                <span className="btn-icon">🗂️</span>
-                                <span className="btn-text">ФОЛД</span>
-                              </button>
-                              
-                              <button
-                                className="action-btn call-btn neumorphism"
-                                onClick={() => makeAction('call', getCallAmount())}
-                                disabled={isLoading}
-                              >
-                                <span className="btn-icon">{getCallAmount() === myPlayerData?.stack ? '🔥' : '📞'}</span>
-                                <span className="btn-text">{getCallAmount() === myPlayerData?.stack ? 'ALL-IN' : 'КОЛЛ'}</span>
-                                <span className="btn-amount">€{getCallAmount()}</span>
-                              </button>
-                              
-                              <button
-                                className="action-btn raise-btn neumorphism"
-                                onClick={() => {
-                                  const callAmount = getCallAmount();
-                                  const hasOpponentBet = callAmount > 0;
-                                  
-                                  let actionType: string;
-                                  let actionAmount: number;
-                                  
-                                  if (!hasOpponentBet) {
-                                    actionType = 'bet';
-                                    actionAmount = selectedBetAmount || calculateBetSize('half');
-                                  } else {
-                                    const desiredAmount = selectedBetAmount || (callAmount + calculateBetSize('half'));
-                                    
-                                    if (desiredAmount === callAmount) {
-                                      actionType = 'call';
-                                      actionAmount = callAmount;
-                                    } else if (desiredAmount > callAmount) {
-                                      actionType = 'raise';
-                                      actionAmount = desiredAmount - callAmount;
-                                    } else {
-                                      actionType = 'call';
-                                      actionAmount = callAmount;
-                                    }
-                                  }
-                                  
-                                  makeAction(actionType, actionAmount);
-                                }}
-                                disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
-                              >
-                                <span className="btn-icon">🚀</span>
-                                <span className="btn-text">{getCallAmount() > 0 ? 'РЕЙЗ' : 'БЕТ'}</span>
-                                <span className="btn-amount">€{selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half'))}</span>
-                              </button>
-                            </>
-                          )}
-                        </>
-                      ) : (
-                        <div className="waiting-turn">
-                          <div className="waiting-spinner"></div>
-                          <span>
-                            {currentPlayerData ? 
-                              `Ход игрока: ${currentPlayerData.name}` : 
-                              'Ожидание хода...'
-                            }
-                          </span>
-                        </div>
-                      )}
+            <div className="action-panel-container">
+              {!table.handComplete && (
+                <div className="inline-action-panel glass-morphism">
+                  {/* Bet Sizing */}
+                  <div className="bet-sizing-panel">
+                    <div className="sizing-header">
+                      <span className="sizing-title">Размеры ставок</span>
+                      <button
+                        className={`settings-btn ${showSizingSettings ? 'active' : ''}`}
+                        onClick={() => setShowSizingSettings(!showSizingSettings)}
+                      >
+                        ⚙️
+                      </button>
                     </div>
                     
-                    {selectedBetAmount > 0 && (
-                      <div className="selected-amount">
-                        <span>Выбрано: €{selectedBetAmount}</span>
-                        <button
-                          className="clear-btn"
-                          onClick={() => setSelectedBetAmount(0)}
-                          disabled={!isMyTurn}
-                        >
-                          ✕
-                        </button>
+                    {showSizingSettings && (
+                      <div className="sizing-settings neumorphism">
+                        {Object.entries(customSizings).filter(([key]) => key !== 'allIn').map(([key, value]) => (
+                          <div key={key} className="sizing-control">
+                            <label>{key === 'quarter' ? '1/4' : key === 'half' ? '1/2' : key === 'threeQuarter' ? '3/4' : 'Пот'}</label>
+                            <input
+                              type="range"
+                              min="5"
+                              max="200"
+                              step="5"
+                              value={value}
+                              onChange={(e) => setCustomSizings(prev => ({
+                                ...prev,
+                                [key]: parseInt(e.target.value)
+                              }))}
+                              className="sizing-slider"
+                            />
+                            <span>{value}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="sizing-buttons">
+                      {availableBetSizes.map(({ type, amount, label }) => {
+                        const callAmount = getCallAmount();
+                        const isRaise = callAmount > 0;
+                        let finalAmount: number = amount;
+                        
+                        if (isRaise && finalAmount <= 0) {
+                          return null;
+                        }
+                        
+                        const isSelected = selectedBetAmount === finalAmount;
+                        
+                        return (
+                          <button
+                            key={type}
+                            className={`sizing-btn ${isSelected ? 'selected' : ''}`}
+                            onClick={() => setSelectedBetAmount(finalAmount)}
+                            disabled={!isMyTurn}
+                          >
+                            <span className="sizing-label">{label}</span>
+                            <span className="sizing-amount">€{finalAmount}</span>
+                          </button>
+                        );
+                      }).filter(Boolean)}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="action-buttons">
+                    {isMyTurn ? (
+                      <>
+                        {canCheck() && (
+                          <>
+                            <button
+                              className="action-btn check-btn neumorphism"
+                              onClick={() => makeAction('check')}
+                              disabled={isLoading}
+                            >
+                              <span className="btn-icon">✋</span>
+                              <span className="btn-text">ЧЕК</span>
+                            </button>
+                            
+                            <button
+                              className="action-btn bet-btn neumorphism"
+                              onClick={() => makeAction('bet', selectedBetAmount || calculateBetSize('half'))}
+                              disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
+                            >
+                              <span className="btn-icon">💰</span>
+                              <span className="btn-text">БЕТ</span>
+                              <span className="btn-amount">€{selectedBetAmount || calculateBetSize('half')}</span>
+                            </button>
+                          </>
+                        )}
+                        
+                        {canCall() && (
+                          <>
+                            <button
+                              className="action-btn fold-btn neumorphism"
+                              onClick={() => makeAction('fold')}
+                              disabled={isLoading}
+                            >
+                              <span className="btn-icon">🗂️</span>
+                              <span className="btn-text">ФОЛД</span>
+                            </button>
+                            
+                            <button
+                              className="action-btn call-btn neumorphism"
+                              onClick={() => makeAction('call', getCallAmount())}
+                              disabled={isLoading}
+                            >
+                              <span className="btn-icon">{getCallAmount() === myPlayerData?.stack ? '🔥' : '📞'}</span>
+                              <span className="btn-text">{getCallAmount() === myPlayerData?.stack ? 'ALL-IN' : 'КОЛЛ'}</span>
+                              <span className="btn-amount">€{getCallAmount()}</span>
+                            </button>
+                            
+                            <button
+                              className="action-btn raise-btn neumorphism"
+                              onClick={() => {
+                                const callAmount = getCallAmount();
+                                const hasOpponentBet = callAmount > 0;
+                                
+                                let actionType: string;
+                                let actionAmount: number;
+                                
+                                if (!hasOpponentBet) {
+                                  actionType = 'bet';
+                                  actionAmount = selectedBetAmount || calculateBetSize('half');
+                                } else {
+                                  const desiredAmount = selectedBetAmount || (callAmount + calculateBetSize('half'));
+                                  
+                                  if (desiredAmount === callAmount) {
+                                    actionType = 'call';
+                                    actionAmount = callAmount;
+                                  } else if (desiredAmount > callAmount) {
+                                    actionType = 'raise';
+                                    actionAmount = desiredAmount - callAmount;
+                                  } else {
+                                    actionType = 'call';
+                                    actionAmount = callAmount;
+                                  }
+                                }
+                                
+                                makeAction(actionType, actionAmount);
+                              }}
+                              disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
+                            >
+                              <span className="btn-icon">🚀</span>
+                              <span className="btn-text">{getCallAmount() > 0 ? 'РЕЙЗ' : 'БЕТ'}</span>
+                              <span className="btn-amount">€{selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half'))}</span>
+                            </button>
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <div className="waiting-turn">
+                        <div className="waiting-spinner"></div>
+                        <span>
+                          {currentPlayerData ? 
+                            `Ход игрока: ${currentPlayerData.name}` : 
+                            'Ожидание хода...'
+                          }
+                        </span>
                       </div>
                     )}
                   </div>
-                )}
-              </div>
+                  
+                  {selectedBetAmount > 0 && (
+                    <div className="selected-amount">
+                      <span>Выбрано: €{selectedBetAmount}</span>
+                      <button
+                        className="clear-btn"
+                        onClick={() => setSelectedBetAmount(0)}
+                        disabled={!isMyTurn}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           );
         })()}
