@@ -102,8 +102,8 @@
   left: 20px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 15px;
+  align-items: center;
+  gap: 10px;
   z-index: 100;
   background: var(--glass-bg);
   backdrop-filter: blur(20px);
@@ -111,30 +111,36 @@
   border-radius: 20px;
   padding: 15px;
   box-shadow: 0 8px 32px var(--shadow-color);
-  min-width: 120px;
+  min-width: auto;
+  width: 80px;
 }
 
 .table-header-controls-left .theme-selector {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
   padding: 8px;
   background: var(--glass-bg);
   border-radius: 15px;
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(20px);
   width: 100%;
+  align-items: center;
 }
 
 .table-header-controls-left .theme-btn {
-  padding: 10px 12px;
+  padding: 8px;
   border: none;
   background: transparent;
   border-radius: 10px;
   font-size: 1.2rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  width: 100%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
@@ -150,19 +156,22 @@
 
 .table-header-controls-left .control-btn,
 .table-header-controls-left .export-btn {
-  padding: 12px 15px;
+  padding: 12px;
   border: none;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-radius: 15px;
   color: var(--text-primary);
-  font-size: 0.9rem;
+  font-size: 1.2rem;
   cursor: pointer;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
-  width: 100%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  white-space: nowrap;
 }
 
 .table-header-controls-left .control-btn:hover,
@@ -1107,19 +1116,23 @@
   .table-header-controls-left {
     top: 10px;
     left: 10px;
-    gap: 10px;
+    gap: 8px;
     padding: 10px;
-    min-width: 100px;
+    width: 70px;
   }
   
   .table-header-controls-left .control-btn,
   .table-header-controls-left .export-btn {
-    padding: 8px 10px;
-    font-size: 0.8rem;
+    width: 45px;
+    height: 45px;
+    padding: 10px;
+    font-size: 1.1rem;
   }
   
   .table-header-controls-left .theme-btn {
-    padding: 8px 10px;
+    width: 35px;
+    height: 35px;
+    padding: 6px;
     font-size: 1rem;
   }
   

@@ -91,6 +91,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
   const [manualBetAmount, setManualBetAmount] = useState<string>('');
   const [showManualInput, setShowManualInput] = useState<boolean>(false);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
+  const [modalShown, setModalShown] = useState<boolean>(false);
   
   // Drag and Drop Edit Mode States
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
@@ -184,9 +185,10 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
       setTable(data.table);
       setCurrentPlayerId(data.playerId);
       setConnectionStatus('Подключен');
-      setShowJoinModal(false); // Закрываем модальное окно при успешном подключении
-      setIsConnecting(false); // Немедленно сбрасываем флаг подключения при успешном подключении
-      console.log('✅ Подключение успешно завершено, флаг isConnecting сброшен');
+      setShowJoinModal(false);
+      setModalShown(true); // Помечаем что подключение успешно
+      setIsConnecting(false);
+      console.log('✅ Подключение успешно завершено');
     });
 
     websocketService.onMessage('table_update', (data) => {
@@ -215,7 +217,9 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
 
     websocketService.onMessage('error', (data) => {
       alert(`Ошибка: ${data.message}`);
-      setShowJoinModal(true); // Показываем модальное окно при ошибке
+      setShowJoinModal(true);
+      setModalShown(false); // Сбрасываем флаг чтобы можно было попробовать снова
+      setIsConnecting(false);
     });
 
     // Проверяем подключение WebSocket и существующую информацию об игроке
@@ -223,33 +227,49 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
       const playerInfo = websocketService.getPlayerInfo();
       const isConnected = websocketService.isWebSocketConnected();
       
+      // Если игрок уже подключен к этой сессии
       if (playerInfo && playerInfo.sessionId === sessionId && playerInfo.tableId === table.id && isConnected) {
         setCurrentPlayerId(playerInfo.playerId);
         setConnectionStatus('Подключен');
         setShowJoinModal(false);
+        setModalShown(true); // Помечаем что модальное окно уже обработано
+        return;
+      }
+      
+      // Если модальное окно уже было показано, не показываем его снова
+      if (modalShown) {
+        return;
+      }
+      
+      // Показываем модальное окно только если WebSocket подключен
+      if (isConnected) {
+        setShowJoinModal(true);
+        setModalShown(true);
       } else {
-        // Ждем подключения WebSocket перед показом модального окна
-        if (isConnected) {
-          setShowJoinModal(true);
-        } else {
-          // Проверяем каждые 500мс до подключения
-          const checkInterval = setInterval(() => {
-            if (websocketService.isWebSocketConnected()) {
-              setShowJoinModal(true);
-              clearInterval(checkInterval);
-            }
-          }, 500);
-          
-          // Таймаут на случай если WebSocket не подключится
-          setTimeout(() => {
-            clearInterval(checkInterval);
+        // Ждем подключения WebSocket с таймаутом
+        let attempts = 0;
+        const maxAttempts = 10; // 5 секунд максимум
+        
+        const checkInterval = setInterval(() => {
+          attempts++;
+          if (websocketService.isWebSocketConnected()) {
             setShowJoinModal(true);
-          }, 5000);
-        }
+            setModalShown(true);
+            clearInterval(checkInterval);
+          } else if (attempts >= maxAttempts) {
+            // Если WebSocket не подключился, все равно показываем модальное окно
+            setShowJoinModal(true);
+            setModalShown(true);
+            clearInterval(checkInterval);
+          }
+        }, 500);
       }
     };
 
-    checkConnectionAndShowModal();
+    // Запускаем проверку только один раз при монтировании компонента
+    if (!modalShown) {
+      checkConnectionAndShowModal();
+    }
 
     return () => {
       websocketService.offMessage('game_state');
@@ -694,9 +714,9 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
             fontSize: '14px',
             minWidth: '120px'
           }}
-          title={isEditMode ? "Выйти из режима редактирования (Esc)" : "Режим редактирования (Ctrl+E)"}
+          title={isEditMode ? "Выйти из режима редактирования (Esc)" : "Режим редактирования позиций (Ctrl+E)"}
         >
-          {isEditMode ? '🔧 Выйти' : '🔧 Редактор'}
+          🔧
         </button>
         
         {isEditMode && (
@@ -808,41 +828,41 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                 onClick={exportHandHistories}
                 title={`Экспорт Hand History (${handHistories.length} рук)`}
               >
-                📁 Export
+                📁
               </button>
               <button
                 className={`control-btn ${isEditMode ? 'active' : ''}`}
                 onClick={toggleEditMode}
-                title={isEditMode ? "Выйти из режима редактирования" : "Режим редактирования позиций"}
+                title={isEditMode ? "Выйти из режима редактирования (Esc)" : "Режим редактирования позиций (Ctrl+E)"}
                 style={{
                   backgroundColor: isEditMode ? 'rgba(255, 215, 0, 0.3)' : 'transparent',
                   border: isEditMode ? '2px solid gold' : '1px solid rgba(255, 255, 255, 0.2)'
                 }}
               >
-                {isEditMode ? '🔧 Выйти' : '🔧 Редактор'}
+                🔧
               </button>
               {isEditMode && (
                 <>
                   <button
                     className="control-btn"
                     onClick={resetPositions}
-                    title="Сбросить позиции к значениям по умолчанию"
+                    title="Сбросить позиции к значениям по умолчанию (Ctrl+R)"
                   >
-                    🔄 Сброс
+                    🔄
                   </button>
                   <button
                     className="control-btn"
                     onClick={exportPositions}
                     title="Экспорт позиций в JSON файл"
                   >
-                    💾 Экспорт
+                    💾
                   </button>
                   <button
                     className="control-btn"
                     onClick={importPositions}
                     title="Импорт позиций из JSON файла"
                   >
-                    📁 Импорт
+                    📁
                   </button>
                 </>
               )}
@@ -851,7 +871,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                 onClick={() => window.close()}
                 title="Закрыть окно стола"
               >
-                ❌ Закрыть
+                ❌
               </button>
             </div>
 
