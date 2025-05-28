@@ -91,6 +91,20 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
   const [manualBetAmount, setManualBetAmount] = useState<string>('');
   const [showManualInput, setShowManualInput] = useState<boolean>(false);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
+  
+  // Drag and Drop Edit Mode States
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const [draggedElement, setDraggedElement] = useState<string | null>(null);
+  const [elementPositions, setElementPositions] = useState<{[key: string]: {x: number, y: number}}>({
+    'opponent-player': { x: 41.4, y: 12 },
+    'current-player': { x: 41.8, y: 66.5 },
+    'board-container': { x: 34.8, y: 42.4 },
+    'betting-panel': { x: 19.8, y: 79.1 },
+    'header-controls': { x: 38.8, y: 89.8 },
+    'new-hand-button': { x: 79.1, y: 90.9 }
+  });
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const tableRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setTable(initialTable);
@@ -426,6 +440,98 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
     setShowManualInput(false);
   };
 
+  // Drag and Drop Functions
+  const handleMouseDown = (e: React.MouseEvent, elementId: string) => {
+    if (!isEditMode) return;
+    
+    e.preventDefault();
+    setDraggedElement(elementId);
+    setIsDragging(true);
+    
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!tableRef.current) return;
+      
+      const rect = tableRef.current.getBoundingClientRect();
+      const x = ((moveEvent.clientX - rect.left) / rect.width) * 100;
+      const y = ((moveEvent.clientY - rect.top) / rect.height) * 100;
+      
+      // Ограничиваем позицию в пределах стола
+      const clampedX = Math.max(0, Math.min(100, x));
+      const clampedY = Math.max(0, Math.min(100, y));
+      
+      setElementPositions(prev => ({
+        ...prev,
+        [elementId]: { x: clampedX, y: clampedY }
+      }));
+    };
+    
+    const handleMouseUp = () => {
+      setDraggedElement(null);
+      setIsDragging(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const toggleEditMode = () => {
+    setIsEditMode(!isEditMode);
+    if (isEditMode) {
+      // При выходе из режима редактирования сохраняем позиции
+      console.log('Сохраненные позиции элементов:', elementPositions);
+    }
+  };
+
+  const resetPositions = () => {
+    setElementPositions({
+      'opponent-player': { x: 41.4, y: 12 },
+      'current-player': { x: 41.8, y: 66.5 },
+      'board-container': { x: 34.8, y: 42.4 },
+      'betting-panel': { x: 19.8, y: 79.1 },
+      'header-controls': { x: 38.8, y: 89.8 },
+      'new-hand-button': { x: 79.1, y: 90.9 }
+    });
+  };
+
+  const exportPositions = () => {
+    const positionsData = {
+      timestamp: new Date().toISOString(),
+      positions: elementPositions
+    };
+    
+    const dataStr = JSON.stringify(positionsData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'poker-table-positions.json';
+    link.click();
+    
+    URL.revokeObjectURL(url);
+  };
+
+  const getElementStyle = (elementId: string) => {
+    const position = elementPositions[elementId];
+    if (!position) return {};
+    
+    const baseStyle = {
+      position: 'absolute' as const,
+      left: `${position.x}%`,
+      top: `${position.y}%`,
+      cursor: isEditMode ? 'move' : 'default',
+      zIndex: draggedElement === elementId ? 1000 : 'auto',
+      transition: isDragging && draggedElement === elementId ? 'none' : 'all 0.2s ease',
+      border: isEditMode ? '2px dashed rgba(255, 255, 255, 0.5)' : 'none',
+      borderRadius: isEditMode ? '8px' : '0',
+      backgroundColor: isEditMode ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
+    };
+    
+    return baseStyle;
+  };
+
   if (showJoinModal) {
     return (
       <PlayerJoinModal
@@ -440,13 +546,37 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
 
   return (
     <div className={`modern-poker-table theme-${colorTheme}`}>
+      {/* Edit Mode Indicator */}
+      {isEditMode && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(255, 215, 0, 0.9)',
+          color: 'black',
+          padding: '10px 20px',
+          borderRadius: '25px',
+          fontWeight: 'bold',
+          zIndex: 10000,
+          boxShadow: '0 4px 20px rgba(255, 215, 0, 0.5)',
+          border: '2px solid gold'
+        }}>
+          🔧 РЕЖИМ РЕДАКТИРОВАНИЯ АКТИВЕН - Перетаскивайте элементы мышью
+        </div>
+      )}
+      
       {/* Main Game Area */}
       <div className="game-container">
         {/* Center Table Area with Players */}
         <div className="table-center">
-          <div className="poker-felt glass-morphism">
+          <div className="poker-felt glass-morphism" ref={tableRef}>
             {/* Header Controls в правом верхнем углу TABLE CENTER */}
-            <div className="table-header-controls">
+            <div 
+              className="table-header-controls"
+              style={getElementStyle('header-controls')}
+              onMouseDown={(e) => handleMouseDown(e, 'header-controls')}
+            >
               <div className="theme-selector">
                 <button
                   className={`theme-btn ${colorTheme === 'dark' ? 'active' : ''}`}
@@ -478,6 +608,35 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                 📁 Export
               </button>
               <button
+                className={`control-btn ${isEditMode ? 'active' : ''}`}
+                onClick={toggleEditMode}
+                title={isEditMode ? "Выйти из режима редактирования" : "Режим редактирования позиций"}
+                style={{
+                  backgroundColor: isEditMode ? 'rgba(255, 215, 0, 0.3)' : 'transparent',
+                  border: isEditMode ? '2px solid gold' : '1px solid rgba(255, 255, 255, 0.2)'
+                }}
+              >
+                {isEditMode ? '🔧 Выйти' : '🔧 Редактор'}
+              </button>
+              {isEditMode && (
+                <>
+                  <button
+                    className="control-btn"
+                    onClick={resetPositions}
+                    title="Сбросить позиции к значениям по умолчанию"
+                  >
+                    🔄 Сброс
+                  </button>
+                  <button
+                    className="control-btn"
+                    onClick={exportPositions}
+                    title="Экспорт позиций в JSON файл"
+                  >
+                    💾 Сохранить
+                  </button>
+                </>
+              )}
+              <button
                 className="control-btn"
                 onClick={() => window.close()}
                 title="Закрыть окно стола"
@@ -502,7 +661,11 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               const isOpponentTurn = opponent.id === table.currentPlayer;
               
               return (
-                <div className={`opponent-in-center ${isOpponentTurn ? 'active-turn' : ''}`}>
+                <div 
+                  className={`opponent-in-center ${isOpponentTurn ? 'active-turn' : ''}`}
+                  style={getElementStyle('opponent-player')}
+                  onMouseDown={(e) => handleMouseDown(e, 'opponent-player')}
+                >
                   <div className={`player-card glass-morphism ${isOpponentTurn ? 'player-turn-animation' : ''}`}>
                     <div className="hole-cards">
                       {opponent.holeCards.map((card, index) => (
@@ -536,7 +699,11 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
             })()}
 
             {/* Board Cards and Pot Display Container - по центру */}
-            <div className="board-and-pot-container">
+            <div 
+              className="board-and-pot-container"
+              style={getElementStyle('board-container')}
+              onMouseDown={(e) => handleMouseDown(e, 'board-container')}
+            >
               {/* Board Cards - фиксированная ширина для всех 5 карт */}
               <div className="board-container-fixed">
                 <div className="board-cards">
@@ -618,7 +785,11 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               const isMyPlayerTurn = myPlayer.id === table.currentPlayer;
               
               return (
-                <div className={`current-player-in-center ${isMyPlayerTurn ? 'active-turn' : ''}`}>
+                <div 
+                  className={`current-player-in-center ${isMyPlayerTurn ? 'active-turn' : ''}`}
+                  style={getElementStyle('current-player')}
+                  onMouseDown={(e) => handleMouseDown(e, 'current-player')}
+                >
                   <div className={`player-card glass-morphism ${isMyPlayerTurn ? 'player-turn-animation' : ''}`}>
                     <div className="hole-cards">
                       {myPlayer.holeCards.map((card, index) => (
@@ -651,13 +822,18 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               );
             })()}
 
-            {/* Combined Bet Sizing and Action Panel - внутри TABLE CENTER под игроком */}
+            {/* Betting Action Panel внутри Table Center */}
             {(() => {
-              const myPlayer = table.players.find(p => p.id === currentPlayerId);
-              if (!myPlayer) return null;
+              const myPlayerData = table.players.find(p => p.id === currentPlayerId);
+              if (!myPlayerData) return null;
+              const isMyTurn = myPlayerData?.id === table.currentPlayer;
               
               return (
-                <div className="betting-action-panel-in-table">
+                <div 
+                  className="betting-action-panel-in-table"
+                  style={getElementStyle('betting-panel')}
+                  onMouseDown={(e) => handleMouseDown(e, 'betting-panel')}
+                >
                   {!table.handComplete && (
                     <div className="table-betting-panel glass-morphism">
                       {/* Bet Sizing Section */}
@@ -880,7 +1056,11 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
 
         {/* New Hand Button */}
         {table.handComplete && (
-          <div className="new-hand-panel">
+          <div 
+            className="new-hand-panel"
+            style={getElementStyle('new-hand-button')}
+            onMouseDown={(e) => handleMouseDown(e, 'new-hand-button')}
+          >
             <button
               className="new-hand-btn neumorphism"
               onClick={dealNewHand}
