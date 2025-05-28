@@ -110,7 +110,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
       'current-player': { x: 41.8, y: 66.5 },
       'board-container': { x: 34.8, y: 42.4 },
       'betting-panel': { x: 19.8, y: 79.1 },
-      'header-controls': { x: 38.8, y: 89.8 },
+      'header-controls': { x: 2.5, y: 5 },
       'new-hand-button': { x: 79.1, y: 90.9 }
     };
   });
@@ -535,7 +535,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
       'current-player': { x: 41.8, y: 66.5 },
       'board-container': { x: 34.8, y: 42.4 },
       'betting-panel': { x: 19.8, y: 79.1 },
-      'header-controls': { x: 38.8, y: 89.8 },
+      'header-controls': { x: 2.5, y: 5 },
       'new-hand-button': { x: 79.1, y: 90.9 }
     };
     
@@ -774,9 +774,9 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
         {/* Center Table Area with Players */}
         <div className="table-center">
           <div className="poker-felt glass-morphism" ref={tableRef}>
-            {/* Header Controls в правом верхнем углу TABLE CENTER */}
+            {/* Header Controls в левой части TABLE CENTER - вертикально */}
             <div 
-              className="table-header-controls"
+              className="table-header-controls-left"
               style={getElementStyle('header-controls')}
               onMouseDown={(e) => handleMouseDown(e, 'header-controls')}
             >
