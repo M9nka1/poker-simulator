@@ -95,21 +95,61 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
   // Drag and Drop Edit Mode States
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [draggedElement, setDraggedElement] = useState<string | null>(null);
-  const [elementPositions, setElementPositions] = useState<{[key: string]: {x: number, y: number}}>({
-    'opponent-player': { x: 41.4, y: 12 },
-    'current-player': { x: 41.8, y: 66.5 },
-    'board-container': { x: 34.8, y: 42.4 },
-    'betting-panel': { x: 19.8, y: 79.1 },
-    'header-controls': { x: 38.8, y: 89.8 },
-    'new-hand-button': { x: 79.1, y: 90.9 }
+  const [elementPositions, setElementPositions] = useState<{[key: string]: {x: number, y: number}}>(() => {
+    // Load positions from localStorage or use defaults
+    const savedPositions = localStorage.getItem('poker-table-positions');
+    if (savedPositions) {
+      try {
+        return JSON.parse(savedPositions);
+      } catch (e) {
+        console.warn('Failed to parse saved positions, using defaults');
+      }
+    }
+    return {
+      'opponent-player': { x: 41.4, y: 12 },
+      'current-player': { x: 41.8, y: 66.5 },
+      'board-container': { x: 34.8, y: 42.4 },
+      'betting-panel': { x: 19.8, y: 79.1 },
+      'header-controls': { x: 38.8, y: 89.8 },
+      'new-hand-button': { x: 79.1, y: 90.9 }
+    };
   });
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [showEditHelp, setShowEditHelp] = useState<boolean>(false);
   const tableRef = useRef<HTMLDivElement>(null);
+
+  // Save positions to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('poker-table-positions', JSON.stringify(elementPositions));
+  }, [elementPositions]);
 
   useEffect(() => {
     setTable(initialTable);
     setSelectedBetAmount(0);
   }, [initialTable]);
+
+  // Keyboard shortcuts for edit mode
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ctrl+E or Cmd+E to toggle edit mode
+      if ((event.ctrlKey || event.metaKey) && event.key === 'e') {
+        event.preventDefault();
+        toggleEditMode();
+      }
+      // Escape to exit edit mode
+      if (event.key === 'Escape' && isEditMode) {
+        setIsEditMode(false);
+      }
+      // Ctrl+R or Cmd+R to reset positions (only in edit mode)
+      if ((event.ctrlKey || event.metaKey) && event.key === 'r' && isEditMode) {
+        event.preventDefault();
+        resetPositions();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isEditMode]);
 
   // Отслеживаем изменение улицы торгов и сохраняем размер банка на начало
   useEffect(() => {
@@ -478,21 +518,51 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
 
   const toggleEditMode = () => {
     setIsEditMode(!isEditMode);
-    if (isEditMode) {
-      // При выходе из режима редактирования сохраняем позиции
+    if (!isEditMode) {
+      // Entering edit mode - show help
+      setShowEditHelp(true);
+      setTimeout(() => setShowEditHelp(false), 5000); // Hide help after 5 seconds
+    } else {
+      // Exiting edit mode - save positions
       console.log('Сохраненные позиции элементов:', elementPositions);
+      setShowEditHelp(false);
     }
   };
 
   const resetPositions = () => {
-    setElementPositions({
+    const defaultPositions = {
       'opponent-player': { x: 41.4, y: 12 },
       'current-player': { x: 41.8, y: 66.5 },
       'board-container': { x: 34.8, y: 42.4 },
       'betting-panel': { x: 19.8, y: 79.1 },
       'header-controls': { x: 38.8, y: 89.8 },
       'new-hand-button': { x: 79.1, y: 90.9 }
-    });
+    };
+    
+    setElementPositions(defaultPositions);
+    localStorage.removeItem('poker-table-positions');
+    
+    // Show feedback to user
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(76, 175, 80, 0.95);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 20px;
+      z-index: 10002;
+      font-weight: bold;
+      box-shadow: 0 4px 20px rgba(76, 175, 80, 0.5);
+    `;
+    notification.textContent = '✅ Позиции сброшены к значениям по умолчанию';
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      document.body.removeChild(notification);
+    }, 2000);
   };
 
   const exportPositions = () => {
@@ -513,6 +583,51 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const importPositions = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = JSON.parse(e.target?.result as string);
+            if (data.positions) {
+              setElementPositions(data.positions);
+              // Show success notification
+              const notification = document.createElement('div');
+              notification.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(76, 175, 80, 0.95);
+                color: white;
+                padding: 15px 25px;
+                border-radius: 20px;
+                z-index: 10002;
+                font-weight: bold;
+                box-shadow: 0 4px 20px rgba(76, 175, 80, 0.5);
+              `;
+              notification.textContent = '✅ Позиции успешно загружены';
+              document.body.appendChild(notification);
+              
+              setTimeout(() => {
+                document.body.removeChild(notification);
+              }, 2000);
+            }
+          } catch (error) {
+            alert('Ошибка при загрузке файла. Проверьте формат JSON.');
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  };
+
   const getElementStyle = (elementId: string) => {
     const position = elementPositions[elementId];
     if (!position) return {};
@@ -521,12 +636,18 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
       position: 'absolute' as const,
       left: `${position.x}%`,
       top: `${position.y}%`,
-      cursor: isEditMode ? 'move' : 'default',
+      cursor: isEditMode ? (draggedElement === elementId ? 'grabbing' : 'grab') : 'default',
       zIndex: draggedElement === elementId ? 1000 : 'auto',
       transition: isDragging && draggedElement === elementId ? 'none' : 'all 0.2s ease',
       border: isEditMode ? '2px dashed rgba(255, 255, 255, 0.5)' : 'none',
       borderRadius: isEditMode ? '8px' : '0',
-      backgroundColor: isEditMode ? 'rgba(255, 255, 255, 0.1)' : 'transparent'
+      backgroundColor: isEditMode ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+      transform: draggedElement === elementId ? 'scale(1.05) rotate(1deg)' : 'scale(1)',
+      boxShadow: isEditMode 
+        ? (draggedElement === elementId 
+          ? '0 10px 30px rgba(255, 255, 255, 0.3), 0 0 20px rgba(255, 255, 255, 0.2)' 
+          : '0 2px 10px rgba(255, 255, 255, 0.1)')
+        : 'none'
     };
     
     return baseStyle;
@@ -546,23 +667,105 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
 
   return (
     <div className={`modern-poker-table theme-${colorTheme}`}>
+      {/* Floating Edit Mode Toggle Button */}
+      <div style={{
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        zIndex: 10001,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px'
+      }}>
+        <button
+          onClick={toggleEditMode}
+          style={{
+            padding: '12px 16px',
+            borderRadius: '25px',
+            border: 'none',
+            background: isEditMode 
+              ? 'linear-gradient(135deg, #ff6b6b, #ffd93d)' 
+              : 'linear-gradient(135deg, #4ecdc4, #44a08d)',
+            color: 'white',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+            transition: 'all 0.3s ease',
+            fontSize: '14px',
+            minWidth: '120px'
+          }}
+          title={isEditMode ? "Выйти из режима редактирования (Esc)" : "Режим редактирования (Ctrl+E)"}
+        >
+          {isEditMode ? '🔧 Выйти' : '🔧 Редактор'}
+        </button>
+        
+        {isEditMode && (
+          <div style={{
+            background: 'rgba(0, 0, 0, 0.8)',
+            color: 'white',
+            padding: '8px 12px',
+            borderRadius: '15px',
+            fontSize: '12px',
+            textAlign: 'center',
+            maxWidth: '200px'
+          }}>
+            <div>Ctrl+E - переключить</div>
+            <div>Ctrl+R - сброс</div>
+            <div>Esc - выйти</div>
+          </div>
+        )}
+      </div>
+
       {/* Edit Mode Indicator */}
       {isEditMode && (
         <div style={{
           position: 'fixed',
-          top: '20px',
+          top: '80px',
           left: '50%',
           transform: 'translateX(-50%)',
-          background: 'rgba(255, 215, 0, 0.9)',
+          background: 'rgba(255, 215, 0, 0.95)',
           color: 'black',
-          padding: '10px 20px',
+          padding: '15px 25px',
           borderRadius: '25px',
           fontWeight: 'bold',
           zIndex: 10000,
           boxShadow: '0 4px 20px rgba(255, 215, 0, 0.5)',
-          border: '2px solid gold'
+          border: '2px solid gold',
+          textAlign: 'center',
+          maxWidth: '90%'
         }}>
-          🔧 РЕЖИМ РЕДАКТИРОВАНИЯ АКТИВЕН - Перетаскивайте элементы мышью
+          <div style={{ fontSize: '16px', marginBottom: '5px' }}>
+            🔧 РЕЖИМ РЕДАКТИРОВАНИЯ АКТИВЕН
+          </div>
+          <div style={{ fontSize: '12px', opacity: 0.8 }}>
+            Перетаскивайте элементы мышью для изменения позиций
+          </div>
+        </div>
+      )}
+
+      {/* Help popup for new users */}
+      {showEditHelp && (
+        <div style={{
+          position: 'fixed',
+          top: '140px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(76, 175, 80, 0.95)',
+          color: 'white',
+          padding: '15px 20px',
+          borderRadius: '20px',
+          zIndex: 10000,
+          boxShadow: '0 4px 20px rgba(76, 175, 80, 0.5)',
+          textAlign: 'center',
+          maxWidth: '90%',
+          animation: 'fadeInOut 5s ease-in-out'
+        }}>
+          <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '5px' }}>
+            💡 Подсказка
+          </div>
+          <div style={{ fontSize: '12px' }}>
+            Нажмите и перетащите любой элемент стола для изменения его позиции
+          </div>
         </div>
       )}
       
@@ -632,7 +835,14 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                     onClick={exportPositions}
                     title="Экспорт позиций в JSON файл"
                   >
-                    💾 Сохранить
+                    💾 Экспорт
+                  </button>
+                  <button
+                    className="control-btn"
+                    onClick={importPositions}
+                    title="Импорт позиций из JSON файла"
+                  >
+                    📁 Импорт
                   </button>
                 </>
               )}
