@@ -73,31 +73,6 @@ const TablePage: React.FC<TablePageProps> = ({
     setHandHistories(prev => [...prev, handHistory]);
   };
 
-  const exportHandHistories = async () => {
-    if (handHistories.length === 0) {
-      alert('Нет сыгранных рук для экспорта');
-      return;
-    }
-
-    try {
-      const content = handHistories.join('\n\n');
-      const blob = new Blob([content], { type: 'text/plain' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `table-${tableId}-export-${Date.now()}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      alert(`✅ Экспортировано ${handHistories.length} рук со стола #${tableId}`);
-    } catch (error) {
-      console.error('Export error:', error);
-      alert('Ошибка при экспорте');
-    }
-  };
-
   if (isLoading) {
     return (
       <div style={{
