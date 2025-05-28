@@ -10,6 +10,7 @@ import CardPositionTuner from './components/CardPositionTuner';
 import OptimizedCardTest from './components/OptimizedCardTest';
 import LayoutDebugger from './components/LayoutDebugger';
 import HandRangeTest from './components/HandRangeTest';
+import TestWindow from './components/TestWindow';
 
 export interface GameSession {
   sessionId: string;
@@ -20,7 +21,7 @@ export interface GameSession {
 }
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'setup' | 'game' | 'join' | 'table' | 'sprite-editor' | 'card-test' | 'card-position' | 'optimized-card-test' | 'layout-debugger' | 'hand-range-test'>('setup');
+  const [currentPage, setCurrentPage] = useState<'setup' | 'game' | 'join' | 'table' | 'sprite-editor' | 'card-test' | 'card-position' | 'optimized-card-test' | 'layout-debugger' | 'hand-range-test' | 'test-window'>('setup');
   const [gameSession, setGameSession] = useState<GameSession | null>(null);
   const [tableParams, setTableParams] = useState<any>(null);
 
@@ -40,6 +41,8 @@ function App() {
         setCurrentPage('layout-debugger');
       } else if (hash === '#hand-range-test') {
         setCurrentPage('hand-range-test');
+      } else if (hash === '#test-window') {
+        setCurrentPage('test-window');
       } else if (hash.startsWith('#table?')) {
         // Парсим параметры из hash
         const params = new URLSearchParams(hash.substring(7)); // убираем '#table?'
@@ -122,6 +125,11 @@ function App() {
   // Если это страница тестирования рук
   if (currentPage === 'hand-range-test') {
     return <HandRangeTest />;
+  }
+
+  // Если это тестовое окно
+  if (currentPage === 'test-window') {
+    return <TestWindow />;
   }
 
   return (

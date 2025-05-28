@@ -845,6 +845,24 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
             🧪 Тест Hand Ranges
           </button>
 
+          <button
+            className="btn btn-modern"
+            onClick={() => window.location.hash = '#test-window'}
+            style={{ 
+              fontSize: '1.1rem', 
+              padding: '12px 24px', 
+              backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            🎨 Тестовое окно
+          </button>
+
         </div>
         
         {(handRanges.player1.length === 0 || handRanges.player2.length === 0) && (
