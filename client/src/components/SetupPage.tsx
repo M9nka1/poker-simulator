@@ -53,13 +53,18 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
       const trimmed = part.trim();
       if (!trimmed) continue;
       
-      // Проверяем есть ли процент (например: AA:0.3)
+      // Проверяем есть ли процент (например: AA:0.3, 99:0.35, K2s:0.75)
       if (trimmed.includes(':')) {
-        const [hand, percentStr] = trimmed.split(':');
+        const colonIndex = trimmed.lastIndexOf(':'); // Используем lastIndexOf на случай если в названии руки есть ':'
+        const hand = trimmed.substring(0, colonIndex).trim();
+        const percentStr = trimmed.substring(colonIndex + 1).trim();
+        
         const percentage = parseFloat(percentStr);
         if (hand && !isNaN(percentage) && percentage >= 0 && percentage <= 1) {
           // Конвертируем из 0-1 в 0-100 для совместимости с HandRangeMatrix
-          hands.push({ hand: hand.trim(), percentage: percentage * 100 });
+          hands.push({ hand: hand, percentage: percentage * 100 });
+        } else {
+          console.warn(`Неверный формат процента для руки: ${trimmed}`);
         }
       } else {
         // Если нет процента, используем 100%
@@ -801,6 +806,14 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
             style={{ fontSize: '1.1rem', padding: '12px 24px', backgroundColor: '#FF6B6B', color: 'white' }}
           >
             🔧 Отладка позиционирования
+          </button>
+
+          <button
+            className="btn btn-test"
+            onClick={() => window.location.hash = '#hand-range-test'}
+            style={{ fontSize: '1.1rem', padding: '12px 24px', backgroundColor: '#E91E63', color: 'white' }}
+          >
+            🧪 Тест Hand Ranges
           </button>
 
         </div>

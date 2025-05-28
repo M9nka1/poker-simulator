@@ -1172,6 +1172,44 @@
   margin-top: 0;
 }
 
+/* Placeholder bet indicator - отображается всегда */
+.bet-indicator-placeholder {
+  position: relative;
+  margin-top: 5px;
+  margin-bottom: 0;
+  padding: 8px 16px;
+  border-radius: 20px;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(5px);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  min-width: 60px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.3;
+  transition: all 0.3s ease;
+}
+
+.current-player-in-center .bet-indicator-placeholder {
+  margin-bottom: 5px;
+  margin-top: 0;
+}
+
+.bet-indicator-placeholder .bet-amount {
+  font-size: 0.9rem;
+  font-weight: normal;
+  color: rgba(255, 255, 255, 0.3);
+  font-style: italic;
+}
+
+/* Когда есть реальная ставка, placeholder скрывается */
+.bet-indicator-placeholder.hidden {
+  display: none;
+}
+
 /* Контейнер для панели действий */
 .action-panel-container {
   display: flex;

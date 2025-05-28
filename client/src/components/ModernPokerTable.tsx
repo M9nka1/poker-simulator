@@ -419,9 +419,14 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                     </div>
                   </div>
                   
-                  {opponentBet > 0 && (
+                  {/* Bet indicator - всегда отображается */}
+                  {opponentBet > 0 ? (
                     <div className="bet-indicator glass-morphism">
                       <span className="bet-amount">€{opponentBet}</span>
+                    </div>
+                  ) : (
+                    <div className="bet-indicator-placeholder">
+                      <span className="bet-amount">—</span>
                     </div>
                   )}
                 </div>
@@ -530,9 +535,14 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                     </div>
                   </div>
                   
-                  {myBet > 0 && (
+                  {/* Bet indicator - всегда отображается */}
+                  {myBet > 0 ? (
                     <div className="bet-indicator glass-morphism">
                       <span className="bet-amount">€{myBet}</span>
+                    </div>
+                  ) : (
+                    <div className="bet-indicator-placeholder">
+                      <span className="bet-amount">—</span>
                     </div>
                   )}
                 </div>
