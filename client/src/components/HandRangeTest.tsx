@@ -25,16 +25,38 @@ const HandRangeTest: React.FC = () => {
         const [hand, percentStr] = trimmed.split(':');
         const percentage = parseFloat(percentStr);
         if (hand && !isNaN(percentage) && percentage >= 0 && percentage <= 1) {
-          hands.push({ hand: hand.trim(), percentage: percentage * 100 });
+          const expandedHands = expandHandNotation(hand.trim());
+          expandedHands.forEach(expandedHand => {
+            hands.push({ hand: expandedHand, percentage: percentage * 100 });
+          });
         } else {
           errors.push(`Ошибка в "${trimmed}": неверный процент`);
         }
       } else {
-        hands.push({ hand: trimmed, percentage: 100 });
+        const expandedHands = expandHandNotation(trimmed);
+        expandedHands.forEach(expandedHand => {
+          hands.push({ hand: expandedHand, percentage: 100 });
+        });
       }
     }
     
     return { hands, errors };
+  };
+
+  const expandHandNotation = (hand: string): string[] => {
+    if (hand.endsWith('s') || hand.endsWith('o')) {
+      return [hand];
+    }
+    
+    if (hand.length === 2 && hand[0] === hand[1]) {
+      return [hand];
+    }
+    
+    if (hand.length === 2 && hand[0] !== hand[1]) {
+      return [`${hand}s`, `${hand}o`];
+    }
+    
+    return [hand];
   };
 
   const handleTest = () => {

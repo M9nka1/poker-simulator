@@ -62,17 +62,46 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
         const percentage = parseFloat(percentStr);
         if (hand && !isNaN(percentage) && percentage >= 0 && percentage <= 1) {
           // Конвертируем из 0-1 в 0-100 для совместимости с HandRangeMatrix
-          hands.push({ hand: hand, percentage: percentage * 100 });
+          // Проверяем нужно ли расширить руку на s и o версии
+          const expandedHands = expandHandNotation(hand);
+          expandedHands.forEach(expandedHand => {
+            hands.push({ hand: expandedHand, percentage: percentage * 100 });
+          });
         } else {
           console.warn(`Неверный формат процента для руки: ${trimmed}`);
         }
       } else {
         // Если нет процента, используем 100%
-        hands.push({ hand: trimmed, percentage: 100 });
+        // Проверяем нужно ли расширить руку на s и o версии
+        const expandedHands = expandHandNotation(trimmed);
+        expandedHands.forEach(expandedHand => {
+          hands.push({ hand: expandedHand, percentage: 100 });
+        });
       }
     }
     
     return hands;
+  };
+  
+  // Функция для расширения нотации рук (например AK -> AKs, AKo)
+  const expandHandNotation = (hand: string): string[] => {
+    // Если рука уже содержит s или o, возвращаем как есть
+    if (hand.endsWith('s') || hand.endsWith('o')) {
+      return [hand];
+    }
+    
+    // Проверяем является ли это парой (AA, KK, QQ, etc.)
+    if (hand.length === 2 && hand[0] === hand[1]) {
+      return [hand]; // Пары не имеют suited/offsuit версий
+    }
+    
+    // Проверяем является ли это двухкарточной рукой без суффикса
+    if (hand.length === 2 && hand[0] !== hand[1]) {
+      return [`${hand}s`, `${hand}o`]; // Расширяем на suited и offsuit
+    }
+    
+    // Если не подходит под стандартные форматы, возвращаем как есть
+    return [hand];
   };
   
   // Функция применения текстового ввода к hand ranges
