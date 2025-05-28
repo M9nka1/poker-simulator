@@ -81,11 +81,18 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
     allIn: 100
   });
   const [colorTheme, setColorTheme] = useState<'dark' | 'light' | 'neon'>('dark');
+  const [streetStartPot, setStreetStartPot] = useState<number>(100); // Размер банка на начало текущей улицы
 
   useEffect(() => {
     setTable(initialTable);
     setSelectedBetAmount(0);
   }, [initialTable]);
+
+  // Отслеживаем изменение улицы торгов и сохраняем размер банка на начало
+  useEffect(() => {
+    // При смене улицы торгов сохраняем размер банка на начало новой улицы
+    setStreetStartPot(table.pot);
+  }, [table.currentStreet]);
 
   // Monitor WebSocket connection status
   useEffect(() => {
@@ -369,15 +376,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
           const opponent = table.players.find(p => p.id !== currentPlayerId);
           if (!opponent) return null;
           
-          const getPlayerBet = (player: Player) => {
-            if (!player) return 0;
-            return player.actions
-              .filter(a => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
-              .reduce((total, action) => total + (action.amount || 0), 0);
-          };
-          
-          const opponentBet = getPlayerBet(opponent);
-          
           return (
             <div className={`player-zone opponent ${opponent.id === table.currentPlayer ? 'active-turn' : ''}`}>
               <div className="player-card glass-morphism">
@@ -412,12 +410,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                   </div>
                 )}
               </div>
-              
-              {opponentBet > 0 && (
-                <div className="bet-indicator glass-morphism">
-                  <span className="bet-amount">€{opponentBet}</span>
-                </div>
-              )}
             </div>
           );
         })()}
@@ -425,51 +417,96 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
         {/* Center Table Area */}
         <div className="table-center">
           <div className="poker-felt glass-morphism">
-            {/* Pot Display */}
-            <div className="pot-container">
-              <div className="pot-display neumorphism">
-                <div className="pot-label">БАНК</div>
-                <div className="pot-amount">€{table.pot}</div>
+            {/* Upper Bet Indicator */}
+            {(() => {
+              const opponent = table.players.find(p => p.id !== currentPlayerId);
+              if (!opponent) return null;
+              
+              const getPlayerBet = (player: Player) => {
+                if (!player) return 0;
+                return player.actions
+                  .filter(a => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
+                  .reduce((total, action) => total + (action.amount || 0), 0);
+              };
+              
+              const opponentBet = getPlayerBet(opponent);
+              
+              return opponentBet > 0 ? (
+                <div className="upper-bet-indicator glass-morphism">
+                  <span className="bet-amount">€{opponentBet}</span>
+                </div>
+              ) : null;
+            })()}
+            
+            {/* Board Cards and Pot Display Container */}
+            <div className="board-and-pot-container">
+              {/* Board Cards */}
+              <div className="board-container">
+                <div className="board-cards">
+                  {/* Флоп */}
+                  {table.board.flop.map((card, index) => (
+                    <div key={`flop-${index}`} className="board-card-slot">
+                      <RankCard 
+                        card={card} 
+                        size={cardSize}
+                        useImages={useCardImages}
+                      />
+                    </div>
+                  ))}
+                  
+                  {/* Тёрн */}
+                  {table.board.turn && (table.currentStreet === 'turn' || table.currentStreet === 'river' || table.handComplete) && (
+                    <div className="board-card-slot">
+                      <RankCard 
+                        card={table.board.turn} 
+                        size={cardSize}
+                        useImages={useCardImages}
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Ривер */}
+                  {table.board.river && (table.currentStreet === 'river' || table.handComplete) && (
+                    <div className="board-card-slot">
+                      <RankCard 
+                        card={table.board.river} 
+                        size={cardSize}
+                        useImages={useCardImages}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Pot Display - справа от карт */}
+              <div className="pot-container">
+                <div className="pot-display neumorphism">
+                  <div className="pot-label">БАНК</div>
+                  <div className="pot-amount">€{streetStartPot}</div>
+                </div>
               </div>
             </div>
             
-            {/* Board Cards */}
-            <div className="board-container">
-              <div className="board-cards">
-                {/* Флоп */}
-                {table.board.flop.map((card, index) => (
-                  <div key={`flop-${index}`} className="board-card-slot">
-                    <RankCard 
-                      card={card} 
-                      size={cardSize}
-                      useImages={useCardImages}
-                    />
-                  </div>
-                ))}
-                
-                {/* Тёрн */}
-                {table.board.turn && (table.currentStreet === 'turn' || table.currentStreet === 'river' || table.handComplete) && (
-                  <div className="board-card-slot">
-                    <RankCard 
-                      card={table.board.turn} 
-                      size={cardSize}
-                      useImages={useCardImages}
-                    />
-                  </div>
-                )}
-                
-                {/* Ривер */}
-                {table.board.river && (table.currentStreet === 'river' || table.handComplete) && (
-                  <div className="board-card-slot">
-                    <RankCard 
-                      card={table.board.river} 
-                      size={cardSize}
-                      useImages={useCardImages}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* Lower Bet Indicator */}
+            {(() => {
+              const myPlayer = table.players.find(p => p.id === currentPlayerId);
+              if (!myPlayer) return null;
+              
+              const getPlayerBet = (player: Player) => {
+                if (!player) return 0;
+                return player.actions
+                  .filter(a => a.street === table.currentStreet && (a.action === 'bet' || a.action === 'raise' || a.action === 'call'))
+                  .reduce((total, action) => total + (action.amount || 0), 0);
+              };
+              
+              const myBet = getPlayerBet(myPlayer);
+              
+              return myBet > 0 ? (
+                <div className="lower-bet-indicator glass-morphism">
+                  <span className="bet-amount">€{myBet}</span>
+                </div>
+              ) : null;
+            })()}
             
             {/* Hand Result */}
             {table.handComplete && (
@@ -499,12 +536,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
           
           return (
             <div className={`player-zone current-player-with-actions ${myPlayer.id === table.currentPlayer ? 'active-turn' : ''}`}>
-              {myBet > 0 && (
-                <div className="bet-indicator glass-morphism">
-                  <span className="bet-amount">€{myBet}</span>
-                </div>
-              )}
-              
               <div className="player-and-actions-container">
                 {/* Player Card */}
                 <div className="player-card glass-morphism">
@@ -724,10 +755,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
           );
         })()}
       </div>
-
-
-
-
 
       {/* New Hand Button */}
       {table.handComplete && (

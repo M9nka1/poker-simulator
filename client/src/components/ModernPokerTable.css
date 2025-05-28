@@ -352,8 +352,6 @@
   color: var(--text-primary);
 }
 
-
-
 .player-stack {
   font-size: 1rem;
   font-weight: bold;
@@ -538,6 +536,7 @@
 .pot-container {
   display: flex;
   justify-content: center;
+  margin-left: 20px;
 }
 
 .pot-display {
@@ -550,7 +549,7 @@
   border: 1px solid var(--glass-border);
   border-radius: 15px;
   box-shadow: 0 8px 32px var(--shadow-color);
-  margin: 0px 10px 0px 10px;
+  margin: 0px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -572,6 +571,13 @@
   line-height: 1;
 }
 
+.board-and-pot-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0px;
+}
+
 .board-container {
   display: flex;
   justify-content: center;
@@ -587,7 +593,7 @@
   border-radius: 25px;
   padding: 25px 35px;
   box-shadow: 0 8px 32px var(--shadow-color);
-  margin: 0px 10px 0px 10px;
+  margin: 0px;
 }
 
 .board-card-slot {
@@ -646,8 +652,6 @@
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
-
 
 .bet-sizing-panel {
   margin-bottom: 25px;
@@ -1064,8 +1068,6 @@
     height: 76px;
   }
 
-
-
   .action-buttons {
     gap: 8px;
   }
@@ -1156,6 +1158,62 @@
     min-width: 100px;
     margin: 3px;
   }
+}
 
+.upper-bet-indicator {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: 15px;
+  padding: 8px 16px;
+  box-shadow: 0 4px 20px var(--shadow-color);
+  animation: slideInDown 0.3s ease-out;
+}
 
+.lower-bet-indicator {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: 15px;
+  padding: 8px 16px;
+  box-shadow: 0 4px 20px var(--shadow-color);
+  animation: slideInUp 0.3s ease-out;
+}
+
+.upper-bet-indicator .bet-amount,
+.lower-bet-indicator .bet-amount {
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--accent-color);
+  margin: 0;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 } 
