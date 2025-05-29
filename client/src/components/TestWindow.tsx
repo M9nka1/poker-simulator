@@ -33,6 +33,8 @@ const TestWindow: React.FC = () => {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedSpot, setSelectedSpot] = useState<string>('');
   const [tableCount, setTableCount] = useState<number>(1);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragField, setDragField] = useState<'highCard' | 'middleCard' | 'lowCard' | null>(null);
   const [rakeSettings, setRakeSettings] = useState<RakeSettings>({
     percentage: 2.5,
     cap: 5
@@ -104,6 +106,36 @@ const TestWindow: React.FC = () => {
       };
     });
   };
+
+  const handleCardRankMouseDown = (field: 'highCard' | 'middleCard' | 'lowCard', card: string) => {
+    setIsDragging(true);
+    setDragField(field);
+    handleCardRankSelection(field, card);
+  };
+
+  const handleCardRankMouseEnter = (field: 'highCard' | 'middleCard' | 'lowCard', card: string) => {
+    if (isDragging && dragField === field) {
+      handleCardRankSelection(field, card);
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    setDragField(null);
+  };
+
+  // Добавляем обработчик mouseup на весь документ
+  React.useEffect(() => {
+    const handleDocumentMouseUp = () => {
+      setIsDragging(false);
+      setDragField(null);
+    };
+
+    document.addEventListener('mouseup', handleDocumentMouseUp);
+    return () => {
+      document.removeEventListener('mouseup', handleDocumentMouseUp);
+    };
+  }, []);
 
   const handleBoardOptionSelection = (field: 'suits' | 'paired', option: string) => {
     setBoardSettings(prev => {
@@ -197,7 +229,7 @@ const TestWindow: React.FC = () => {
         <div className="panel-content">
           {/* Префлоп споты */}
           <div className="control-section">
-            <label className="control-label">🎯 Префлоп спот</label>
+            <label className="control-label">Префлоп спот</label>
             <select 
               className="modern-select modern-select-narrow"
               value={selectedSpot}
@@ -226,11 +258,11 @@ const TestWindow: React.FC = () => {
           {/* Количество столов */}
           <div className="control-section">
             <label className="control-label">Количество столов</label>
-            <div className="table-count-controls">
+            <div className="button-group button-group-tight">
               {[1, 2, 3, 4].map(count => (
                 <button
                   key={count}
-                  className={`count-btn count-btn-square ${tableCount === count ? 'active' : ''}`}
+                  className={`rank-btn ${tableCount === count ? 'active' : ''}`}
                   onClick={() => setTableCount(count)}
                 >
                   {count}
@@ -376,7 +408,9 @@ const TestWindow: React.FC = () => {
                         <button
                           key={`high-${card}`}
                           className={`rank-btn ${boardSettings.flop.highCard.includes(card) ? 'active' : ''}`}
-                          onClick={() => handleCardRankSelection('highCard', card)}
+                          onMouseDown={() => handleCardRankMouseDown('highCard', card)}
+                          onMouseEnter={() => handleCardRankMouseEnter('highCard', card)}
+                          onMouseUp={handleMouseUp}
                         >
                           {card === 'any' ? 'Любой' : card}
                         </button>
@@ -392,7 +426,9 @@ const TestWindow: React.FC = () => {
                         <button
                           key={`middle-${card}`}
                           className={`rank-btn ${boardSettings.flop.middleCard.includes(card) ? 'active' : ''}`}
-                          onClick={() => handleCardRankSelection('middleCard', card)}
+                          onMouseDown={() => handleCardRankMouseDown('middleCard', card)}
+                          onMouseEnter={() => handleCardRankMouseEnter('middleCard', card)}
+                          onMouseUp={handleMouseUp}
                         >
                           {card === 'any' ? 'Любой' : card}
                         </button>
@@ -408,7 +444,9 @@ const TestWindow: React.FC = () => {
                         <button
                           key={`low-${card}`}
                           className={`rank-btn ${boardSettings.flop.lowCard.includes(card) ? 'active' : ''}`}
-                          onClick={() => handleCardRankSelection('lowCard', card)}
+                          onMouseDown={() => handleCardRankMouseDown('lowCard', card)}
+                          onMouseEnter={() => handleCardRankMouseEnter('lowCard', card)}
+                          onMouseUp={handleMouseUp}
                         >
                           {card === 'any' ? 'Любой' : card}
                         </button>

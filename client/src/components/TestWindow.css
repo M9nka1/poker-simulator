@@ -200,47 +200,6 @@
   font-weight: 500;
 }
 
-/* Table Count Controls */
-.table-count-controls {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-
-.count-btn {
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
-
-/* Квадратные кнопки для столов */
-.count-btn-square {
-  aspect-ratio: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-}
-
-.count-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: translateY(-1px);
-}
-
-.count-btn.active {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(59, 130, 246, 0.4);
-  color: #3b82f6;
-  box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
-}
-
 /* Rake Controls */
 .rake-controls {
   display: grid;
@@ -414,6 +373,7 @@
   display: flex;
   gap: 0;
   flex-wrap: wrap;
+  user-select: none;
 }
 
 .option-btn {
@@ -488,6 +448,7 @@
   backdrop-filter: blur(10px);
   min-width: 35px;
   text-align: center;
+  user-select: none;
 }
 
 /* Скругляем только первую и последнюю кнопку в группе */
@@ -726,10 +687,6 @@
     margin-left: 45%;
   }
   
-  .table-count-controls {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
   .street-buttons {
     grid-template-columns: 1fr;
     gap: 6px;
@@ -790,10 +747,6 @@
   
   .content-wrapper p {
     font-size: 1rem;
-  }
-  
-  .table-count-controls {
-    grid-template-columns: repeat(2, 1fr);
   }
   
   .button-group {
