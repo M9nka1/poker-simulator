@@ -187,12 +187,13 @@ const TestWindow: React.FC = () => {
       const cardAtIndex = currentCards[selectedCardIndex];
       
       if (cardAtIndex === card) {
-        // Если кликнули по уже выбранной карте - отменяем выбор
+        // Если кликнули по уже выбранной карте в этой позиции - отменяем выбор
         currentCards[selectedCardIndex] = '';
         setBoardSettings(prev => ({
           ...prev,
           flop: { ...prev.flop, specificCards: currentCards }
         }));
+        return; // Не закрываем модальное окно при отмене
       } else {
         // Проверяем, не выбрана ли уже эта карта в других позициях
         const isCardAlreadySelected = currentCards.some((existingCard, index) => 
@@ -200,7 +201,7 @@ const TestWindow: React.FC = () => {
         );
         
         if (isCardAlreadySelected) {
-          // Карта уже выбрана, ничего не делаем
+          // Карта уже выбрана в другой позиции, ничего не делаем
           return;
         }
         
@@ -216,7 +217,7 @@ const TestWindow: React.FC = () => {
         if (nextEmptyIndex !== -1) {
           setSelectedCardIndex(nextEmptyIndex);
         } else {
-          // Если все карты заполнены или мы на последней позиции, автоматически закрываем
+          // Если все карты заполнены, автоматически закрываем
           const allFilled = currentCards.every(c => c !== '');
           if (allFilled) {
             closeCardModal();
@@ -329,7 +330,14 @@ const TestWindow: React.FC = () => {
   // Проверяем, выбрана ли карта
   const isCardSelected = (suit: Suit, rank: Rank): boolean => {
     const cardString = convertSpriteToCard(suit, rank);
-    return boardSettings.flop.specificCards.includes(cardString);
+    
+    if (selectedCardIndex !== null) {
+      // В режиме выбора по позиции - проверяем только текущую позицию
+      return boardSettings.flop.specificCards[selectedCardIndex] === cardString;
+    } else {
+      // В режиме быстрого выбора - проверяем все позиции
+      return boardSettings.flop.specificCards.includes(cardString);
+    }
   };
 
   const cards = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
