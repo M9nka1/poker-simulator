@@ -191,12 +191,26 @@ const TestWindow: React.FC = () => {
 
   const selectCard = (card: string) => {
     if (selectedCardIndex !== null) {
-      handleSpecificCardChange(selectedCardIndex, card);
+      const currentCards = boardSettings.flop.specificCards;
+      const cardAtIndex = currentCards[selectedCardIndex];
       
-      // Автоматически переходим к следующей карте если это не последняя
-      if (selectedCardIndex < 2) {
-        setSelectedCardIndex(selectedCardIndex + 1);
+      if (cardAtIndex === card) {
+        // Если кликнули по уже выбранной карте - отменяем выбор
+        handleSpecificCardChange(selectedCardIndex, '');
+        closeCardModal();
       } else {
+        // Проверяем, не выбрана ли уже эта карта в других позициях
+        const isCardAlreadySelected = currentCards.some((existingCard, index) => 
+          existingCard === card && index !== selectedCardIndex
+        );
+        
+        if (isCardAlreadySelected) {
+          // Карта уже выбрана, ничего не делаем
+          return;
+        }
+        
+        // Выбираем новую карту
+        handleSpecificCardChange(selectedCardIndex, card);
         closeCardModal();
       }
     }
@@ -671,24 +685,17 @@ const TestWindow: React.FC = () => {
             <div className="cards-grid-suits">
               {suits.map(suit => (
                 <div key={suit.name} className="suit-row">
-                  <div className="suit-label" style={{ color: suit.color }}>
-                    <span className="suit-symbol">{suit.symbol}</span>
-                    <span className="suit-name">
-                      {suit.name === 'hearts' ? 'Червы' : 
-                       suit.name === 'diamonds' ? 'Бубны' :
-                       suit.name === 'clubs' ? 'Трефы' : 'Пики'}
-                    </span>
-                  </div>
                   <div className="cards-row">
                     {RANKS_ORDER.map(rank => {
                       const spriteSuit = suit.name as Suit;
                       const isSelected = isCardSelected(spriteSuit, rank);
                       const cardString = convertSpriteToCard(spriteSuit, rank);
+                      const isAlreadyUsed = boardSettings.flop.specificCards.includes(cardString);
                       
                       return (
                         <div
                           key={`${rank}${suit.symbol}`}
-                          className={`card-option-container ${isSelected ? 'selected' : ''}`}
+                          className={`card-option-container ${isSelected ? 'selected' : ''} ${isAlreadyUsed ? 'used' : ''}`}
                           onClick={() => selectCard(cardString)}
                         >
                           <Card
@@ -696,7 +703,7 @@ const TestWindow: React.FC = () => {
                             rank={rank}
                             width={60}
                             height={84}
-                            animated={true}
+                            animated={false}
                             selected={isSelected}
                           />
                         </div>
