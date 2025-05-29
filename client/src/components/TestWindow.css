@@ -247,7 +247,7 @@
 /* Иконки внутри полей ввода справа */
 .input-label-right {
   position: absolute;
-  right: 8px;
+  right: 0px;
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
@@ -824,7 +824,7 @@
 
 /* Компактные поля ввода */
 .compact-input {
-  padding: 6px 20px 6px 8px !important; /* Место справа для значков */
+  padding: 6px 15px 6px 8px !important; /* Место справа для значков - уменьшено до 15px */
   font-size: 12px !important;
   min-width: 0;
   flex: none !important; /* Отключаем flex для точного контроля ширины */
