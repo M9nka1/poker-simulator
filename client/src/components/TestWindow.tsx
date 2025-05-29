@@ -35,6 +35,8 @@ const TestWindow: React.FC = () => {
   const [tableCount, setTableCount] = useState<number>(1);
   const [isDragging, setIsDragging] = useState(false);
   const [dragField, setDragField] = useState<'highCard' | 'middleCard' | 'lowCard' | null>(null);
+  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+  const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(null);
   const [rakeSettings, setRakeSettings] = useState<RakeSettings>({
     percentage: 2.5,
     cap: 5
@@ -175,6 +177,23 @@ const TestWindow: React.FC = () => {
     handleFlopSettingChange('specificCards', newCards);
   };
 
+  const openCardModal = (index: number) => {
+    setSelectedCardIndex(index);
+    setIsCardModalOpen(true);
+  };
+
+  const closeCardModal = () => {
+    setIsCardModalOpen(false);
+    setSelectedCardIndex(null);
+  };
+
+  const selectCard = (card: string) => {
+    if (selectedCardIndex !== null) {
+      handleSpecificCardChange(selectedCardIndex, card);
+      closeCardModal();
+    }
+  };
+
   const cards = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
   const suits = ['♠', '♥', '♦', '♣'];
 
@@ -255,49 +274,54 @@ const TestWindow: React.FC = () => {
             )}
           </div>
 
-          {/* Количество столов */}
+          {/* Количество столов и Настройки рейка в одной строке */}
           <div className="control-section">
-            <label className="control-label">Количество столов</label>
-            <div className="button-group button-group-tight">
-              {[1, 2, 3, 4].map(count => (
-                <button
-                  key={count}
-                  className={`rank-btn ${tableCount === count ? 'active' : ''}`}
-                  onClick={() => setTableCount(count)}
-                >
-                  {count}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Настройки рейка */}
-          <div className="control-section">
-            <label className="control-label">Настройки рейка</label>
-            <div className="rake-controls">
-              <div className="rake-input-group">
-                <input
-                  type="number"
-                  className="modern-input"
-                  min="0"
-                  max="10"
-                  step="0.1"
-                  value={rakeSettings.percentage}
-                  onChange={(e) => handleRakeChange('percentage', parseFloat(e.target.value) || 0)}
-                />
-                <label className="input-label input-label-right">%</label>
+            <div className="controls-row">
+              {/* Количество столов */}
+              <div className="control-group">
+                <label className="control-label">Количество столов</label>
+                <div className="button-group button-group-tight">
+                  {[1, 2, 3, 4].map(count => (
+                    <button
+                      key={count}
+                      className={`rank-btn ${tableCount === count ? 'active' : ''}`}
+                      onClick={() => setTableCount(count)}
+                    >
+                      {count}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="rake-input-group">
-                <input
-                  type="number"
-                  className="modern-input"
-                  min="0"
-                  max="50"
-                  step="0.5"
-                  value={rakeSettings.cap}
-                  onChange={(e) => handleRakeChange('cap', parseFloat(e.target.value) || 0)}
-                />
-                <label className="input-label input-label-right">$</label>
+
+              {/* Настройки рейка */}
+              <div className="control-group">
+                <label className="control-label">Настройки рейка</label>
+                <div className="rake-controls-inline">
+                  <div className="rake-input-group">
+                    <input
+                      type="number"
+                      className="modern-input compact-input"
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      value={rakeSettings.percentage}
+                      onChange={(e) => handleRakeChange('percentage', parseFloat(e.target.value) || 0)}
+                    />
+                    <label className="input-label input-label-right">%</label>
+                  </div>
+                  <div className="rake-input-group">
+                    <input
+                      type="number"
+                      className="modern-input compact-input"
+                      min="0"
+                      max="50"
+                      step="0.5"
+                      value={rakeSettings.cap}
+                      onChange={(e) => handleRakeChange('cap', parseFloat(e.target.value) || 0)}
+                    />
+                    <label className="input-label input-label-right">$</label>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -322,36 +346,26 @@ const TestWindow: React.FC = () => {
               <div className="flop-settings">
                 {/* Конкретный флоп */}
                 <div className="flop-subsection">
-                  <div className="subsection-header">
-                    <input
-                      type="checkbox"
-                      id="specific-flop"
-                      checked={boardSettings.flop.specific}
-                      onChange={(e) => handleFlopSettingChange('specific', e.target.checked)}
-                    />
-                    <label htmlFor="specific-flop">Конкретный флоп</label>
+                  <label className="subsection-label">Конкретный флоп</label>
+                  <div className="specific-cards-row">
+                    {[0, 1, 2].map(index => (
+                      <div 
+                        key={index}
+                        className="card-slot"
+                        onClick={() => openCardModal(index)}
+                      >
+                        {boardSettings.flop.specificCards[index] ? (
+                          <div className="selected-card">
+                            {boardSettings.flop.specificCards[index]}
+                          </div>
+                        ) : (
+                          <div className="card-back">
+                            🂠
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                  {boardSettings.flop.specific && (
-                    <div className="specific-cards">
-                      {[0, 1, 2].map(index => (
-                        <select
-                          key={index}
-                          className="card-select"
-                          value={boardSettings.flop.specificCards[index]}
-                          onChange={(e) => handleSpecificCardChange(index, e.target.value)}
-                        >
-                          <option value="">Карта {index + 1}</option>
-                          {cards.map(card => 
-                            suits.map(suit => (
-                              <option key={`${card}${suit}`} value={`${card}${suit}`}>
-                                {card}{suit}
-                              </option>
-                            ))
-                          )}
-                        </select>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
                 {/* Масти */}
@@ -544,6 +558,31 @@ const TestWindow: React.FC = () => {
           onClick={togglePanel}
           aria-hidden="true"
         />
+      )}
+
+      {/* Модальное окно выбора карт */}
+      {isCardModalOpen && (
+        <div className="modal-overlay" onClick={closeCardModal}>
+          <div className="card-selection-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Выберите карту</h3>
+              <button className="close-modal-btn" onClick={closeCardModal}>✕</button>
+            </div>
+            <div className="cards-grid">
+              {cards.map(card => 
+                suits.map(suit => (
+                  <button
+                    key={`${card}${suit}`}
+                    className="card-option"
+                    onClick={() => selectCard(`${card}${suit}`)}
+                  >
+                    {card}{suit}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

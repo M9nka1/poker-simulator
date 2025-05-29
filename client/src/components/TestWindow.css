@@ -132,6 +132,25 @@
   backdrop-filter: blur(10px);
 }
 
+/* Строка с двумя блоками управления */
+.controls-row {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.control-group {
+  flex: 1;
+}
+
+.control-group:first-child {
+  flex: 0 0 auto; /* Не растягиваем блок количества столов */
+}
+
+.control-group:last-child {
+  flex: 1; /* Блок настроек рейка занимает оставшееся место */
+}
+
 .control-label {
   display: block;
   font-size: 14px;
@@ -784,5 +803,193 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Rake Controls Inline */
+.rake-controls-inline {
+  display: flex;
+  gap: 12px;
+}
+
+.rake-controls-inline .rake-input-group {
+  flex: 1;
+}
+
+/* Компактные поля ввода */
+.compact-input {
+  padding: 6px 24px 6px 8px !important;
+  font-size: 12px !important;
+  min-width: 0;
+}
+
+/* Specific Cards Row */
+.specific-cards-row {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-start;
+  margin-top: 12px;
+}
+
+.card-slot {
+  width: 50px;
+  height: 70px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.card-slot:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.1);
+  transform: translateY(-2px);
+}
+
+.card-back {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.3);
+  user-select: none;
+}
+
+.selected-card {
+  font-size: 14px;
+  font-weight: bold;
+  color: #ffffff;
+  text-align: center;
+  user-select: none;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Card Selection Modal */
+.card-selection-modal {
+  background: rgba(20, 20, 20, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.close-modal-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.close-modal-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+/* Cards Grid */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  gap: 8px;
+  max-width: 700px;
+}
+
+.card-option {
+  padding: 12px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  min-width: 40px;
+}
+
+.card-option:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #3b82f6;
+  transform: translateY(-2px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .controls-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .control-group:first-child,
+  .control-group:last-child {
+    flex: 1;
+  }
+  
+  .cards-grid {
+    grid-template-columns: repeat(8, 1fr);
+    gap: 6px;
+  }
+  
+  .card-selection-modal {
+    padding: 16px;
+    margin: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .cards-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+  }
+  
+  .card-option {
+    padding: 8px 4px;
+    font-size: 11px;
   }
 } 
