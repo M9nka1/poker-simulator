@@ -469,13 +469,32 @@ const TestWindow: React.FC = () => {
   const handlePasteFromClipboard = async (position: 'ip' | 'oop') => {
     try {
       const text = await navigator.clipboard.readText();
-      // Парсинг текста рук (простая реализация)
+      // Парсинг текста рук
       const hands = text.split(/[\s,]+/).filter(hand => hand.length >= 2);
       const newMatrix: HandMatrix = {};
       
       hands.forEach(hand => {
         if (hand) {
-          newMatrix[hand] = matrixSettings[position].percentage;
+          const cleanHand = hand.trim();
+          
+          // Проверяем, есть ли в руке указание на suited/offsuit
+          if (cleanHand.endsWith('s') || cleanHand.endsWith('o')) {
+            // Рука уже имеет указание - добавляем как есть с 100%
+            newMatrix[cleanHand] = 100;
+          } else {
+            // Рука без указания - добавляем обе версии (suited и offsuit) с 100%
+            const baseHand = cleanHand;
+            if (baseHand.length >= 2) {
+              // Для пар добавляем только саму пару
+              if (baseHand[0] === baseHand[1]) {
+                newMatrix[baseHand] = 100;
+              } else {
+                // Для непарных рук добавляем обе версии
+                newMatrix[`${baseHand}s`] = 100;
+                newMatrix[`${baseHand}o`] = 100;
+              }
+            }
+          }
         }
       });
       
@@ -802,10 +821,8 @@ const TestWindow: React.FC = () => {
                   </div>
                 </div>
                 <div className="matrix-content">
-                  <div className="hand-matrix">
-                    {renderHandMatrix('ip')}
-                  </div>
-                  <div className="percentage-slider">
+                  <div className="percentage-slider-horizontal">
+                    <span className="slider-label">Процент для ручного выбора:</span>
                     <input
                       type="range"
                       min="0"
@@ -813,15 +830,12 @@ const TestWindow: React.FC = () => {
                       step="25"
                       value={matrixSettings.ip.percentage}
                       onChange={(e) => handleMatrixPercentageChange('ip', parseInt(e.target.value))}
-                      className="slider vertical-slider"
+                      className="slider horizontal-slider"
                     />
-                    <div className="slider-labels">
-                      <span>100%</span>
-                      <span>75%</span>
-                      <span>50%</span>
-                      <span>25%</span>
-                      <span>0%</span>
-                    </div>
+                    <span className="slider-value">{matrixSettings.ip.percentage}%</span>
+                  </div>
+                  <div className="hand-matrix">
+                    {renderHandMatrix('ip')}
                   </div>
                 </div>
               </div>
@@ -851,10 +865,8 @@ const TestWindow: React.FC = () => {
                   </div>
                 </div>
                 <div className="matrix-content">
-                  <div className="hand-matrix">
-                    {renderHandMatrix('oop')}
-                  </div>
-                  <div className="percentage-slider">
+                  <div className="percentage-slider-horizontal">
+                    <span className="slider-label">Процент для ручного выбора:</span>
                     <input
                       type="range"
                       min="0"
@@ -862,15 +874,12 @@ const TestWindow: React.FC = () => {
                       step="25"
                       value={matrixSettings.oop.percentage}
                       onChange={(e) => handleMatrixPercentageChange('oop', parseInt(e.target.value))}
-                      className="slider vertical-slider"
+                      className="slider horizontal-slider"
                     />
-                    <div className="slider-labels">
-                      <span>100%</span>
-                      <span>75%</span>
-                      <span>50%</span>
-                      <span>25%</span>
-                      <span>0%</span>
-                    </div>
+                    <span className="slider-value">{matrixSettings.oop.percentage}%</span>
+                  </div>
+                  <div className="hand-matrix">
+                    {renderHandMatrix('oop')}
                   </div>
                 </div>
               </div>
