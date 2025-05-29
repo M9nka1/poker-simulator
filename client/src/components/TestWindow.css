@@ -60,7 +60,7 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 35%;
+  width: 28%;
   height: 100vh;
   background: rgba(15, 15, 15, 0.95);
   backdrop-filter: blur(20px);
@@ -576,7 +576,7 @@
 }
 
 .main-content.panel-open {
-  margin-left: 35%;
+  margin-left: 28%;
 }
 
 .content-wrapper {
@@ -721,11 +721,11 @@
 /* Responsive Design */
 @media (max-width: 1024px) {
   .side-panel {
-    width: 45%;
+    width: 35%;
   }
   
   .main-content.panel-open {
-    margin-left: 45%;
+    margin-left: 35%;
   }
   
   .street-buttons {
