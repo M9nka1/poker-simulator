@@ -825,11 +825,11 @@
 
 /* Конкретные ширины для полей рейка */
 .rake-input-group:first-child .compact-input {
-  width: 60px; /* Ширина для "2,5%" + 2 символа запаса */
+  width: 50px !important; /* Ширина для 6 символов: "99,9%" */
 }
 
 .rake-input-group:last-child .compact-input {
-  width: 70px; /* Ширина для "21,5$" + 2 символа запаса */
+  width: 50px !important; /* Ширина для 6 символов: "999,9$" */
 }
 
 /* Specific Cards Row */
@@ -1026,6 +1026,44 @@
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+.card-option-container {
+  position: relative;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 4px;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.card-option-container:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.card-option-container.selected {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+}
+
+.card-option-container.selected::before {
+  content: '✓';
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #22c55e;
+  color: white;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 100;
 }
 
 .card-option {

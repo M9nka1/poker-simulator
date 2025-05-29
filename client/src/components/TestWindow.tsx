@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import './TestWindow.css';
 import preflopSpots from '../data/preflop-spots/spots.json';
+import Card from './Card';
+import { SUITS_ORDER, RANKS_ORDER, Suit, Rank } from '../utils/cardSprites';
 
 interface PreflopSpot {
   id: string;
@@ -203,17 +205,19 @@ const TestWindow: React.FC = () => {
   const selectRandomFlop = () => {
     // Выбираем 3 случайные карты для флопа
     const allCards: string[] = [];
-    const suits = [
-      { symbol: '♥', name: 'hearts', color: '#e74c3c' },
-      { symbol: '♦', name: 'diamonds', color: '#e74c3c' },
-      { symbol: '♣', name: 'clubs', color: '#2c3e50' },
-      { symbol: '♠', name: 'spades', color: '#2c3e50' }
-    ];
     
-    suits.forEach(suit => {
-      const cards = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
-      cards.forEach(card => {
-        allCards.push(`${card}${suit.symbol}`);
+    SUITS_ORDER.forEach(suitName => {
+      RANKS_ORDER.forEach(rank => {
+        // Конвертируем формат карты для нашего компонента
+        const displayRank = rank === '10' ? 'T' : rank;
+        let suitSymbol = '';
+        switch(suitName) {
+          case 'hearts': suitSymbol = '♥'; break;
+          case 'diamonds': suitSymbol = '♦'; break;
+          case 'clubs': suitSymbol = '♣'; break;
+          case 'spades': suitSymbol = '♠'; break;
+        }
+        allCards.push(`${displayRank}${suitSymbol}`);
       });
     });
     
@@ -227,6 +231,48 @@ const TestWindow: React.FC = () => {
     }));
     
     closeCardModal();
+  };
+
+  // Конвертируем наш формат карты в формат спрайтов
+  const convertCardToSprite = (cardString: string) => {
+    if (!cardString) return null;
+    
+    const rank = cardString.slice(0, -1); // Все символы кроме последнего
+    const suitSymbol = cardString.slice(-1); // Последний символ
+    
+    // Конвертируем ранг
+    const spriteRank = rank === 'T' ? '10' : rank;
+    
+    // Конвертируем масть
+    let spriteSuit: Suit;
+    switch(suitSymbol) {
+      case '♥': spriteSuit = 'hearts'; break;
+      case '♦': spriteSuit = 'diamonds'; break;
+      case '♣': spriteSuit = 'clubs'; break;
+      case '♠': spriteSuit = 'spades'; break;
+      default: return null;
+    }
+    
+    return { suit: spriteSuit, rank: spriteRank as Rank };
+  };
+
+  // Конвертируем из формата спрайтов в наш формат
+  const convertSpriteToCard = (suit: Suit, rank: Rank): string => {
+    const displayRank = rank === '10' ? 'T' : rank;
+    let suitSymbol = '';
+    switch(suit) {
+      case 'hearts': suitSymbol = '♥'; break;
+      case 'diamonds': suitSymbol = '♦'; break;
+      case 'clubs': suitSymbol = '♣'; break;
+      case 'spades': suitSymbol = '♠'; break;
+    }
+    return `${displayRank}${suitSymbol}`;
+  };
+
+  // Проверяем, выбрана ли карта
+  const isCardSelected = (suit: Suit, rank: Rank): boolean => {
+    const cardString = convertSpriteToCard(suit, rank);
+    return boardSettings.flop.specificCards.includes(cardString);
   };
 
   const cards = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
@@ -388,23 +434,32 @@ const TestWindow: React.FC = () => {
                 <div className="flop-subsection">
                   <label className="subsection-label">Конкретный флоп</label>
                   <div className="specific-cards-row">
-                    {[0, 1, 2].map(index => (
-                      <div 
-                        key={index}
-                        className="card-slot"
-                        onClick={() => openCardModal(index)}
-                      >
-                        {boardSettings.flop.specificCards[index] ? (
-                          <div className="selected-card">
-                            {boardSettings.flop.specificCards[index]}
-                          </div>
-                        ) : (
-                          <div className="card-back">
-                            🂠
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                    {[0, 1, 2].map(index => {
+                      const cardString = boardSettings.flop.specificCards[index];
+                      const cardData = convertCardToSprite(cardString);
+                      
+                      return (
+                        <div 
+                          key={index}
+                          className="card-slot"
+                          onClick={() => openCardModal(index)}
+                        >
+                          {cardData ? (
+                            <Card
+                              suit={cardData.suit}
+                              rank={cardData.rank}
+                              width={50}
+                              height={70}
+                              animated={true}
+                            />
+                          ) : (
+                            <div className="card-back">
+                              🂠
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -625,20 +680,28 @@ const TestWindow: React.FC = () => {
                     </span>
                   </div>
                   <div className="cards-row">
-                    {cards.map(card => (
-                      <button
-                        key={`${card}${suit.symbol}`}
-                        className="card-option"
-                        style={{ 
-                          color: suit.color,
-                          borderColor: `${suit.color}40`
-                        }}
-                        onClick={() => selectCard(`${card}${suit.symbol}`)}
-                      >
-                        <span className="card-rank">{card}</span>
-                        <span className="card-suit" style={{ color: suit.color }}>{suit.symbol}</span>
-                      </button>
-                    ))}
+                    {RANKS_ORDER.map(rank => {
+                      const spriteSuit = suit.name as Suit;
+                      const isSelected = isCardSelected(spriteSuit, rank);
+                      const cardString = convertSpriteToCard(spriteSuit, rank);
+                      
+                      return (
+                        <div
+                          key={`${rank}${suit.symbol}`}
+                          className={`card-option-container ${isSelected ? 'selected' : ''}`}
+                          onClick={() => selectCard(cardString)}
+                        >
+                          <Card
+                            suit={spriteSuit}
+                            rank={rank}
+                            width={60}
+                            height={84}
+                            animated={true}
+                            selected={isSelected}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
