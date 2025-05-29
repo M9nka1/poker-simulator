@@ -72,13 +72,6 @@ const TestWindow: React.FC = () => {
     setBoardSettings(prev => ({ ...prev, activeStreet: street }));
   };
 
-  const handleFlopSettingChange = (field: string, value: any) => {
-    setBoardSettings(prev => ({
-      ...prev,
-      flop: { ...prev.flop, [field]: value }
-    }));
-  };
-
   const handleCardRankSelection = (field: 'highCard' | 'middleCard' | 'lowCard', card: string) => {
     setBoardSettings(prev => {
       const currentSelection = prev.flop[field];
@@ -171,12 +164,6 @@ const TestWindow: React.FC = () => {
         flop: { ...prev.flop, [field]: newSelection }
       };
     });
-  };
-
-  const handleSpecificCardChange = (index: number, value: string) => {
-    const newCards = [...boardSettings.flop.specificCards];
-    newCards[index] = value;
-    handleFlopSettingChange('specificCards', newCards);
   };
 
   const openCardModal = (index: number) => {
