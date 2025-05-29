@@ -190,12 +190,52 @@ const TestWindow: React.FC = () => {
   const selectCard = (card: string) => {
     if (selectedCardIndex !== null) {
       handleSpecificCardChange(selectedCardIndex, card);
-      closeCardModal();
+      
+      // Автоматически переходим к следующей карте если это не последняя
+      if (selectedCardIndex < 2) {
+        setSelectedCardIndex(selectedCardIndex + 1);
+      } else {
+        closeCardModal();
+      }
     }
   };
 
+  const selectRandomFlop = () => {
+    // Выбираем 3 случайные карты для флопа
+    const allCards: string[] = [];
+    const suits = [
+      { symbol: '♥', name: 'hearts', color: '#e74c3c' },
+      { symbol: '♦', name: 'diamonds', color: '#e74c3c' },
+      { symbol: '♣', name: 'clubs', color: '#2c3e50' },
+      { symbol: '♠', name: 'spades', color: '#2c3e50' }
+    ];
+    
+    suits.forEach(suit => {
+      const cards = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+      cards.forEach(card => {
+        allCards.push(`${card}${suit.symbol}`);
+      });
+    });
+    
+    const shuffled = [...allCards].sort(() => 0.5 - Math.random());
+    const selectedCards = shuffled.slice(0, 3);
+    
+    // Устанавливаем выбранные карты
+    setBoardSettings(prev => ({
+      ...prev,
+      flop: { ...prev.flop, specificCards: selectedCards }
+    }));
+    
+    closeCardModal();
+  };
+
   const cards = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
-  const suits = ['♠', '♥', '♦', '♣'];
+  const suits = [
+    { symbol: '♥', name: 'hearts', color: '#e74c3c' },
+    { symbol: '♦', name: 'diamonds', color: '#e74c3c' },
+    { symbol: '♣', name: 'clubs', color: '#2c3e50' },
+    { symbol: '♠', name: 'spades', color: '#2c3e50' }
+  ];
 
   const getSelectedSpotData = (): PreflopSpot | null => {
     return preflopSpots.find(spot => spot.id === selectedSpot) || null;
@@ -565,21 +605,43 @@ const TestWindow: React.FC = () => {
         <div className="modal-overlay" onClick={closeCardModal}>
           <div className="card-selection-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Выберите карту</h3>
-              <button className="close-modal-btn" onClick={closeCardModal}>✕</button>
+              <h3>Выберите карту {selectedCardIndex !== null ? selectedCardIndex + 1 : ''}</h3>
+              <div className="modal-actions">
+                <button className="random-flop-btn" onClick={selectRandomFlop}>
+                  🎲 Случайный флоп
+                </button>
+                <button className="close-modal-btn" onClick={closeCardModal}>✕</button>
+              </div>
             </div>
-            <div className="cards-grid">
-              {cards.map(card => 
-                suits.map(suit => (
-                  <button
-                    key={`${card}${suit}`}
-                    className="card-option"
-                    onClick={() => selectCard(`${card}${suit}`)}
-                  >
-                    {card}{suit}
-                  </button>
-                ))
-              )}
+            <div className="cards-grid-suits">
+              {suits.map(suit => (
+                <div key={suit.name} className="suit-row">
+                  <div className="suit-label" style={{ color: suit.color }}>
+                    <span className="suit-symbol">{suit.symbol}</span>
+                    <span className="suit-name">
+                      {suit.name === 'hearts' ? 'Червы' : 
+                       suit.name === 'diamonds' ? 'Бубны' :
+                       suit.name === 'clubs' ? 'Трефы' : 'Пики'}
+                    </span>
+                  </div>
+                  <div className="cards-row">
+                    {cards.map(card => (
+                      <button
+                        key={`${card}${suit.symbol}`}
+                        className="card-option"
+                        style={{ 
+                          color: suit.color,
+                          borderColor: `${suit.color}40`
+                        }}
+                        onClick={() => selectCard(`${card}${suit.symbol}`)}
+                      >
+                        <span className="card-rank">{card}</span>
+                        <span className="card-suit" style={{ color: suit.color }}>{suit.symbol}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
