@@ -226,7 +226,7 @@
 }
 
 .rake-controls-inline .rake-input-group {
-  flex: 1;
+  flex: none;              /* Убираем растягивание - поля имеют фиксированный размер */
   position: relative;
 }
 
@@ -819,7 +819,8 @@
 }
 
 .rake-controls-inline .rake-input-group {
-  flex: 1;
+  flex: none;              /* Убираем растягивание - поля имеют фиксированный размер */
+  position: relative;
 }
 
 /* Компактные поля ввода */
@@ -831,10 +832,11 @@
   width: auto !important; /* Возвращаем автоматическую ширину */
 }
 
-/* Убираем конкретные ширины для полей рейка - возвращаем к исходному состоянию */
+/* Убираем конкретные ширины для полей рейка - устанавливаем фиксированную максимальную ширину */
 .rake-input-group .compact-input {
-  width: auto !important;
-  min-width: 60px;
+  width: 60px !important;          /* Фиксированная ширина 60px */
+  max-width: 60px !important;      /* Максимальная ширина 60px */
+  min-width: 60px !important;      /* Минимальная ширина 60px для стабильности */
 }
 
 /* Specific Cards Row */
