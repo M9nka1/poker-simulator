@@ -184,6 +184,11 @@ const TestWindow: React.FC = () => {
     setIsCardModalOpen(true);
   };
 
+  const openFreeCardModal = () => {
+    setSelectedCardIndex(null);
+    setIsCardModalOpen(true);
+  };
+
   const closeCardModal = () => {
     setIsCardModalOpen(false);
     setSelectedCardIndex(null);
@@ -191,13 +196,16 @@ const TestWindow: React.FC = () => {
 
   const selectCard = (card: string) => {
     if (selectedCardIndex !== null) {
-      const currentCards = boardSettings.flop.specificCards;
+      const currentCards = [...boardSettings.flop.specificCards];
       const cardAtIndex = currentCards[selectedCardIndex];
       
       if (cardAtIndex === card) {
         // Если кликнули по уже выбранной карте - отменяем выбор
-        handleSpecificCardChange(selectedCardIndex, '');
-        closeCardModal();
+        currentCards[selectedCardIndex] = '';
+        setBoardSettings(prev => ({
+          ...prev,
+          flop: { ...prev.flop, specificCards: currentCards }
+        }));
       } else {
         // Проверяем, не выбрана ли уже эта карта в других позициях
         const isCardAlreadySelected = currentCards.some((existingCard, index) => 
@@ -210,7 +218,55 @@ const TestWindow: React.FC = () => {
         }
         
         // Выбираем новую карту
-        handleSpecificCardChange(selectedCardIndex, card);
+        currentCards[selectedCardIndex] = card;
+        setBoardSettings(prev => ({
+          ...prev,
+          flop: { ...prev.flop, specificCards: currentCards }
+        }));
+        
+        // Автоматически переходим к следующей пустой позиции
+        const nextEmptyIndex = currentCards.findIndex((c, i) => i > selectedCardIndex && !c);
+        if (nextEmptyIndex !== -1) {
+          setSelectedCardIndex(nextEmptyIndex);
+        } else {
+          // Если все карты заполнены или мы на последней позиции, автоматически закрываем
+          const allFilled = currentCards.every(c => c !== '');
+          if (allFilled) {
+            closeCardModal();
+          }
+        }
+      }
+    }
+  };
+
+  // Функция для быстрого выбора всех карт флопа
+  const selectCardForAnyPosition = (card: string) => {
+    const currentCards = [...boardSettings.flop.specificCards];
+    
+    // Проверяем, не выбрана ли уже эта карта
+    const existingIndex = currentCards.findIndex(c => c === card);
+    if (existingIndex !== -1) {
+      // Карта уже выбрана - отменяем выбор
+      currentCards[existingIndex] = '';
+      setBoardSettings(prev => ({
+        ...prev,
+        flop: { ...prev.flop, specificCards: currentCards }
+      }));
+      return;
+    }
+    
+    // Ищем первую пустую позицию
+    const emptyIndex = currentCards.findIndex(c => !c);
+    if (emptyIndex !== -1) {
+      currentCards[emptyIndex] = card;
+      setBoardSettings(prev => ({
+        ...prev,
+        flop: { ...prev.flop, specificCards: currentCards }
+      }));
+      
+      // Если все позиции заполнены, закрываем модальное окно
+      const allFilled = currentCards.every(c => c !== '');
+      if (allFilled) {
         closeCardModal();
       }
     }
@@ -474,6 +530,13 @@ const TestWindow: React.FC = () => {
                         </div>
                       );
                     })}
+                    <button 
+                      className="quick-select-btn" 
+                      onClick={openFreeCardModal}
+                      title="Быстрый выбор карт"
+                    >
+                      ⚡ Выбрать карты
+                    </button>
                   </div>
                 </div>
 
@@ -674,10 +737,18 @@ const TestWindow: React.FC = () => {
         <div className="modal-overlay" onClick={closeCardModal}>
           <div className="card-selection-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Выберите карту {selectedCardIndex !== null ? selectedCardIndex + 1 : ''}</h3>
+              <h3>
+                {selectedCardIndex !== null 
+                  ? `Выберите карту ${selectedCardIndex + 1}`
+                  : 'Выберите карты флопа'
+                }
+              </h3>
               <div className="modal-actions">
                 <button className="random-flop-btn" onClick={selectRandomFlop}>
                   🎲 Случайный флоп
+                </button>
+                <button className="done-btn" onClick={closeCardModal}>
+                  ✅ Готово
                 </button>
                 <button className="close-modal-btn" onClick={closeCardModal}>✕</button>
               </div>
@@ -696,7 +767,13 @@ const TestWindow: React.FC = () => {
                         <div
                           key={`${rank}${suit.symbol}`}
                           className={`card-option-container ${isSelected ? 'selected' : ''} ${isAlreadyUsed ? 'used' : ''}`}
-                          onClick={() => selectCard(cardString)}
+                          onClick={() => {
+                            if (selectedCardIndex !== null) {
+                              selectCard(cardString);
+                            } else {
+                              selectCardForAnyPosition(cardString);
+                            }
+                          }}
                         >
                           <Card
                             suit={spriteSuit}

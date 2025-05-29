@@ -825,53 +825,60 @@
 
 /* Конкретные ширины для полей рейка */
 .rake-input-group:first-child .compact-input {
-  width: 17px !important; /* Уменьшена в 3 раза с 50px */
+  width: 45px !important; /* Ширина для 4-5 символов: "99.9%" */
 }
 
 .rake-input-group:last-child .compact-input {
-  width: 17px !important; /* Уменьшена в 3 раза с 50px */
+  width: 50px !important; /* Ширина для 4-5 символов: "99.9$" */
 }
 
 /* Specific Cards Row */
 .specific-cards-row {
   display: flex;
   gap: 12px;
+  align-items: center;
   justify-content: flex-start;
   margin-top: 12px;
 }
 
-.card-slot {
-  width: 50px;
+.quick-select-btn {
+  padding: 8px 12px;
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  border-radius: 6px;
+  color: #a855f7;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
   height: 70px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.quick-select-btn:hover {
+  background: rgba(168, 85, 247, 0.3);
+  transform: translateY(-2px);
+}
+
+.done-btn {
+  padding: 8px 16px;
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  border-radius: 6px;
+  color: #22c55e;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
-  position: relative;
+  white-space: nowrap;
 }
 
-.card-slot:hover {
-  border-color: rgba(59, 130, 246, 0.5);
-  background: rgba(59, 130, 246, 0.1);
-  transform: none; /* Убираем анимацию положения */
-}
-
-.card-back {
-  font-size: 24px;
-  color: rgba(255, 255, 255, 0.3);
-  user-select: none;
-}
-
-.selected-card {
-  font-size: 14px;
-  font-weight: bold;
-  color: #ffffff;
-  text-align: center;
-  user-select: none;
+.done-btn:hover {
+  background: rgba(34, 197, 94, 0.3);
+  transform: translateY(-1px);
 }
 
 /* Modal Overlay */
@@ -1159,4 +1166,38 @@
     flex-wrap: wrap;
     gap: 1px;
   }
+}
+
+.card-slot {
+  width: 50px;
+  height: 70px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.card-slot:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(59, 130, 246, 0.1);
+  transform: none; /* Убираем анимацию положения */
+}
+
+.card-back {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.3);
+  user-select: none;
+}
+
+.selected-card {
+  font-size: 14px;
+  font-weight: bold;
+  color: #ffffff;
+  text-align: center;
+  user-select: none;
 } 
