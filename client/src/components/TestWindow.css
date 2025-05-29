@@ -828,15 +828,13 @@
   font-size: 12px !important;
   min-width: 0;
   flex: none !important; /* Отключаем flex для точного контроля ширины */
+  width: auto !important; /* Возвращаем автоматическую ширину */
 }
 
-/* Конкретные ширины для полей рейка */
-.rake-input-group:first-child .compact-input {
-  width: 55px !important; /* Ширина для 4-5 символов: "99.9%" */
-}
-
-.rake-input-group:last-child .compact-input {
-  width: 60px !important; /* Ширина для 4-5 символов: "99.9$" */
+/* Убираем конкретные ширины для полей рейка - возвращаем к исходному состоянию */
+.rake-input-group .compact-input {
+  width: auto !important;
+  min-width: 60px;
 }
 
 /* Specific Cards Row */

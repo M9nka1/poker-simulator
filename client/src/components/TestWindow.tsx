@@ -184,28 +184,20 @@ const TestWindow: React.FC = () => {
   const selectCard = (card: string) => {
     if (selectedCardIndex !== null) {
       const currentCards = [...boardSettings.flop.specificCards];
-      const cardAtIndex = currentCards[selectedCardIndex];
       
-      if (cardAtIndex === card) {
-        // Если кликнули по уже выбранной карте в этой позиции - отменяем выбор
-        currentCards[selectedCardIndex] = '';
+      // Проверяем, есть ли эта карта уже в любой позиции
+      const existingCardIndex = currentCards.findIndex(c => c === card);
+      
+      if (existingCardIndex !== -1) {
+        // Карта уже выбрана где-то - отменяем её выбор
+        currentCards[existingCardIndex] = '';
         setBoardSettings(prev => ({
           ...prev,
           flop: { ...prev.flop, specificCards: currentCards }
         }));
         return; // Не закрываем модальное окно при отмене
       } else {
-        // Проверяем, не выбрана ли уже эта карта в других позициях
-        const isCardAlreadySelected = currentCards.some((existingCard, index) => 
-          existingCard === card && index !== selectedCardIndex
-        );
-        
-        if (isCardAlreadySelected) {
-          // Карта уже выбрана в другой позиции, ничего не делаем
-          return;
-        }
-        
-        // Выбираем новую карту
+        // Выбираем новую карту в текущую позицию
         currentCards[selectedCardIndex] = card;
         setBoardSettings(prev => ({
           ...prev,
