@@ -220,10 +220,14 @@
 }
 
 /* Rake Controls */
-.rake-controls {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.rake-controls-inline {
+  display: flex;
   gap: 12px;
+}
+
+.rake-controls-inline .rake-input-group {
+  flex: 1;
+  position: relative;
 }
 
 .rake-input-group {
@@ -240,15 +244,17 @@
   white-space: nowrap;
 }
 
-/* Иконки справа от полей ввода */
+/* Иконки внутри полей ввода справа */
 .input-label-right {
   position: absolute;
-  right: 12px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
   z-index: 1;
   background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
 }
 
 .modern-input {
@@ -818,7 +824,7 @@
 
 /* Компактные поля ввода */
 .compact-input {
-  padding: 6px 24px 6px 8px !important;
+  padding: 6px 20px 6px 8px !important; /* Место справа для значков */
   font-size: 12px !important;
   min-width: 0;
   flex: none !important; /* Отключаем flex для точного контроля ширины */
