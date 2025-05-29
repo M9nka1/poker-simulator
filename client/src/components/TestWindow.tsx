@@ -31,6 +31,23 @@ interface BoardSettings {
   };
 }
 
+interface HandMatrix {
+  [hand: string]: number; // процент с которым играется рука (0-100)
+}
+
+interface MatrixSettings {
+  ip: {
+    selectedPlayer: string;
+    percentage: number;
+    matrix: HandMatrix;
+  };
+  oop: {
+    selectedPlayer: string;
+    percentage: number;
+    matrix: HandMatrix;
+  };
+}
+
 const TestWindow: React.FC = () => {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedSpot, setSelectedSpot] = useState<string>('');
@@ -53,6 +70,20 @@ const TestWindow: React.FC = () => {
       highCard: ['any'],
       middleCard: ['any'],
       lowCard: ['any']
+    }
+  });
+
+  // Состояние для матриц рук
+  const [matrixSettings, setMatrixSettings] = useState<MatrixSettings>({
+    ip: {
+      selectedPlayer: '',
+      percentage: 50,
+      matrix: {}
+    },
+    oop: {
+      selectedPlayer: '',
+      percentage: 50,
+      matrix: {}
     }
   });
 
@@ -362,6 +393,143 @@ const TestWindow: React.FC = () => {
     return cells;
   };
 
+  // Генерация всех возможных покерных рук
+  const generatePokerHands = () => {
+    const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+    const hands: string[] = [];
+    
+    // Добавляем пары
+    ranks.forEach(rank => {
+      hands.push(`${rank}${rank}`);
+    });
+    
+    // Добавляем suited и offsuit комбинации
+    for (let i = 0; i < ranks.length; i++) {
+      for (let j = i + 1; j < ranks.length; j++) {
+        hands.push(`${ranks[i]}${ranks[j]}s`); // suited
+        hands.push(`${ranks[i]}${ranks[j]}o`); // offsuit
+      }
+    }
+    
+    return hands;
+  };
+
+  // Матрицы рук
+  const renderHandMatrix = (position: 'ip' | 'oop') => {
+    const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+    const matrix: React.ReactElement[] = [];
+    
+    // Создаем сетку 13x13
+    for (let i = 0; i < 13; i++) {
+      for (let j = 0; j < 13; j++) {
+        let hand = '';
+        let className = 'matrix-cell';
+        
+        if (i === j) {
+          // Пары на диагонали
+          hand = `${ranks[i]}${ranks[i]}`;
+          className += ' pair';
+        } else if (i < j) {
+          // Suited руки выше диагонали
+          hand = `${ranks[i]}${ranks[j]}s`;
+          className += ' suited';
+        } else {
+          // Offsuit руки ниже диагонали
+          hand = `${ranks[j]}${ranks[i]}o`;
+          className += ' offsuit';
+        }
+        
+        const percentage = matrixSettings[position].matrix[hand] || 0;
+        const intensity = percentage / 100;
+        
+        matrix.push(
+          <div
+            key={`${position}-${i}-${j}`}
+            className={`${className} ${percentage > 0 ? 'selected' : ''}`}
+            style={{
+              backgroundColor: percentage > 0 
+                ? `rgba(34, 197, 94, ${0.2 + intensity * 0.6})` 
+                : 'rgba(255, 255, 255, 0.05)',
+              borderColor: percentage > 0 
+                ? `rgba(34, 197, 94, ${0.3 + intensity * 0.4})` 
+                : 'rgba(255, 255, 255, 0.15)'
+            }}
+            onClick={() => toggleHandSelection(position, hand)}
+            title={`${hand}: ${percentage}%`}
+          >
+            <span className="hand-text">{hand}</span>
+            {percentage > 0 && (
+              <span className="percentage-text">{percentage}%</span>
+            )}
+          </div>
+        );
+      }
+    }
+    
+    return <div className="poker-matrix">{matrix}</div>;
+  };
+
+  const toggleHandSelection = (position: 'ip' | 'oop', hand: string) => {
+    const currentPercentage = matrixSettings[position].matrix[hand] || 0;
+    const selectedPercentage = matrixSettings[position].percentage;
+    
+    setMatrixSettings(prev => ({
+      ...prev,
+      [position]: {
+        ...prev[position],
+        matrix: {
+          ...prev[position].matrix,
+          [hand]: currentPercentage === 0 ? selectedPercentage : 0
+        }
+      }
+    }));
+  };
+
+  const handleMatrixPlayerChange = (position: 'ip' | 'oop', player: string) => {
+    setMatrixSettings(prev => ({
+      ...prev,
+      [position]: {
+        ...prev[position],
+        selectedPlayer: player
+      }
+    }));
+  };
+
+  const handleMatrixPercentageChange = (position: 'ip' | 'oop', percentage: number) => {
+    setMatrixSettings(prev => ({
+      ...prev,
+      [position]: {
+        ...prev[position],
+        percentage
+      }
+    }));
+  };
+
+  const handlePasteFromClipboard = async (position: 'ip' | 'oop') => {
+    try {
+      const text = await navigator.clipboard.readText();
+      // Парсинг текста рук (простая реализация)
+      const hands = text.split(/[\s,]+/).filter(hand => hand.length >= 2);
+      const newMatrix: HandMatrix = {};
+      
+      hands.forEach(hand => {
+        if (hand) {
+          newMatrix[hand] = matrixSettings[position].percentage;
+        }
+      });
+      
+      setMatrixSettings(prev => ({
+        ...prev,
+        [position]: {
+          ...prev[position],
+          matrix: { ...prev[position].matrix, ...newMatrix }
+        }
+      }));
+    } catch (err) {
+      console.error('Ошибка при вставке из буфера обмена:', err);
+    }
+  };
+
   return (
     <div className="test-window">
       {/* Кнопка открытия панели */}
@@ -644,11 +812,107 @@ const TestWindow: React.FC = () => {
             )}
           </div>
 
-          {/* Старая сетка для демонстрации */}
+          {/* Матрицы рук */}
           <div className="control-section">
-            <label className="control-label">📊 Демо сетка</label>
-            <div className="grid-container">
-              {renderGrid()}
+            <label className="control-label">🂡 Матрицы рук</label>
+            <div className="matrices-container">
+              {/* IP Матрица */}
+              <div className="matrix-group">
+                <div className="matrix-header">
+                  <span className="matrix-title">IP (In Position)</span>
+                  <div className="matrix-controls">
+                    <select 
+                      className="modern-select matrix-player-select"
+                      value={matrixSettings.ip.selectedPlayer}
+                      onChange={(e) => handleMatrixPlayerChange('ip', e.target.value)}
+                    >
+                      <option value="">Выберите игрока</option>
+                      <option value="tight">Tight Player</option>
+                      <option value="loose">Loose Player</option>
+                      <option value="aggressive">Aggressive Player</option>
+                    </select>
+                    <button 
+                      className="paste-btn" 
+                      title="Вставить из буфера обмена"
+                      onClick={() => handlePasteFromClipboard('ip')}
+                    >
+                      📋
+                    </button>
+                  </div>
+                </div>
+                <div className="matrix-content">
+                  <div className="hand-matrix">
+                    {renderHandMatrix('ip')}
+                  </div>
+                  <div className="percentage-slider">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="25"
+                      value={matrixSettings.ip.percentage}
+                      onChange={(e) => handleMatrixPercentageChange('ip', parseInt(e.target.value))}
+                      className="slider vertical-slider"
+                    />
+                    <div className="slider-labels">
+                      <span>100%</span>
+                      <span>75%</span>
+                      <span>50%</span>
+                      <span>25%</span>
+                      <span>0%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* OOP Матрица */}
+              <div className="matrix-group">
+                <div className="matrix-header">
+                  <span className="matrix-title">OOP (Out of Position)</span>
+                  <div className="matrix-controls">
+                    <select 
+                      className="modern-select matrix-player-select"
+                      value={matrixSettings.oop.selectedPlayer}
+                      onChange={(e) => handleMatrixPlayerChange('oop', e.target.value)}
+                    >
+                      <option value="">Выберите игрока</option>
+                      <option value="tight">Tight Player</option>
+                      <option value="loose">Loose Player</option>
+                      <option value="aggressive">Aggressive Player</option>
+                    </select>
+                    <button 
+                      className="paste-btn" 
+                      title="Вставить из буфера обмена"
+                      onClick={() => handlePasteFromClipboard('oop')}
+                    >
+                      📋
+                    </button>
+                  </div>
+                </div>
+                <div className="matrix-content">
+                  <div className="hand-matrix">
+                    {renderHandMatrix('oop')}
+                  </div>
+                  <div className="percentage-slider">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="25"
+                      value={matrixSettings.oop.percentage}
+                      onChange={(e) => handleMatrixPercentageChange('oop', parseInt(e.target.value))}
+                      className="slider vertical-slider"
+                    />
+                    <div className="slider-labels">
+                      <span>100%</span>
+                      <span>75%</span>
+                      <span>50%</span>
+                      <span>25%</span>
+                      <span>0%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

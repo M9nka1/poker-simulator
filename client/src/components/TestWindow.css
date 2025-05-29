@@ -1223,4 +1223,258 @@
   color: #ffffff;
   text-align: center;
   user-select: none;
+}
+
+/* Matrices Container */
+.matrices-container {
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.matrix-group {
+  flex: 1;
+  max-width: 48%;
+}
+
+.matrix-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.matrix-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.matrix-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.matrix-player-select {
+  min-width: 140px;
+  font-size: 12px;
+  padding: 6px 10px;
+}
+
+.paste-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(168, 85, 247, 0.2);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #a855f7;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.paste-btn:hover {
+  background: rgba(168, 85, 247, 0.3);
+  transform: translateY(-1px);
+}
+
+.matrix-content {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.hand-matrix {
+  flex: 1;
+}
+
+/* Poker Matrix Grid */
+.poker-matrix {
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 4px;
+  max-width: 400px;
+}
+
+.matrix-cell {
+  aspect-ratio: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 2px;
+}
+
+.matrix-cell:hover {
+  transform: scale(1.05);
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.matrix-cell.pair {
+  background: rgba(255, 165, 0, 0.1);
+  border-color: rgba(255, 165, 0, 0.3);
+}
+
+.matrix-cell.suited {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.matrix-cell.offsuit {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.matrix-cell.selected {
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.3);
+}
+
+.hand-text {
+  font-size: 10px;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+  line-height: 1;
+}
+
+.percentage-text {
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 1px;
+}
+
+/* Percentage Slider */
+.percentage-slider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  min-height: 200px;
+}
+
+.vertical-slider {
+  writing-mode: bt-lr; /* IE */
+  -webkit-appearance: slider-vertical; /* WebKit */
+  width: 20px;
+  height: 150px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  outline: none;
+  cursor: pointer;
+}
+
+.vertical-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #22c55e;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.vertical-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #22c55e;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.slider-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+}
+
+/* Responsive Matrix */
+@media (max-width: 1024px) {
+  .matrices-container {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .matrix-group {
+    max-width: 100%;
+  }
+  
+  .poker-matrix {
+    max-width: 100%;
+  }
+  
+  .matrix-cell {
+    min-height: 24px;
+  }
+  
+  .hand-text {
+    font-size: 9px;
+  }
+  
+  .percentage-text {
+    font-size: 7px;
+  }
+}
+
+@media (max-width: 768px) {
+  .matrix-content {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .percentage-slider {
+    flex-direction: row;
+    min-height: auto;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .vertical-slider {
+    writing-mode: initial;
+    -webkit-appearance: none;
+    width: 150px;
+    height: 20px;
+  }
+  
+  .slider-labels {
+    flex-direction: row;
+    justify-content: space-between;
+    width: 150px;
+  }
+  
+  .matrix-controls {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  
+  .matrix-player-select {
+    min-width: 120px;
+  }
 } 
