@@ -222,7 +222,7 @@
 /* Rake Controls */
 .rake-controls-inline {
   display: flex;
-  gap: 12px;
+  gap: 2px;
 }
 
 .rake-controls-inline .rake-input-group {
@@ -815,7 +815,7 @@
 /* Rake Controls Inline */
 .rake-controls-inline {
   display: flex;
-  gap: 12px;
+  gap: 2px;
 }
 
 .rake-controls-inline .rake-input-group {
