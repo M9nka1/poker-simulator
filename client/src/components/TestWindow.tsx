@@ -375,45 +375,6 @@ const TestWindow: React.FC = () => {
     return preflopSpots.find(spot => spot.id === selectedSpot) || null;
   };
 
-  // Создаем сетку 75 строк и 25 колонок
-  const renderGrid = () => {
-    const cells = [];
-    for (let row = 0; row < 75; row++) {
-      for (let col = 0; col < 25; col++) {
-        cells.push(
-          <div 
-            key={`${row}-${col}`} 
-            className="grid-cell"
-            data-row={row + 1}
-            data-col={col + 1}
-          />
-        );
-      }
-    }
-    return cells;
-  };
-
-  // Генерация всех возможных покерных рук
-  const generatePokerHands = () => {
-    const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
-    const hands: string[] = [];
-    
-    // Добавляем пары
-    ranks.forEach(rank => {
-      hands.push(`${rank}${rank}`);
-    });
-    
-    // Добавляем suited и offsuit комбинации
-    for (let i = 0; i < ranks.length; i++) {
-      for (let j = i + 1; j < ranks.length; j++) {
-        hands.push(`${ranks[i]}${ranks[j]}s`); // suited
-        hands.push(`${ranks[i]}${ranks[j]}o`); // offsuit
-      }
-    }
-    
-    return hands;
-  };
-
   // Матрицы рук
   const renderHandMatrix = (position: 'ip' | 'oop') => {
     const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
