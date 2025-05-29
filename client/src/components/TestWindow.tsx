@@ -477,21 +477,38 @@ const TestWindow: React.FC = () => {
         if (hand) {
           const cleanHand = hand.trim();
           
+          // Проверяем, есть ли в руке указание процента (формат "рука:процент")
+          let handName = cleanHand;
+          let percentage = 100; // По умолчанию 100%
+          
+          if (cleanHand.includes(':')) {
+            const parts = cleanHand.split(':');
+            handName = parts[0].trim();
+            const percentValue = parseFloat(parts[1]);
+            
+            // Конвертируем процент: если меньше 1, то это десятичная дробь (0.55 = 55%)
+            if (percentValue < 1) {
+              percentage = Math.round(percentValue * 100);
+            } else {
+              percentage = Math.round(percentValue);
+            }
+          }
+          
           // Проверяем, есть ли в руке указание на suited/offsuit
-          if (cleanHand.endsWith('s') || cleanHand.endsWith('o')) {
-            // Рука уже имеет указание - добавляем как есть с 100%
-            newMatrix[cleanHand] = 100;
+          if (handName.endsWith('s') || handName.endsWith('o')) {
+            // Рука уже имеет указание - добавляем как есть
+            newMatrix[handName] = percentage;
           } else {
-            // Рука без указания - добавляем обе версии (suited и offsuit) с 100%
-            const baseHand = cleanHand;
+            // Рука без указания - добавляем обе версии (suited и offsuit)
+            const baseHand = handName;
             if (baseHand.length >= 2) {
               // Для пар добавляем только саму пару
               if (baseHand[0] === baseHand[1]) {
-                newMatrix[baseHand] = 100;
+                newMatrix[baseHand] = percentage;
               } else {
                 // Для непарных рук добавляем обе версии
-                newMatrix[`${baseHand}s`] = 100;
-                newMatrix[`${baseHand}o`] = 100;
+                newMatrix[`${baseHand}s`] = percentage;
+                newMatrix[`${baseHand}o`] = percentage;
               }
             }
           }
