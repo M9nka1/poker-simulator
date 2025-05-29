@@ -87,6 +87,10 @@ const TestWindow: React.FC = () => {
     }
   });
 
+  // Состояние для игровой симуляции
+  const [selectedPosition, setSelectedPosition] = useState<'ip' | 'oop'>('ip');
+  const [isGameStarted, setIsGameStarted] = useState(false);
+
   const togglePanel = () => {
     setIsPanelOpen(!isPanelOpen);
   };
@@ -527,6 +531,156 @@ const TestWindow: React.FC = () => {
     }
   };
 
+  const startGameSimulation = () => {
+    setIsGameStarted(true);
+    setIsPanelOpen(false);
+  };
+
+  // Генерация случайной руки из матрицы
+  const generateRandomHandFromMatrix = (position: 'ip' | 'oop'): string[] => {
+    const matrix = matrixSettings[position].matrix;
+    const hands = Object.keys(matrix).filter(hand => matrix[hand] > 0);
+    
+    if (hands.length === 0) {
+      // Если матрица пуста, возвращаем случайную руку
+      const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+      const suits = ['♠', '♥', '♦', '♣'];
+      
+      const randomRank1 = ranks[Math.floor(Math.random() * ranks.length)];
+      const randomRank2 = ranks[Math.floor(Math.random() * ranks.length)];
+      const randomSuit1 = suits[Math.floor(Math.random() * suits.length)];
+      const randomSuit2 = suits[Math.floor(Math.random() * suits.length)];
+      
+      return [`${randomRank1}${randomSuit1}`, `${randomRank2}${randomSuit2}`];
+    }
+    
+    // Выбираем случайную руку из матрицы с учетом вероятности
+    const totalWeight = hands.reduce((sum, hand) => sum + matrix[hand], 0);
+    let random = Math.random() * totalWeight;
+    
+    for (const hand of hands) {
+      random -= matrix[hand];
+      if (random <= 0) {
+        return convertHandNotationToCards(hand);
+      }
+    }
+    
+    return convertHandNotationToCards(hands[0]);
+  };
+
+  // Конвертация нотации руки в карты
+  const convertHandNotationToCards = (handNotation: string): string[] => {
+    const suits = ['♠', '♥', '♦', '♣'];
+    
+    if (handNotation.length === 2) {
+      // Пара (например, AA)
+      const rank = handNotation[0];
+      const suit1 = suits[Math.floor(Math.random() * suits.length)];
+      let suit2 = suits[Math.floor(Math.random() * suits.length)];
+      while (suit2 === suit1) {
+        suit2 = suits[Math.floor(Math.random() * suits.length)];
+      }
+      return [`${rank}${suit1}`, `${rank}${suit2}`];
+    } else {
+      // Непарная рука (например, AKs, AKo)
+      const rank1 = handNotation[0];
+      const rank2 = handNotation[1];
+      const suitType = handNotation[2]; // 's' или 'o'
+      
+      if (suitType === 's') {
+        // Suited
+        const suit = suits[Math.floor(Math.random() * suits.length)];
+        return [`${rank1}${suit}`, `${rank2}${suit}`];
+      } else {
+        // Offsuit
+        const suit1 = suits[Math.floor(Math.random() * suits.length)];
+        let suit2 = suits[Math.floor(Math.random() * suits.length)];
+        while (suit2 === suit1) {
+          suit2 = suits[Math.floor(Math.random() * suits.length)];
+        }
+        return [`${rank1}${suit1}`, `${rank2}${suit2}`];
+      }
+    }
+  };
+
+  // Генерация флопа по настройкам
+  const generateFlopFromSettings = (): string[] => {
+    if (boardSettings.flop.specificCards.every(card => card !== '')) {
+      // Используем конкретный флоп
+      return boardSettings.flop.specificCards;
+    }
+    
+    // Генерируем случайный флоп по параметрам
+    const suits = ['♠', '♥', '♦', '♣'];
+    const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+    
+    // Простая генерация (можно расширить логику для учета всех параметров)
+    const flop = [];
+    const usedCards = new Set();
+    
+    for (let i = 0; i < 3; i++) {
+      let card;
+      do {
+        const rank = ranks[Math.floor(Math.random() * ranks.length)];
+        const suit = suits[Math.floor(Math.random() * suits.length)];
+        card = `${rank}${suit}`;
+      } while (usedCards.has(card));
+      
+      usedCards.add(card);
+      flop.push(card);
+    }
+    
+    return flop;
+  };
+
+  // Компонент покерного стола
+  const PokerTable = ({ tableIndex }: { tableIndex: number }) => {
+    const playerHand = generateRandomHandFromMatrix(selectedPosition);
+    const opponentHand = generateRandomHandFromMatrix(selectedPosition === 'ip' ? 'oop' : 'ip');
+    const flop = generateFlopFromSettings();
+    
+    return (
+      <div className="poker-table">
+        <div className="table-surface">
+          <div className="table-number">Стол {tableIndex + 1}</div>
+          
+          {/* Флоп */}
+          <div className="community-cards">
+            {flop.map((card, index) => (
+              <div key={index} className="community-card">
+                {card}
+              </div>
+            ))}
+          </div>
+          
+          {/* Игрок */}
+          <div className="player-position player">
+            <div className="player-label">Вы ({selectedPosition.toUpperCase()})</div>
+            <div className="player-cards">
+              {playerHand.map((card, index) => (
+                <div key={index} className="player-card">
+                  {card}
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Оппонент */}
+          <div className="player-position opponent">
+            <div className="player-label">Оппонент ({selectedPosition === 'ip' ? 'OOP' : 'IP'})</div>
+            <div className="player-cards">
+              {opponentHand.map((card, index) => (
+                <div key={index} className="player-card">
+                  {card}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="test-window">
       {/* Кнопка открытия панели */}
@@ -543,7 +697,33 @@ const TestWindow: React.FC = () => {
       {/* Боковая панель */}
       <div className={`side-panel ${isPanelOpen ? 'open' : ''}`}>
         <div className="panel-header">
-          <h2>Панель управления</h2>
+          <div className="header-content">
+            <h2>Панель управления</h2>
+            <div className="position-selector">
+              <span className="position-label">За кого играть:</span>
+              <div className="position-buttons">
+                <button 
+                  className={`position-btn ${selectedPosition === 'ip' ? 'active' : ''}`}
+                  onClick={() => setSelectedPosition('ip')}
+                >
+                  IP
+                </button>
+                <button 
+                  className={`position-btn ${selectedPosition === 'oop' ? 'active' : ''}`}
+                  onClick={() => setSelectedPosition('oop')}
+                >
+                  OOP
+                </button>
+              </div>
+            </div>
+            <button 
+              className="start-btn"
+              onClick={startGameSimulation}
+              title="Начать симуляцию"
+            >
+              ▶
+            </button>
+          </div>
           <button 
             className="close-btn"
             onClick={togglePanel}
@@ -907,58 +1087,79 @@ const TestWindow: React.FC = () => {
 
       {/* Основной контент */}
       <div className={`main-content ${isPanelOpen ? 'panel-open' : ''}`}>
-        <div className="content-wrapper">
-          <h1>Тестовое окно</h1>
-          <p>Современная панель управления покерными настройками</p>
-          
-          {/* Отображение текущих настроек */}
-          <div className="settings-preview">
-            <div className="preview-card">
-              <h3>🎯 Текущие настройки</h3>
-              <div className="settings-grid">
-                <div className="setting-item">
-                  <span className="setting-label">Префлоп спот:</span>
-                  <span className="setting-value">
-                    {getSelectedSpotData()?.name || 'Не выбран'}
-                  </span>
-                </div>
-                <div className="setting-item">
-                  <span className="setting-label">Столов:</span>
-                  <span className="setting-value">{tableCount}</span>
-                </div>
-                <div className="setting-item">
-                  <span className="setting-label">Рейк:</span>
-                  <span className="setting-value">{rakeSettings.percentage}% / €{rakeSettings.cap}</span>
-                </div>
-                <div className="setting-item">
-                  <span className="setting-label">Борд:</span>
-                  <span className="setting-value">
-                    {boardSettings.activeStreet === 'flop' ? 'Флоп' : 
-                     boardSettings.activeStreet === 'turn' ? 'Тёрн' : 'Ривер'}
-                  </span>
+        {isGameStarted ? (
+          <div className="game-mode">
+            <button 
+              className="back-to-settings-btn"
+              onClick={() => setIsGameStarted(false)}
+              title="Вернуться к настройкам"
+            >
+              ⚙️ Настройки
+            </button>
+            <div className={`tables-container tables-${tableCount}`}>
+              {Array.from({ length: tableCount }, (_, index) => (
+                <PokerTable key={index} tableIndex={index} />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="content-wrapper">
+            <h1>Тестовое окно</h1>
+            <p>Современная панель управления покерными настройками</p>
+            
+            {/* Отображение текущих настроек */}
+            <div className="settings-preview">
+              <div className="preview-card">
+                <h3>🎯 Текущие настройки</h3>
+                <div className="settings-grid">
+                  <div className="setting-item">
+                    <span className="setting-label">Префлоп спот:</span>
+                    <span className="setting-value">
+                      {getSelectedSpotData()?.name || 'Не выбран'}
+                    </span>
+                  </div>
+                  <div className="setting-item">
+                    <span className="setting-label">Позиция:</span>
+                    <span className="setting-value">{selectedPosition.toUpperCase()}</span>
+                  </div>
+                  <div className="setting-item">
+                    <span className="setting-label">Столов:</span>
+                    <span className="setting-value">{tableCount}</span>
+                  </div>
+                  <div className="setting-item">
+                    <span className="setting-label">Рейк:</span>
+                    <span className="setting-value">{rakeSettings.percentage}% / €{rakeSettings.cap}</span>
+                  </div>
+                  <div className="setting-item">
+                    <span className="setting-label">Борд:</span>
+                    <span className="setting-value">
+                      {boardSettings.activeStreet === 'flop' ? 'Флоп' : 
+                       boardSettings.activeStreet === 'turn' ? 'Тёрн' : 'Ривер'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="feature-grid">
-            <div className="feature-card">
-              <div className="feature-icon">🎨</div>
-              <h3>Современный дизайн</h3>
-              <p>Минималистичный интерфейс с glass morphism эффектами</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">⚙️</div>
-              <h3>Гибкие настройки</h3>
-              <p>Полный контроль над префлоп спотами и настройками борда</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">🚀</div>
-              <h3>Быстрая настройка</h3>
-              <p>Интуитивно понятные элементы управления</p>
+            <div className="feature-grid">
+              <div className="feature-card">
+                <div className="feature-icon">🎨</div>
+                <h3>Современный дизайн</h3>
+                <p>Минималистичный интерфейс с glass morphism эффектами</p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-icon">⚙️</div>
+                <h3>Гибкие настройки</h3>
+                <p>Полный контроль над префлоп спотами и настройками борда</p>
+              </div>
+              <div className="feature-card">
+                <div className="feature-icon">🚀</div>
+                <h3>Быстрая настройка</h3>
+                <p>Интуитивно понятные элементы управления</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Оверлей для закрытия панели на мобильных */}
