@@ -21,11 +21,11 @@ interface BoardSettings {
   flop: {
     specific: boolean;
     specificCards: string[];
-    suits: 'flush-draw' | 'rainbow' | 'monotone' | 'any';
-    paired: 'unpaired' | 'paired' | 'trips' | 'any';
-    highCard: string;
-    middleCard: string;
-    lowCard: string;
+    suits: string[];
+    paired: string[];
+    highCard: string[];
+    middleCard: string[];
+    lowCard: string[];
   };
 }
 
@@ -42,11 +42,11 @@ const TestWindow: React.FC = () => {
     flop: {
       specific: false,
       specificCards: ['', '', ''],
-      suits: 'any',
-      paired: 'any',
-      highCard: 'any',
-      middleCard: 'any',
-      lowCard: 'any'
+      suits: ['any'],
+      paired: ['any'],
+      highCard: ['any'],
+      middleCard: ['any'],
+      lowCard: ['any']
     }
   });
 
@@ -71,6 +71,70 @@ const TestWindow: React.FC = () => {
       ...prev,
       flop: { ...prev.flop, [field]: value }
     }));
+  };
+
+  const handleCardRankSelection = (field: 'highCard' | 'middleCard' | 'lowCard', card: string) => {
+    setBoardSettings(prev => {
+      const currentSelection = prev.flop[field];
+      let newSelection: string[];
+
+      if (card === 'any') {
+        // Если выбрано "Любой", сбрасываем выбор к только "any"
+        newSelection = ['any'];
+      } else {
+        // Если в текущем выборе есть "any", убираем его при выборе конкретной карты
+        const filteredSelection = currentSelection.filter(c => c !== 'any');
+        
+        if (filteredSelection.includes(card)) {
+          // Убираем карту из выбора
+          newSelection = filteredSelection.filter(c => c !== card);
+          // Если ничего не осталось, возвращаем "any"
+          if (newSelection.length === 0) {
+            newSelection = ['any'];
+          }
+        } else {
+          // Добавляем карту к выбору
+          newSelection = [...filteredSelection, card];
+        }
+      }
+
+      return {
+        ...prev,
+        flop: { ...prev.flop, [field]: newSelection }
+      };
+    });
+  };
+
+  const handleBoardOptionSelection = (field: 'suits' | 'paired', option: string) => {
+    setBoardSettings(prev => {
+      const currentSelection = prev.flop[field];
+      let newSelection: string[];
+
+      if (option === 'any') {
+        // Если выбрано "Любой", сбрасываем выбор к только "any"
+        newSelection = ['any'];
+      } else {
+        // Если в текущем выборе есть "any", убираем его при выборе конкретной опции
+        const filteredSelection = currentSelection.filter(c => c !== 'any');
+        
+        if (filteredSelection.includes(option)) {
+          // Убираем опцию из выбора
+          newSelection = filteredSelection.filter(c => c !== option);
+          // Если ничего не осталось, возвращаем "any"
+          if (newSelection.length === 0) {
+            newSelection = ['any'];
+          }
+        } else {
+          // Добавляем опцию к выбору
+          newSelection = [...filteredSelection, option];
+        }
+      }
+
+      return {
+        ...prev,
+        flop: { ...prev.flop, [field]: newSelection }
+      };
+    });
   };
 
   const handleSpecificCardChange = (index: number, value: string) => {
@@ -135,7 +199,7 @@ const TestWindow: React.FC = () => {
           <div className="control-section">
             <label className="control-label">🎯 Префлоп спот</label>
             <select 
-              className="modern-select"
+              className="modern-select modern-select-narrow"
               value={selectedSpot}
               onChange={(e) => handleSpotChange(e.target.value)}
             >
@@ -161,12 +225,12 @@ const TestWindow: React.FC = () => {
 
           {/* Количество столов */}
           <div className="control-section">
-            <label className="control-label">🎲 Количество столов</label>
+            <label className="control-label">Количество столов</label>
             <div className="table-count-controls">
-              {[1, 2, 3, 4, 5, 6].map(count => (
+              {[1, 2, 3, 4].map(count => (
                 <button
                   key={count}
-                  className={`count-btn ${tableCount === count ? 'active' : ''}`}
+                  className={`count-btn count-btn-square ${tableCount === count ? 'active' : ''}`}
                   onClick={() => setTableCount(count)}
                 >
                   {count}
@@ -177,10 +241,9 @@ const TestWindow: React.FC = () => {
 
           {/* Настройки рейка */}
           <div className="control-section">
-            <label className="control-label">💰 Настройки рейка</label>
+            <label className="control-label">Настройки рейка</label>
             <div className="rake-controls">
               <div className="rake-input-group">
-                <label className="input-label">%</label>
                 <input
                   type="number"
                   className="modern-input"
@@ -190,9 +253,9 @@ const TestWindow: React.FC = () => {
                   value={rakeSettings.percentage}
                   onChange={(e) => handleRakeChange('percentage', parseFloat(e.target.value) || 0)}
                 />
+                <label className="input-label input-label-right">%</label>
               </div>
               <div className="rake-input-group">
-                <label className="input-label">Кэп</label>
                 <input
                   type="number"
                   className="modern-input"
@@ -202,6 +265,7 @@ const TestWindow: React.FC = () => {
                   value={rakeSettings.cap}
                   onChange={(e) => handleRakeChange('cap', parseFloat(e.target.value) || 0)}
                 />
+                <label className="input-label input-label-right">$</label>
               </div>
             </div>
           </div>
@@ -261,7 +325,7 @@ const TestWindow: React.FC = () => {
                 {/* Масти */}
                 <div className="flop-subsection">
                   <label className="subsection-label">Масти</label>
-                  <div className="button-group">
+                  <div className="button-group button-group-tight">
                     {[
                       { value: 'flush-draw', label: 'Флеш-дро' },
                       { value: 'rainbow', label: 'Радуга' },
@@ -270,8 +334,8 @@ const TestWindow: React.FC = () => {
                     ].map(option => (
                       <button
                         key={option.value}
-                        className={`option-btn ${boardSettings.flop.suits === option.value ? 'active' : ''}`}
-                        onClick={() => handleFlopSettingChange('suits', option.value)}
+                        className={`option-btn ${boardSettings.flop.suits.includes(option.value) ? 'active' : ''}`}
+                        onClick={() => handleBoardOptionSelection('suits', option.value)}
                       >
                         {option.label}
                       </button>
@@ -282,7 +346,7 @@ const TestWindow: React.FC = () => {
                 {/* Спаренность */}
                 <div className="flop-subsection">
                   <label className="subsection-label">Спаренность</label>
-                  <div className="button-group">
+                  <div className="button-group button-group-tight">
                     {[
                       { value: 'unpaired', label: 'Не спаренный' },
                       { value: 'paired', label: 'Спаренный' },
@@ -291,8 +355,8 @@ const TestWindow: React.FC = () => {
                     ].map(option => (
                       <button
                         key={option.value}
-                        className={`option-btn ${boardSettings.flop.paired === option.value ? 'active' : ''}`}
-                        onClick={() => handleFlopSettingChange('paired', option.value)}
+                        className={`option-btn ${boardSettings.flop.paired.includes(option.value) ? 'active' : ''}`}
+                        onClick={() => handleBoardOptionSelection('paired', option.value)}
                       >
                         {option.label}
                       </button>
@@ -307,12 +371,12 @@ const TestWindow: React.FC = () => {
                   {/* Высокая карта */}
                   <div className="card-rank-group">
                     <span className="rank-label">Высокая карта</span>
-                    <div className="button-group">
+                    <div className="button-group button-group-tight">
                       {['any', ...cards].map(card => (
                         <button
                           key={`high-${card}`}
-                          className={`rank-btn ${boardSettings.flop.highCard === card ? 'active' : ''}`}
-                          onClick={() => handleFlopSettingChange('highCard', card)}
+                          className={`rank-btn ${boardSettings.flop.highCard.includes(card) ? 'active' : ''}`}
+                          onClick={() => handleCardRankSelection('highCard', card)}
                         >
                           {card === 'any' ? 'Любой' : card}
                         </button>
@@ -323,12 +387,12 @@ const TestWindow: React.FC = () => {
                   {/* Средняя карта */}
                   <div className="card-rank-group">
                     <span className="rank-label">Средняя карта</span>
-                    <div className="button-group">
+                    <div className="button-group button-group-tight">
                       {['any', ...cards].map(card => (
                         <button
                           key={`middle-${card}`}
-                          className={`rank-btn ${boardSettings.flop.middleCard === card ? 'active' : ''}`}
-                          onClick={() => handleFlopSettingChange('middleCard', card)}
+                          className={`rank-btn ${boardSettings.flop.middleCard.includes(card) ? 'active' : ''}`}
+                          onClick={() => handleCardRankSelection('middleCard', card)}
                         >
                           {card === 'any' ? 'Любой' : card}
                         </button>
@@ -339,12 +403,12 @@ const TestWindow: React.FC = () => {
                   {/* Нижняя карта */}
                   <div className="card-rank-group">
                     <span className="rank-label">Нижняя карта</span>
-                    <div className="button-group">
+                    <div className="button-group button-group-tight">
                       {['any', ...cards].map(card => (
                         <button
                           key={`low-${card}`}
-                          className={`rank-btn ${boardSettings.flop.lowCard === card ? 'active' : ''}`}
-                          onClick={() => handleFlopSettingChange('lowCard', card)}
+                          className={`rank-btn ${boardSettings.flop.lowCard.includes(card) ? 'active' : ''}`}
+                          onClick={() => handleCardRankSelection('lowCard', card)}
                         >
                           {card === 'any' ? 'Любой' : card}
                         </button>
