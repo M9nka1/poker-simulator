@@ -401,15 +401,14 @@ const TestWindow: React.FC = () => {
 
   // Обновляем имена игроков при изменении выбранного спота
   useEffect(() => {
-    if (selectedSpot) {
-      const names = getPlayerNamesFromSpot(selectedSpot);
-      setMatrixSettings(prev => ({
-        ...prev,
-        ip: { ...prev.ip, selectedPlayer: names[0] },
-        oop: { ...prev.oop, selectedPlayer: names[1] }
-      }));
-    }
-  }, [selectedSpot, getPlayerNamesFromSpot]);
+    const names = getPlayerNamesFromSpot(selectedSpot);
+    setMatrixSettings(prev => ({
+      ...prev,
+      ip: { ...prev.ip, selectedPlayer: names[0] },
+      oop: { ...prev.oop, selectedPlayer: names[1] }
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSpot]);
 
   // Матрицы рук
   const renderHandMatrix = (position: 'ip' | 'oop') => {

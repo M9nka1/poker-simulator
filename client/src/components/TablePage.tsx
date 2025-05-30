@@ -35,7 +35,6 @@ const TablePage: React.FC<TablePageProps> = ({
   const [table, setTable] = useState<TableData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>('');
-  const [handHistories, setHandHistories] = useState<string[]>([]);
 
   useEffect(() => {
     console.log(`🎮 TablePage loading - Session: ${sessionId}, Table: ${tableId}, Guest: ${isGuest}, Style: ${tableStyle}`);
@@ -76,11 +75,7 @@ const TablePage: React.FC<TablePageProps> = ({
     };
 
     loadTable();
-  }, [sessionId, tableId]);
-
-  const handleHandComplete = (handHistory: string) => {
-    setHandHistories(prev => [...prev, handHistory]);
-  };
+  }, [sessionId, tableId, isGuest, tableStyle]);
 
   if (isLoading) {
     return (
@@ -161,24 +156,6 @@ const TablePage: React.FC<TablePageProps> = ({
           console.log('✅ Hand completed:', handHistory);
         }}
       />
-
-      {/* Статистика стола */}
-      {handHistories.length > 0 && (
-        <div style={{
-          marginTop: '20px',
-          background: 'rgba(255, 255, 255, 0.05)',
-          borderRadius: '10px',
-          padding: '15px',
-          textAlign: 'center'
-        }}>
-          <div style={{ fontSize: '1.2rem', color: '#FFA726', marginBottom: '5px' }}>
-            📊 Статистика стола
-          </div>
-          <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
-            Сыграно рук: {handHistories.length} | Стол: #{tableId}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
