@@ -85,10 +85,23 @@ const JoinSessionPage: React.FC<JoinSessionPageProps> = ({
       if (response.ok) {
         const sessionData = await response.json();
         
-        // Открываем новое окно для второго игрока
-        openPlayerWindow(sessionData.sessionId, sessionData.tables[0].id, sessionData.playerNames || []);
+        // Открываем окна для всех столов в сессии
+        const tableCount = sessionData.tables ? sessionData.tables.length : 1;
         
-        alert(`✅ Подключение к сессии!\n\nОткрыто новое окно для игры.\nВы играете как Игрок 2.`);
+        console.log(`🎯 Opening ${tableCount} tables for guest connection`);
+        
+        // Открываем окно для каждого стола
+        for (let i = 0; i < tableCount; i++) {
+          const table = sessionData.tables[i];
+          if (table) {
+            // Небольшая задержка между открытием окон
+            setTimeout(() => {
+              openPlayerWindow(sessionData.sessionId, table.id, sessionData.playerNames || [], i);
+            }, i * 200); // 200ms задержка между окнами
+          }
+        }
+        
+        alert(`✅ Успешно подключились к ${tableCount} столам!\n\nОткрыто ${tableCount} новых окон для игры.\nВы играете как Игрок 2.`);
         
       } else if (response.status === 404) {
         setError('Сессия не найдена. Обновите список сессий.');
@@ -104,20 +117,28 @@ const JoinSessionPage: React.FC<JoinSessionPageProps> = ({
     }
   };
 
-  const openPlayerWindow = (sessionId: string, tableId: number, playerNames: string[]) => {
-    // Создаем URL с параметрами для стола
-    const baseUrl = window.location.origin;
-    const tableUrl = new URL(`${baseUrl}`);
+  const openPlayerWindow = (sessionId: string, tableId: number, playerNames: string[], windowIndex: number = 0) => {
+    // Используем config для baseUrl
+    const baseUrl = config.apiBaseUrl;
+    const tableUrl = new URL(baseUrl);
     
-    // Добавляем параметры в hash для передачи в новое окно
-    tableUrl.hash = `table?sessionId=${sessionId}&tableId=${tableId}&playerNames=${encodeURIComponent(JSON.stringify(playerNames))}`;
+    // Добавляем параметры в hash для передачи в новое окно с указанием современного стиля
+    tableUrl.hash = `table?sessionId=${sessionId}&tableId=${tableId}&playerNames=${encodeURIComponent(JSON.stringify(playerNames))}&tableStyle=modern&isGuest=true`;
+    
+    // Вычисляем позицию окна
+    const windowWidth = 1200;
+    const windowHeight = 800;
+    const offsetX = windowIndex * 50; // Смещение каждого следующего окна
+    const offsetY = windowIndex * 50;
+    const startX = 100 + offsetX;
+    const startY = 100 + offsetY;
     
     // Настройки окна для полноэкранного режима без элементов браузера
     const windowFeatures = [
-      'width=1200',
-      'height=800',
-      'left=150',
-      'top=150',
+      `width=${windowWidth}`,
+      `height=${windowHeight}`,
+      `left=${startX}`,
+      `top=${startY}`,
       'resizable=yes',
       'scrollbars=no',
       'status=no',
@@ -145,6 +166,8 @@ const JoinSessionPage: React.FC<JoinSessionPageProps> = ({
       newWindow.addEventListener('load', () => {
         newWindow.document.title = `Покерный стол #${tableId} - Сессия ${sessionId.substring(0, 8)}`;
       });
+      
+      console.log(`🪟 Opened window for table ${tableId} at position (${startX}, ${startY})`);
     } else {
       // Если окно не открылось (заблокировано браузером)
       alert('Не удалось открыть новое окно. Проверьте настройки блокировки всплывающих окон в браузере.');

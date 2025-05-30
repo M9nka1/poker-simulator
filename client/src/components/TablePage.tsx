@@ -7,6 +7,7 @@ interface TablePageProps {
   tableId: number;
   playerNames: string[];
   tableStyle?: string;
+  isGuest?: boolean;
 }
 
 interface TableData {
@@ -27,8 +28,9 @@ interface TableData {
 const TablePage: React.FC<TablePageProps> = ({ 
   sessionId, 
   tableId, 
-  playerNames,
-  tableStyle = 'modern'
+  playerNames, 
+  tableStyle = 'modern',
+  isGuest = false 
 }) => {
   const [table, setTable] = useState<TableData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,6 +38,8 @@ const TablePage: React.FC<TablePageProps> = ({
   const [handHistories, setHandHistories] = useState<string[]>([]);
 
   useEffect(() => {
+    console.log(`🎮 TablePage loading - Session: ${sessionId}, Table: ${tableId}, Guest: ${isGuest}, Style: ${tableStyle}`);
+    
     if (!sessionId || !tableId) {
       setError('Не указаны параметры сессии или стола');
       setIsLoading(false);
@@ -51,16 +55,20 @@ const TablePage: React.FC<TablePageProps> = ({
         const response = await fetch(`${config.apiBaseUrl}/api/session/${sessionId}`);
         if (response.ok) {
           const sessionData = await response.json();
+          console.log(`📊 Loaded session data:`, sessionData);
+          
           const targetTable = sessionData.tables.find((t: any) => t.id === tableId);
           if (targetTable) {
             setTable(targetTable);
+            console.log(`✅ Found target table:`, targetTable);
           } else {
-            setError('Стол не найден');
+            setError(`Стол #${tableId} не найден в сессии`);
           }
         } else {
           setError('Сессия не найдена');
         }
       } catch (err) {
+        console.error('❌ Error loading table:', err);
         setError('Ошибка загрузки данных');
       } finally {
         setIsLoading(false);
@@ -81,11 +89,11 @@ const TablePage: React.FC<TablePageProps> = ({
         justifyContent: 'center',
         alignItems: 'center',
         height: '100vh',
-        fontSize: '1.5rem',
-        background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
-        color: 'white'
+        backgroundColor: '#0f4c2a',
+        color: 'white',
+        fontSize: '1.5rem'
       }}>
-        🎲 Загрузка стола...
+        🔄 Загрузка стола...
       </div>
     );
   }
@@ -98,26 +106,25 @@ const TablePage: React.FC<TablePageProps> = ({
         justifyContent: 'center',
         alignItems: 'center',
         height: '100vh',
-        fontSize: '1.2rem',
-        textAlign: 'center',
-        background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
-        color: 'white'
+        backgroundColor: '#0f4c2a',
+        color: 'white',
+        textAlign: 'center'
       }}>
-        <div style={{ fontSize: '3rem', marginBottom: '20px' }}>❌</div>
-        <div style={{ color: '#FF5722', marginBottom: '20px' }}>{error}</div>
-        <button
-          onClick={() => window.close()}
+        <h2 style={{ color: '#e74c3c', marginBottom: '20px' }}>❌ Ошибка</h2>
+        <p style={{ fontSize: '1.2rem', marginBottom: '20px' }}>{error}</p>
+        <button 
+          onClick={() => window.location.reload()}
           style={{
             padding: '10px 20px',
             fontSize: '1rem',
-            background: '#4CAF50',
+            backgroundColor: '#4CAF50',
             color: 'white',
             border: 'none',
             borderRadius: '5px',
             cursor: 'pointer'
           }}
         >
-          Закрыть окно
+          🔄 Попробовать снова
         </button>
       </div>
     );
@@ -140,22 +147,20 @@ const TablePage: React.FC<TablePageProps> = ({
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
-      color: 'white'
+    <div style={{ 
+      width: '100vw', 
+      height: '100vh', 
+      overflow: 'hidden',
+      backgroundColor: '#0f4c2a'
     }}>
-      {/* Покерный стол */}
-      <div style={{ flex: 1 }}>
-        <ModernPokerTable
-          table={table}
-          sessionId={sessionId!}
-          playerNames={playerNames}
-          onHandComplete={handleHandComplete}
-        />
-      </div>
+      <ModernPokerTable
+        table={table}
+        sessionId={sessionId}
+        playerNames={playerNames}
+        onHandComplete={(handHistory: string) => {
+          console.log('✅ Hand completed:', handHistory);
+        }}
+      />
 
       {/* Статистика стола */}
       {handHistories.length > 0 && (
