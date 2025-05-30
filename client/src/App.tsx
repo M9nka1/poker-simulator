@@ -43,26 +43,95 @@ function App() {
       const sessionData = await response.json();
       console.log('📊 Session data for guest:', sessionData);
       
-      // Создаем сессию для гостя
-      const guestSession: GameSession = {
-        sessionId: sessionId,
-        tables: sessionData.tables,
-        settings: sessionData.settings,
-        playerNames: sessionData.playerNames || ['Player1', 'Player2'],
-        isGuest: true // Помечаем как гостя
-      };
+      // Определяем количество столов в сессии
+      const tableCount = sessionData.tables ? sessionData.tables.length : 1;
+      console.log(`🎯 Opening ${tableCount} tables for guest in modern style`);
       
-      // Устанавливаем сессию и переходим к игре
-      setGameSession(guestSession);
-      setCurrentPage('game');
+      // Открываем окно для каждого стола в сессии в современном стиле
+      let openedWindows = 0;
       
-      console.log('✅ Successfully joined session as guest');
+      for (let i = 0; i < tableCount; i++) {
+        const table = sessionData.tables[i] || { id: i + 1 };
+        
+        setTimeout(() => {
+          const opened = openGuestTableWindow(sessionId, table.id, sessionData.playerNames || ['Player1', 'Player2'], i);
+          if (opened) {
+            openedWindows++;
+          }
+        }, i * 200); // 200ms задержка между окнами
+      }
+      
+      // Показываем уведомление о подключении
+      setTimeout(() => {
+        alert(`✅ Подключение к сессии как гость!\nОткрыто ${tableCount} столов в современном стиле.\nВы играете как Игрок 2.`);
+      }, tableCount * 200 + 500);
+      
+      console.log('✅ Successfully initiated guest connection with modern tables');
       
     } catch (error) {
       console.error('❌ Error joining session as guest:', error);
       alert(`Ошибка подключения к сессии: ${(error as Error).message}`);
-      // Возвращаемся к странице подключения при ошибке
-      setCurrentPage('join');
+    }
+  };
+
+  // Функция для открытия окна отдельного стола для гостя
+  const openGuestTableWindow = (sessionId: string, tableId: number, playerNames: string[], windowIndex: number): boolean => {
+    try {
+      // Создаем URL для отдельного стола в современном стиле
+      const baseUrl = config.apiBaseUrl;
+      const tableUrl = new URL(baseUrl);
+      
+      // Добавляем параметры в hash для современного стола с параметрами гостя
+      tableUrl.hash = `table?sessionId=${sessionId}&tableId=${tableId}&playerNames=${encodeURIComponent(JSON.stringify(playerNames))}&tableStyle=modern&isGuest=true`;
+      
+      // Вычисляем позицию окна
+      const windowWidth = 1200;
+      const windowHeight = 800;
+      const offsetX = windowIndex * 50; // Смещение каждого следующего окна
+      const offsetY = windowIndex * 50;
+      const startX = 100 + offsetX;
+      const startY = 100 + offsetY;
+      
+      // Настройки окна для полноэкранного режима без элементов браузера
+      const windowFeatures = [
+        `width=${windowWidth}`,
+        `height=${windowHeight}`,
+        `left=${startX}`,
+        `top=${startY}`,
+        'resizable=yes',
+        'scrollbars=no',
+        'status=no',
+        'menubar=no',
+        'toolbar=no',
+        'location=no',
+        'directories=no'
+      ].join(',');
+      
+      // Открываем новое окно
+      const newWindow = window.open(
+        tableUrl.toString(),
+        `poker-guest-modern-table-${sessionId}-${tableId}`,
+        windowFeatures
+      );
+      
+      if (newWindow) {
+        // Фокусируемся на новом окне
+        newWindow.focus();
+        
+        // Устанавливаем заголовок окна после загрузки
+        newWindow.addEventListener('load', () => {
+          newWindow.document.title = `Покерный стол #${tableId} - Сессия ${sessionId.substring(0, 8)} (Гость)`;
+        });
+        
+        console.log(`🪟 Opened guest window for table ${tableId} at position (${startX}, ${startY})`);
+        return true;
+      } else {
+        console.error(`❌ Failed to open guest window for table ${tableId}`);
+        return false;
+      }
+    } catch (error: any) {
+      console.error(`❌ Exception when opening guest window for table ${tableId}:`, error);
+      return false;
     }
   };
 

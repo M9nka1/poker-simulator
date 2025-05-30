@@ -769,63 +769,57 @@ Player2: posts big blind €${spotData.blinds.big}
         return;
       }
       
-      if (sessionIds.length === 1) {
-        // Одна сессия - подключаемся напрямую
-        const sessionId = sessionIds[0];
-        console.log('🔗 Joining single session:', sessionId);
+      console.log(`🔗 Found ${sessionIds.length} session ID(s) in clipboard`);
+      
+      // Для ВСЕХ сессий (включая одиночную) открываем современные столы через окна
+      let totalTablesOpened = 0;
+      
+      for (let sessionIndex = 0; sessionIndex < sessionIds.length; sessionIndex++) {
+        const sessionId = sessionIds[sessionIndex];
+        console.log(`🔗 Processing session ${sessionIndex + 1}/${sessionIds.length}: ${sessionId}`);
         
         try {
-          const response = await fetch(`/api/session/${sessionId}`);
+          // Сначала получаем информацию о сессии
+          const response = await fetch(`${config.apiBaseUrl}/api/session/${sessionId}`);
           const sessionData = await response.json();
           
           if (!response.ok) {
             throw new Error(sessionData.error || 'Failed to load session');
           }
           
-          // Устанавливаем режим гостя
-          setGameSession({
-            sessionId: sessionId,
-            tables: sessionData.tables,
-            playerNames: sessionData.playerNames,
-            isGuest: true
-          });
+          // Определяем количество столов в сессии
+          const tableCount = sessionData.tables ? sessionData.tables.length : 1;
+          console.log(`📊 Session ${sessionId} has ${tableCount} tables`);
+          
+          // Открываем окно для каждого стола в этой сессии
+          for (let tableIndex = 0; tableIndex < tableCount; tableIndex++) {
+            const table = sessionData.tables[tableIndex] || { id: 1 };
+            
+            // Вычисляем общий индекс окна для правильного позиционирования
+            const globalWindowIndex = totalTablesOpened + tableIndex;
+            
+            setTimeout(() => {
+              console.log(`🪟 Opening table ${tableIndex + 1}/${tableCount} for session ${sessionId}`);
+              const newWindow = openSessionWindow(sessionId, globalWindowIndex + 1, sessionData.playerNames || ['Player1', 'Player2']);
+              if (newWindow) {
+                console.log(`✅ Successfully opened window for session ${sessionId}, table ${table.id}`);
+              }
+            }, globalWindowIndex * 200); // 200ms задержка между каждым окном
+          }
+          
+          totalTablesOpened += tableCount;
           
         } catch (error: any) {
-          console.error('Failed to join session:', error);
-          alert(`Не удалось подключиться к сессии: ${error.message}`);
+          console.error(`Failed to process session ${sessionId}:`, error);
+          alert(`Не удалось подключиться к сессии ${sessionId}: ${error.message}`);
         }
+      }
+      
+      if (totalTablesOpened > 0) {
+        console.log(`✅ Successfully opened ${totalTablesOpened} table windows for ${sessionIds.length} session(s)`);
+        alert(`Успешно подключились к ${sessionIds.length} сессии(ям)!\nОткрыто ${totalTablesOpened} столов в современном стиле.\nВы играете как гость.`);
       } else {
-        // Множественные сессии - открываем отдельные окна для каждой БЕЗ предварительной проверки
-        console.log(`🔗 Opening ${sessionIds.length} separate windows for sessions:`, sessionIds);
-        
-        // Открываем отдельное окно для каждой сессии сразу
-        const openedWindows = [];
-        for (let i = 0; i < sessionIds.length; i++) {
-          const sessionId = sessionIds[i];
-          
-          try {
-            console.log(`🪟 Opening window ${i + 1}/${sessionIds.length} for session ${sessionId}`);
-            const newWindow = openSessionWindow(sessionId, i + 1);
-            if (newWindow) {
-              openedWindows.push(newWindow);
-            }
-            
-            // Небольшая задержка между открытием окон
-            if (i < sessionIds.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 200));
-            }
-          } catch (error: any) {
-            console.error(`Failed to open window for session ${sessionId}:`, error);
-          }
-        }
-        
-        console.log(`✅ Successfully opened ${openedWindows.length} windows for ${sessionIds.length} sessions`);
-        
-        if (openedWindows.length > 0) {
-          alert(`Успешно подключились к ${sessionIds.length} столам!\nОткрыто ${openedWindows.length} окон.`);
-        } else {
-          alert('Не удалось открыть окна. Проверьте настройки блокировки всплывающих окон в браузере.');
-        }
+        alert('Не удалось открыть ни одного стола. Проверьте ID сессий.');
       }
       
     } catch (error: any) {
@@ -834,11 +828,11 @@ Player2: posts big blind €${spotData.blinds.big}
     }
   };
 
-  const openSessionWindow = (sessionId: string, tableNumber: number) => {
+  const openSessionWindow = (sessionId: string, tableNumber: number, playerNames: string[]) => {
     // Создаем URL для подключения гостя к сессии
     const baseUrl = config.apiBaseUrl;
     
-    // Упрощенный URL без hash для тестирования
+    // Создаем URL для подключения к конкретному столу сессии
     const guestUrl = `${baseUrl}/#join?sessionId=${sessionId}&isGuest=true&tableStyle=modern`;
     
     console.log(`🪟 Opening window ${tableNumber} for session ${sessionId}`);
@@ -848,8 +842,8 @@ Player2: posts big blind €${spotData.blinds.big}
     const windowFeatures = [
       'width=1200',
       'height=800',
-      `left=${200 + (tableNumber - 1) * 150}`, // Увеличиваем смещение для лучшей видимости
-      `top=${100 + (tableNumber - 1) * 150}`,
+      `left=${200 + (tableNumber - 1) * 50}`, // Смещение каждого окна
+      `top=${100 + (tableNumber - 1) * 50}`,
       'resizable=yes',
       'scrollbars=no',
       'status=no',
@@ -863,12 +857,12 @@ Player2: posts big blind €${spotData.blinds.big}
       // Открываем новое окно
       const newWindow = window.open(
         guestUrl,
-        `poker-guest-table-${tableNumber}`,
+        `poker-guest-session-${sessionId}-${tableNumber}`,
         windowFeatures
       );
       
       if (newWindow) {
-        console.log(`✅ Window opened successfully for table ${tableNumber}`);
+        console.log(`✅ Window opened successfully for session ${sessionId}, window ${tableNumber}`);
         
         // Фокусируемся на новом окне
         setTimeout(() => {
