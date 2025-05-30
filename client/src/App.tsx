@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import SetupPage from './components/SetupPage';
 import GamePage from './components/GamePage';
@@ -28,54 +28,8 @@ function App() {
   const [gameSession, setGameSession] = useState<GameSession | null>(null);
   const [tableParams, setTableParams] = useState<any>(null);
 
-  // Новая функция для автоматического подключения гостя к сессии
-  const joinSessionAsGuest = async (sessionId: string, tableStyle: string = 'modern') => {
-    try {
-      console.log('🔗 Auto-joining session as guest:', sessionId);
-      
-      // Получаем информацию о сессии
-      const response = await fetch(`${config.apiBaseUrl}/api/session/${sessionId}`);
-      
-      if (!response.ok) {
-        throw new Error('Сессия не найдена или недоступна');
-      }
-      
-      const sessionData = await response.json();
-      console.log('📊 Session data for guest:', sessionData);
-      
-      // Определяем количество столов в сессии
-      const tableCount = sessionData.tables ? sessionData.tables.length : 1;
-      console.log(`🎯 Opening ${tableCount} tables for guest in modern style`);
-      
-      // Открываем окно для каждого стола в сессии в современном стиле
-      let openedWindows = 0;
-      
-      for (let i = 0; i < tableCount; i++) {
-        const table = sessionData.tables[i] || { id: i + 1 };
-        
-        setTimeout(() => {
-          const opened = openGuestTableWindow(sessionId, table.id, sessionData.playerNames || ['Player1', 'Player2'], i);
-          if (opened) {
-            openedWindows++;
-          }
-        }, i * 200); // 200ms задержка между окнами
-      }
-      
-      // Показываем уведомление о подключении
-      setTimeout(() => {
-        alert(`✅ Подключение к сессии как гость!\nОткрыто ${tableCount} столов в современном стиле.\nВы играете как Игрок 2.`);
-      }, tableCount * 200 + 500);
-      
-      console.log('✅ Successfully initiated guest connection with modern tables');
-      
-    } catch (error) {
-      console.error('❌ Error joining session as guest:', error);
-      alert(`Ошибка подключения к сессии: ${(error as Error).message}`);
-    }
-  };
-
   // Функция для открытия окна отдельного стола для гостя
-  const openGuestTableWindow = (sessionId: string, tableId: number, playerNames: string[], windowIndex: number): boolean => {
+  const openGuestTableWindow = useCallback((sessionId: string, tableId: number, playerNames: string[], windowIndex: number): boolean => {
     try {
       // Создаем URL для отдельного стола в современном стиле
       const baseUrl = config.apiBaseUrl;
@@ -133,7 +87,48 @@ function App() {
       console.error(`❌ Exception when opening guest window for table ${tableId}:`, error);
       return false;
     }
-  };
+  }, []);
+
+  // Новая функция для автоматического подключения гостя к сессии
+  const joinSessionAsGuest = useCallback(async (sessionId: string, tableStyle: string = 'modern') => {
+    try {
+      console.log('🔗 Auto-joining session as guest:', sessionId);
+      
+      // Получаем информацию о сессии
+      const response = await fetch(`${config.apiBaseUrl}/api/session/${sessionId}`);
+      
+      if (!response.ok) {
+        throw new Error('Сессия не найдена или недоступна');
+      }
+      
+      const sessionData = await response.json();
+      console.log('📊 Session data for guest:', sessionData);
+      
+      // Определяем количество столов в сессии
+      const tableCount = sessionData.tables ? sessionData.tables.length : 1;
+      console.log(`🎯 Opening ${tableCount} tables for guest in modern style`);
+      
+      // Открываем окно для каждого стола в сессии в современном стиле
+      for (let i = 0; i < tableCount; i++) {
+        const table = sessionData.tables[i] || { id: i + 1 };
+        
+        setTimeout(() => {
+          openGuestTableWindow(sessionId, table.id, sessionData.playerNames || ['Player1', 'Player2'], i);
+        }, i * 200); // 200ms задержка между окнами
+      }
+      
+      // Показываем уведомление о подключении
+      setTimeout(() => {
+        alert(`✅ Подключение к сессии как гость!\nОткрыто ${tableCount} столов в современном стиле.\nВы играете как Игрок 2.`);
+      }, tableCount * 200 + 500);
+      
+      console.log('✅ Successfully initiated guest connection with modern tables');
+      
+    } catch (error) {
+      console.error('❌ Error joining session as guest:', error);
+      alert(`Ошибка подключения к сессии: ${(error as Error).message}`);
+    }
+  }, [openGuestTableWindow]);
 
   // Проверяем hash при загрузке для определения, нужно ли показать отдельный стол
   useEffect(() => {
@@ -192,7 +187,7 @@ function App() {
     // Слушаем изменения hash
     window.addEventListener('hashchange', checkHash);
     return () => window.removeEventListener('hashchange', checkHash);
-  }, []);
+  }, [joinSessionAsGuest]);
 
   const handleSessionCreated = (session: GameSession) => {
     setGameSession(session);
