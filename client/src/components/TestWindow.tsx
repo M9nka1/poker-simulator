@@ -95,6 +95,10 @@ const TestWindow: React.FC = () => {
   // Состояние для уведомления о копировании
   const [copyNotification, setCopyNotification] = useState<string>('');
 
+  // Добавляю новые функции для открытых столов
+  const [useOpenTables, setUseOpenTables] = useState(false);
+  const [sessionId, setSessionId] = useState<string>('');
+
   const togglePanel = () => {
     setIsPanelOpen(!isPanelOpen);
   };
@@ -940,6 +944,133 @@ Player2: posts big blind €${spotData.blinds.big}
     }
   };
 
+  // Функция создания открытых столов
+  const createOpenSession = async () => {
+    try {
+      const sessionData = {
+        tableCount: tableCount,
+        boardSettings: {
+          flopSettings: {
+            specific: boardSettings.flop.specific,
+            specificCards: boardSettings.flop.specificCards,
+            twoTone: boardSettings.flop.suits.includes('flush-draw'),
+            rainbow: boardSettings.flop.suits.includes('rainbow'),
+            monotone: boardSettings.flop.suits.includes('monotone'),
+            unpaired: boardSettings.flop.paired.includes('unpaired'),
+            paired: boardSettings.flop.paired.includes('paired'),
+            trips: boardSettings.flop.paired.includes('trips'),
+            ranges: boardSettings.flop.highCard.length > 0 || 
+                   boardSettings.flop.middleCard.length > 0 || 
+                   boardSettings.flop.lowCard.length > 0,
+            rangeSettings: {
+              high: boardSettings.flop.highCard,
+              middle: boardSettings.flop.middleCard,
+              low: boardSettings.flop.lowCard
+            }
+          },
+          turnSettings: {
+            enabled: true
+          },
+          riverSettings: {
+            enabled: true
+          }
+        },
+        handRanges: {
+          player1: matrixSettings.ip.matrix,
+          player2: matrixSettings.oop.matrix
+        },
+        preflopHistory: {
+          actions: gameSession.preflopInfo.actions,
+          potSize: gameSession.preflopInfo.potSize,
+          players: gameSession.preflopInfo.playerNames,
+          playerStacks: gameSession.preflopInfo.blinds,
+          stacksWithCorrectNames: gameSession.preflopInfo.blinds,
+          blinds: gameSession.preflopInfo.blinds
+        }
+      };
+
+      console.log('🏗️ Creating open session with data:', sessionData);
+
+      const response = await fetch('/api/create-open-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sessionData }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSessionId(result.sessionId);
+        
+        console.log('✅ Open session created:', result.sessionId);
+        
+        // Открываем окна для каждого стола
+        result.tables.forEach((table: any, index: number) => {
+          const tableUrl = `/table?sessionId=${table.sessionId}&tableId=${table.tableId}&tableStyle=open`;
+          const windowName = `OpenTable_${table.sessionId}_${table.tableId}`;
+          
+          // Задержка для корректного открытия окон
+          setTimeout(() => {
+            window.open(
+              tableUrl,
+              windowName,
+              'width=1200,height=800,scrollbars=yes,resizable=yes'
+            );
+          }, index * 200);
+        });
+
+        alert(`✅ Создано ${result.tables.length} открытых столов!\nID сессии: ${result.sessionId}\n\nПоделитесь этим ID с другими игроками для присоединения.`);
+      } else {
+        console.error('❌ Failed to create open session:', result.error);
+        alert(`Ошибка создания сессии: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('❌ Error creating open session:', error);
+      alert('Ошибка создания открытых столов');
+    }
+  };
+
+  // Функция присоединения к открытой сессии
+  const joinOpenSession = async () => {
+    try {
+      const inputSessionId = prompt('Введите ID сессии:');
+      if (!inputSessionId) return;
+
+      console.log('🔗 Joining open session:', inputSessionId);
+
+      const response = await fetch(`/api/open-session/${inputSessionId}`);
+      const result = await response.json();
+
+      if (result.success) {
+        console.log('✅ Found open session with tables:', result.tables.length);
+        
+        // Открываем окна для каждого стола в сессии
+        result.tables.forEach((table: any, index: number) => {
+          const tableUrl = `/table?sessionId=${table.sessionId}&tableId=${table.tableId}&tableStyle=open&isGuest=true`;
+          const windowName = `OpenTable_Guest_${table.sessionId}_${table.tableId}`;
+          
+          setTimeout(() => {
+            window.open(
+              tableUrl,
+              windowName,
+              'width=1200,height=800,scrollbars=yes,resizable=yes'
+            );
+          }, index * 200);
+        });
+
+        alert(`✅ Присоединение к ${result.tables.length} открытым столам!`);
+      } else {
+        console.error('❌ Session not found:', result.error);
+        alert('Сессия не найдена');
+      }
+    } catch (error) {
+      console.error('❌ Error joining open session:', error);
+      alert('Ошибка присоединения к сессии');
+    }
+  };
+
   return (
     <div className="test-window">
       {/* Кнопка открытия панели */}
@@ -1629,6 +1760,112 @@ Player2: posts big blind €${spotData.blinds.big}
           </div>
         </div>
       )}
+
+      {/* Добавляю переключатель архитектуры */}
+      <div className="architecture-switch" style={{ 
+        border: '2px solid #4CAF50', 
+        padding: '15px', 
+        margin: '20px 0', 
+        borderRadius: '8px',
+        backgroundColor: '#f0f8f0'
+      }}>
+        <h3 style={{ color: '#2E7D32' }}>🏗️ Архитектура столов</h3>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <input
+            type="checkbox"
+            checked={useOpenTables}
+            onChange={(e) => setUseOpenTables(e.target.checked)}
+          />
+          <span style={{ fontWeight: 'bold' }}>
+            {useOpenTables ? '🆕 Открытые столы (новая система)' : '🔒 Система хостов (старая)'}
+          </span>
+        </label>
+        
+        {useOpenTables && (
+          <div style={{ marginTop: '10px', padding: '10px', backgroundColor: '#e8f5e8', borderRadius: '4px' }}>
+            <p><strong>✨ Новые возможности:</strong></p>
+            <ul style={{ margin: '5px 0', paddingLeft: '20px' }}>
+              <li>• Любой может создать сессию без авторизации</li>
+              <li>• Игроки выбирают позиции прямо за столом</li>
+              <li>• Автостарт игры когда все места заняты</li>
+              <li>• Нет системы хостов - все равны</li>
+            </ul>
+            {sessionId && (
+              <div style={{ marginTop: '10px', padding: '8px', backgroundColor: '#fff', border: '1px solid #ddd', borderRadius: '4px' }}>
+                <strong>🆔 ID созданной сессии:</strong>
+                <div style={{ fontFamily: 'monospace', fontSize: '14px', margin: '5px 0' }}>
+                  {sessionId}
+                </div>
+                <button
+                  onClick={() => navigator.clipboard.writeText(sessionId)}
+                  style={{ fontSize: '12px', padding: '4px 8px' }}
+                >
+                  📋 Копировать
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Обновленные кнопки действий */}
+      <div className="action-buttons" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        {useOpenTables ? (
+          // Новая архитектура
+          <>
+            <button
+              onClick={createOpenSession}
+              disabled={tableCount < 1}
+              style={{
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                padding: '12px 20px',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: tableCount < 1 ? 'not-allowed' : 'pointer',
+                fontSize: '16px',
+                fontWeight: 'bold'
+              }}
+            >
+              🏗️ Создать открытые столы ({tableCount})
+            </button>
+            
+            <button
+              onClick={joinOpenSession}
+              style={{
+                backgroundColor: '#2196F3',
+                color: 'white',
+                padding: '12px 20px',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 'bold'
+              }}
+            >
+              🔗 Присоединиться к сессии
+            </button>
+          </>
+        ) : (
+          // Старая архитектура (существующие кнопки)
+          <>
+            <button
+              onClick={startGameSimulation}
+              className="create-session-button"
+              disabled={tableCount < 1}
+            >
+              🎮 Создать сессию ({tableCount} {tableCount === 1 ? 'стол' : 'стола'})
+            </button>
+            
+            <button
+              onClick={joinSessionFromClipboard}
+              className="join-session-button"
+            >
+              🔗 Присоединиться к сессии
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 };

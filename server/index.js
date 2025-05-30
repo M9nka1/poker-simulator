@@ -45,12 +45,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Game sessions storage
-const gameSessions = new Map();
-// Connected players storage
-const connectedPlayers = new Map(); // playerId -> { ws, sessionId, tableId, playerId }
-// Host tracking - sessionId -> hostPlayerId (кто создал сессию)
-const sessionHosts = new Map();
+// Глобальные переменные для новой архитектуры открытых столов
+const openTables = new Map(); // sessionId -> { tableData, players: {}, gameStarted: boolean }
+const playerConnections = new Map(); // playerId -> ws connection
 
 // Функция для генерации уникального ID сессии
 function generateSessionId() {
@@ -104,10 +101,132 @@ function calculateFinalStacks(playerNames, remainingStacks, activePlayers) {
 wss.on('connection', (ws) => {
   console.log('New WebSocket connection');
   
-  ws.on('message', (message) => {
+  ws.on('message', async (message) => {
     try {
       const data = JSON.parse(message);
       
+      // 🔥 НОВАЯ АРХИТЕКТУРА: Присоединение к открытому столу с выбором позиции
+      if (data.type === 'joinOpenTable') {
+        const { sessionId, tableId, playerName, selectedPosition } = data;
+        const tableKey = `${sessionId}-${tableId}`;
+        const tableData = openTables.get(tableKey);
+
+        if (!tableData) {
+          ws.send(JSON.stringify({
+            type: 'error',
+            message: 'Table not found'
+          }));
+          return;
+        }
+
+        // Проверяем, доступна ли позиция
+        if (!tableData.availablePositions.includes(selectedPosition)) {
+          ws.send(JSON.stringify({
+            type: 'error',
+            message: 'Position not available'
+          }));
+          return;
+        }
+
+        // Присаживаем игрока на выбранную позицию
+        const playerId = `${sessionId}-${tableId}-${selectedPosition}`;
+        tableData.players[selectedPosition] = {
+          name: playerName,
+          position: selectedPosition,
+          connected: true,
+          cards: null // карты будут розданы при старте игры
+        };
+
+        // Удаляем позицию из доступных
+        tableData.availablePositions = tableData.availablePositions.filter(pos => pos !== selectedPosition);
+
+        // Сохраняем соединение игрока
+        playerConnections.set(playerId, ws);
+        
+        console.log(`🪑 Player ${playerName} joined table ${tableId} at position ${selectedPosition}`);
+
+        // Проверяем, можно ли начать игру (все места заняты)
+        if (tableData.availablePositions.length === 0 && !tableData.gameStarted) {
+          console.log(`🎮 Starting game at table ${tableId} - all positions filled`);
+          await startGameAtTable(tableData);
+        }
+
+        // Отправляем обновление всем игрокам за столом
+        broadcastTableUpdate(tableData);
+        return;
+      }
+
+      // 🔥 НОВАЯ АРХИТЕКТУРА: Получение списка доступных позиций
+      if (data.type === 'getAvailablePositions') {
+        const { sessionId, tableId } = data;
+        const tableKey = `${sessionId}-${tableId}`;
+        const tableData = openTables.get(tableKey);
+
+        if (tableData) {
+          ws.send(JSON.stringify({
+            type: 'availablePositions',
+            positions: tableData.availablePositions,
+            players: tableData.players
+          }));
+        }
+        return;
+      }
+
+      // 🔥 НОВАЯ АРХИТЕКТУРА: Игровые действия за открытым столом
+      if (data.type === 'gameAction') {
+        const { sessionId, tableId, action, amount, street } = data;
+        const tableKey = `${sessionId}-${tableId}`;
+        const tableData = openTables.get(tableKey);
+
+        if (!tableData || !tableData.gameStarted) {
+          ws.send(JSON.stringify({
+            type: 'error',
+            message: 'Game not started or table not found'
+          }));
+          return;
+        }
+
+        // Определяем игрока по соединению
+        let playerPosition = null;
+        for (const [pos, playerInfo] of Object.entries(tableData.players)) {
+          const playerId = `${sessionId}-${tableId}-${pos}`;
+          if (playerConnections.get(playerId) === ws) {
+            playerPosition = pos;
+            break;
+          }
+        }
+
+        if (!playerPosition) {
+          ws.send(JSON.stringify({
+            type: 'error',
+            message: 'Player not found at table'
+          }));
+          return;
+        }
+
+        // Обрабатываем игровое действие
+        try {
+          const result = tableData.pokerEngine.processAction(playerPosition, action, amount, street);
+          
+          if (result.success) {
+            console.log(`🎮 ${playerPosition} performed ${action} ${amount || ''} on ${street}`);
+            broadcastTableUpdate(tableData);
+          } else {
+            ws.send(JSON.stringify({
+              type: 'actionError',
+              message: result.error
+            }));
+          }
+        } catch (error) {
+          console.error('❌ Game action error:', error);
+          ws.send(JSON.stringify({
+            type: 'actionError',
+            message: 'Invalid action'
+          }));
+        }
+        return;
+      }
+
       if (data.type === 'create_session') {
         console.log('🔧 Converting board settings:', JSON.stringify(data.boardSettings, null, 2));
         
@@ -198,16 +317,29 @@ wss.on('connection', (ws) => {
             uniqueCurrentPlayerInfo
           );
           
-          // 🔧 ИСПРАВЛЕНИЕ: Используем hostPlayerId от клиента (кто выбрал "За кого играть")
-          const hostPlayerId = currentPlayerInfo?.id || 1; // Используем ID текущего игрока как хоста
-          sessionHosts.set(sessionId, hostPlayerId);
-          console.log(`👑 Setting host for session ${sessionId}: Player ${hostPlayerId} (${uniqueCurrentPlayerInfo?.name || 'Unknown'})`);
-          
-          // Сохраняем сессию
-          gameSessions.set(sessionId, {
-            tables: [table],
-            playerNames: uniquePlayerNames, // Уникальные имена для этого стола
-            currentPlayerInfo: uniqueCurrentPlayerInfo
+          // Создаем открытый стол
+          const tableData = {
+            sessionId,
+            tableId,
+            players: {}, // позиция -> playerInfo
+            availablePositions: ['BTN', 'BB'], // доступные позиции
+            gameStarted: false,
+            board,
+            pokerEngine,
+            settings: {
+              boardSettings: convertedBoardSettings,
+              handRanges,
+              preflopHistory
+            }
+          };
+
+          openTables.set(`${sessionId}-${tableId}`, tableData);
+          tablesData.push({
+            sessionId,
+            tableId,
+            board,
+            availablePositions: ['BTN', 'BB'],
+            players: {}
           });
           
           sessionIds.push(sessionId);
@@ -226,23 +358,38 @@ wss.on('connection', (ws) => {
         handleWebSocketMessage(ws, data);
       }
     } catch (error) {
-      console.error('WebSocket message error:', error);
-      ws.send(JSON.stringify({ type: 'error', message: 'Invalid message format' }));
+      console.error('❌ WebSocket message error:', error);
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Invalid message format'
+      }));
     }
   });
   
   ws.on('close', () => {
-    // Remove player from connected players when they disconnect
-    for (const [playerId, playerData] of connectedPlayers.entries()) {
-      if (playerData.ws === ws) {
-        console.log(`Player ${playerId} disconnected`);
-        connectedPlayers.delete(playerId);
+    console.log('Player disconnected');
+    
+    // Находим и удаляем игрока из открытых столов
+    for (const [playerId, connection] of playerConnections) {
+      if (connection === ws) {
+        playerConnections.delete(playerId);
         
-        // Notify other players in the same session
-        broadcastToSession(playerData.sessionId, {
-          type: 'player_disconnected',
-          playerId: playerId
-        }, playerId);
+        // Найдем стол и освободим позицию
+        const [sessionId, tableId, position] = playerId.split('-');
+        const tableKey = `${sessionId}-${tableId}`;
+        const tableData = openTables.get(tableKey);
+        
+        if (tableData && tableData.players[position]) {
+          console.log(`🚪 Player left position ${position} at table ${tableId}`);
+          delete tableData.players[position];
+          
+          // Возвращаем позицию в доступные, если игра не началась
+          if (!tableData.gameStarted) {
+            tableData.availablePositions.push(position);
+          }
+          
+          broadcastTableUpdate(tableData);
+        }
         break;
       }
     }
@@ -1156,6 +1303,191 @@ app.use(express.static(path.join(__dirname, '../client/build')));
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
 });
+
+// 🔥 НОВАЯ АРХИТЕКТУРА: API для создания открытых столов
+app.post('/api/create-open-session', async (req, res) => {
+  try {
+    const {
+      sessionData: {
+        tableCount,
+        boardSettings,
+        handRanges,
+        preflopHistory
+      }
+    } = req.body;
+
+    console.log('🏗️ Creating open tables session with', tableCount, 'tables');
+
+    // Конвертируем настройки борда
+    const convertedBoardSettings = convertBoardSettings(boardSettings);
+    console.log('Converted board settings:', JSON.stringify(convertedBoardSettings, null, 2));
+
+    const sessionId = uuidv4();
+    const tablesData = [];
+
+    // Создаем открытые столы
+    for (let i = 0; i < tableCount; i++) {
+      const tableId = i + 1;
+      const pokerEngine = new PokerEngine(convertedBoardSettings, handRanges, preflopHistory);
+      
+      // Генерируем уникальную доску для каждого стола
+      console.log(`🎲 Generating new board for table ${tableId}`);
+      let board;
+      try {
+        board = pokerEngine.generateBoard();
+        console.log(`✅ Board generated for table ${tableId}:`, board);
+      } catch (error) {
+        console.log(`⚠️ Board generation failed for table ${tableId}, using default`);
+        board = [
+          { rank: 'A', suit: 's', display: 'As' },
+          { rank: 'K', suit: 'h', display: 'Kh' },
+          { rank: 'Q', suit: 'd', display: 'Qd' }
+        ];
+      }
+
+      // Создаем открытый стол
+      const tableData = {
+        sessionId,
+        tableId,
+        players: {}, // позиция -> playerInfo
+        availablePositions: ['BTN', 'BB'], // доступные позиции
+        gameStarted: false,
+        board,
+        pokerEngine,
+        settings: {
+          boardSettings: convertedBoardSettings,
+          handRanges,
+          preflopHistory
+        }
+      };
+
+      openTables.set(`${sessionId}-${tableId}`, tableData);
+      tablesData.push({
+        sessionId,
+        tableId,
+        board,
+        availablePositions: ['BTN', 'BB'],
+        players: {}
+      });
+    }
+
+    console.log(`✅ Created ${tableCount} open tables for session ${sessionId}`);
+
+    res.json({
+      success: true,
+      sessionId,
+      tables: tablesData,
+      message: `Created ${tableCount} open tables. Players can join and select positions.`
+    });
+
+  } catch (error) {
+    console.error('❌ Error creating open session:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create open session',
+      details: error.message
+    });
+  }
+});
+
+// 🔥 НОВАЯ АРХИТЕКТУРА: API для получения информации об открытых столах
+app.get('/api/open-session/:sessionId', (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    console.log(`📋 Getting open session info for ${sessionId}`);
+
+    const tablesData = [];
+    for (const [key, tableData] of openTables) {
+      if (key.startsWith(sessionId)) {
+        tablesData.push({
+          sessionId: tableData.sessionId,
+          tableId: tableData.tableId,
+          board: tableData.board,
+          availablePositions: tableData.availablePositions,
+          players: tableData.players,
+          gameStarted: tableData.gameStarted
+        });
+      }
+    }
+
+    if (tablesData.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Session not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      sessionId,
+      tables: tablesData
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting open session:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get session info'
+    });
+  }
+});
+
+// 🔥 НОВАЯ ФУНКЦИЯ: Старт игры за столом
+async function startGameAtTable(tableData) {
+  try {
+    console.log(`🎯 Starting game at table ${tableData.tableId}`);
+    
+    // Раздаем карты игрокам
+    const positions = Object.keys(tableData.players);
+    for (const position of positions) {
+      const cards = tableData.pokerEngine.dealPlayerCards();
+      tableData.players[position].cards = cards;
+      console.log(`🃏 Dealt cards to ${position}: ${cards.map(c => c.display).join(', ')}`);
+    }
+
+    // Устанавливаем начальное состояние игры
+    tableData.gameStarted = true;
+    tableData.pokerEngine.startHand(positions);
+    
+    console.log(`✅ Game started at table ${tableData.tableId}`);
+    
+  } catch (error) {
+    console.error('❌ Error starting game:', error);
+  }
+}
+
+// 🔥 НОВАЯ ФУНКЦИЯ: Рассылка обновлений стола
+function broadcastTableUpdate(tableData) {
+  const { sessionId, tableId, players, board, gameStarted, availablePositions } = tableData;
+  
+  console.log(`📡 Broadcasting update for table ${tableId}`);
+  
+  // Отправляем обновление каждому игроку за столом
+  for (const [position, playerInfo] of Object.entries(players)) {
+    const playerId = `${sessionId}-${tableId}-${position}`;
+    const ws = playerConnections.get(playerId);
+    
+    if (ws && ws.readyState === ws.OPEN) {
+      const gameState = gameStarted ? 
+        tableData.pokerEngine.getGameState(position) : 
+        null;
+        
+      ws.send(JSON.stringify({
+        type: 'tableUpdate',
+        sessionId,
+        tableId,
+        position,
+        players,
+        board,
+        gameStarted,
+        availablePositions,
+        gameState
+      }));
+    }
+  }
+  
+  console.log(`📡 Broadcast complete for table ${tableId}`);
+}
 
 server.listen(PORT, () => {
   console.log(`Poker Simulator server running on port ${PORT}`);
