@@ -36,6 +36,18 @@ const TablePage: React.FC<TablePageProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>('');
 
+  // 🔥 НОВАЯ АРХИТЕКТУРА: Состояние для открытых столов
+  const [isOpenTable, setIsOpenTable] = useState(false);
+  const [openTableParams, setOpenTableParams] = useState<{
+    sessionId: string;
+    tableId: number;
+    isGuest: boolean;
+  } | null>(null);
+  const [tableData, setTableData] = useState<any>(null);
+  const [selectedPosition, setSelectedPosition] = useState<string>('');
+  const [playerName, setPlayerName] = useState<string>('');
+  const [ws, setWs] = useState<WebSocket | null>(null);
+
   // Проверяем URL параметры для определения типа стола
   useEffect(() => {
     const checkParams = () => {
@@ -58,18 +70,6 @@ const TablePage: React.FC<TablePageProps> = ({
 
     checkParams();
   }, []);
-
-  // 🔥 НОВАЯ АРХИТЕКТУРА: Состояние для открытых столов
-  const [isOpenTable, setIsOpenTable] = useState(false);
-  const [openTableParams, setOpenTableParams] = useState<{
-    sessionId: string;
-    tableId: number;
-    isGuest: boolean;
-  } | null>(null);
-  const [tableData, setTableData] = useState<any>(null);
-  const [selectedPosition, setSelectedPosition] = useState<string>('');
-  const [playerName, setPlayerName] = useState<string>('');
-  const [ws, setWs] = useState<WebSocket | null>(null);
 
   // 🔥 НОВАЯ АРХИТЕКТУРА: WebSocket для открытых столов
   useEffect(() => {
@@ -117,6 +117,50 @@ const TablePage: React.FC<TablePageProps> = ({
       websocket.close();
     };
   }, [isOpenTable, openTableParams]);
+
+  // Основной useEffect для загрузки стола (только для обычных столов)
+  useEffect(() => {
+    if (isOpenTable) return; // Не выполняем для открытых столов
+    
+    console.log(`🎮 TablePage loading - Session: ${sessionId}, Table: ${tableId}, Guest: ${isGuest}, Style: ${tableStyle}`);
+    
+    if (!sessionId || !tableId) {
+      setError('Не указаны параметры сессии или стола');
+      setIsLoading(false);
+      return;
+    }
+
+    // Устанавливаем заголовок окна
+    document.title = `Покерный стол #${tableId} - Сессия ${sessionId.substring(0, 8)}`;
+
+    // Загружаем данные стола
+    const loadTable = async () => {
+      try {
+        const response = await fetch(`${config.apiBaseUrl}/api/session/${sessionId}`);
+        if (response.ok) {
+          const sessionData = await response.json();
+          console.log(`📊 Loaded session data:`, sessionData);
+          
+          const targetTable = sessionData.tables.find((t: any) => t.id === tableId);
+          if (targetTable) {
+            setTable(targetTable);
+            console.log(`✅ Found target table:`, targetTable);
+          } else {
+            setError(`Стол #${tableId} не найден в сессии`);
+          }
+        } else {
+          setError('Сессия не найдена');
+        }
+      } catch (err) {
+        console.error('❌ Error loading table:', err);
+        setError('Ошибка загрузки данных');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadTable();
+  }, [sessionId, tableId, isGuest, tableStyle, isOpenTable]);
 
   // 🔥 НОВАЯ АРХИТЕКТУРА: Присоединение к открытому столу
   const joinOpenTable = () => {
@@ -321,47 +365,6 @@ const TablePage: React.FC<TablePageProps> = ({
       </div>
     );
   }
-
-  useEffect(() => {
-    console.log(`🎮 TablePage loading - Session: ${sessionId}, Table: ${tableId}, Guest: ${isGuest}, Style: ${tableStyle}`);
-    
-    if (!sessionId || !tableId) {
-      setError('Не указаны параметры сессии или стола');
-      setIsLoading(false);
-      return;
-    }
-
-    // Устанавливаем заголовок окна
-    document.title = `Покерный стол #${tableId} - Сессия ${sessionId.substring(0, 8)}`;
-
-    // Загружаем данные стола
-    const loadTable = async () => {
-      try {
-        const response = await fetch(`${config.apiBaseUrl}/api/session/${sessionId}`);
-        if (response.ok) {
-          const sessionData = await response.json();
-          console.log(`📊 Loaded session data:`, sessionData);
-          
-          const targetTable = sessionData.tables.find((t: any) => t.id === tableId);
-          if (targetTable) {
-            setTable(targetTable);
-            console.log(`✅ Found target table:`, targetTable);
-          } else {
-            setError(`Стол #${tableId} не найден в сессии`);
-          }
-        } else {
-          setError('Сессия не найдена');
-        }
-      } catch (err) {
-        console.error('❌ Error loading table:', err);
-        setError('Ошибка загрузки данных');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadTable();
-  }, [sessionId, tableId, isGuest, tableStyle]);
 
   if (isLoading) {
     return (
