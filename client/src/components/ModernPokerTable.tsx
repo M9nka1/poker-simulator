@@ -130,6 +130,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
   const tableRef = useRef<HTMLDivElement>(null);
 
   // Table Center control states
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [tableCenterSize, setTableCenterSize] = useState<number>(() => {
     const saved = localStorage.getItem('poker-table-center-size');
     return saved ? parseInt(saved) : 82; // Default 82%
@@ -260,6 +261,59 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
   }, []);
 
   useEffect(() => {
+    setHandHistories(handHistories);
+  }, [handHistories]);
+
+  const handleJoinSession = useCallback((playerId: number, playerName: string) => {
+    // Защита от повторных подключений
+    if (isConnecting) {
+      console.log('🔄 Подключение уже в процессе, игнорируем повторный запрос');
+      return;
+    }
+    
+    // Дополнительная проверка - если игрок уже подключен
+    const existingPlayerInfo = websocketService.getPlayerInfo();
+    if (existingPlayerInfo && 
+        existingPlayerInfo.sessionId === sessionId && 
+        existingPlayerInfo.tableId === table.id &&
+        existingPlayerInfo.playerId === playerId) {
+      console.log('🎮 Игрок уже подключен к этой сессии');
+      setCurrentPlayerId(playerId);
+      setConnectionStatus('Подключен');
+      setShowJoinModal(false);
+      return;
+    }
+    
+    const playerInfo: PlayerInfo = {
+      playerId,
+      playerName,
+      sessionId,
+      tableId: table.id
+    };
+    
+    // Проверяем подключение WebSocket перед присоединением
+    if (!websocketService.isWebSocketConnected()) {
+      alert('WebSocket не подключен. Попробуйте еще раз через несколько секунд.');
+      return;
+    }
+    
+    setIsConnecting(true);
+    setCurrentPlayerId(playerId);
+    setConnectionStatus('Подключение...');
+    setShowJoinModal(false);
+    
+    console.log('🎮 Присоединяемся к сессии:', playerInfo);
+    
+    // Присоединяемся к сессии
+    websocketService.joinSession(playerInfo);
+    
+    // Увеличиваем время сброса флага подключения до 5 секунд
+    setTimeout(() => {
+      setIsConnecting(false);
+    }, 5000);
+  }, [isConnecting, sessionId, table.id]);
+
+  useEffect(() => {
     // Setup WebSocket message handlers
     websocketService.onMessage('game_state', (data) => {
       console.log('🎮 Received game_state:', data);
@@ -375,56 +429,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
       websocketService.offMessage('player_disconnected');
       websocketService.offMessage('error');
     };
-  }, [sessionId, table.id, onHandComplete, modalShown, currentPlayer]);
-
-  const handleJoinSession = (playerId: number, playerName: string) => {
-    // Защита от повторных подключений
-    if (isConnecting) {
-      console.log('🔄 Подключение уже в процессе, игнорируем повторный запрос');
-      return;
-    }
-    
-    // Дополнительная проверка - если игрок уже подключен
-    const existingPlayerInfo = websocketService.getPlayerInfo();
-    if (existingPlayerInfo && 
-        existingPlayerInfo.sessionId === sessionId && 
-        existingPlayerInfo.tableId === table.id &&
-        existingPlayerInfo.playerId === playerId) {
-      console.log('🎮 Игрок уже подключен к этой сессии');
-      setCurrentPlayerId(playerId);
-      setConnectionStatus('Подключен');
-      setShowJoinModal(false);
-      return;
-    }
-    
-    const playerInfo: PlayerInfo = {
-      playerId,
-      playerName,
-      sessionId,
-      tableId: table.id
-    };
-    
-    // Проверяем подключение WebSocket перед присоединением
-    if (!websocketService.isWebSocketConnected()) {
-      alert('WebSocket не подключен. Попробуйте еще раз через несколько секунд.');
-      return;
-    }
-    
-    setIsConnecting(true);
-    setCurrentPlayerId(playerId);
-    setConnectionStatus('Подключение...');
-    setShowJoinModal(false);
-    
-    console.log('🎮 Присоединяемся к сессии:', playerInfo);
-    
-    // Присоединяемся к сессии
-    websocketService.joinSession(playerInfo);
-    
-    // Увеличиваем время сброса флага подключения до 5 секунд
-    setTimeout(() => {
-      setIsConnecting(false);
-    }, 5000);
-  };
+  }, [sessionId, table.id, onHandComplete, modalShown, currentPlayer, handleJoinSession]);
 
   const makeAction = (action: string, amount?: number) => {
     if (!currentPlayerId || table.currentPlayer !== currentPlayerId) {
@@ -510,7 +515,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
              'All-in'
     }));
 
-  const currentPlayerData = table.players.find(p => p.id === table.currentPlayer);
   const isMyTurn = currentPlayerId === table.currentPlayer && !table.handComplete;
 
   const exportHandHistories = () => {
@@ -741,47 +745,12 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
     return baseStyle;
   };
 
-  // Table Center control functions
-  const adjustTableCenterSize = (delta: number) => {
-    const newSize = Math.max(40, Math.min(120, tableCenterSize + delta)); // Limit between 40% and 120%
-    setTableCenterSize(newSize);
-  };
-
   const moveTableCenter = (deltaX: number, deltaY: number) => {
     const newPosition = {
       x: Math.max(-500, Math.min(500, tableCenterPosition.x + deltaX)), // Расширяем лимиты движения
       y: Math.max(-800, Math.min(800, tableCenterPosition.y + deltaY))  // Разрешаем подъем до -800px
     };
     setTableCenterPosition(newPosition);
-  };
-
-  const resetTableCenter = () => {
-    setTableCenterSize(82);
-    setTableCenterPosition({ x: 0, y: 0 });
-    localStorage.removeItem('poker-table-center-size');
-    localStorage.removeItem('poker-table-center-position');
-    
-    // Show feedback
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(76, 175, 80, 0.95);
-      color: white;
-      padding: 15px 25px;
-      border-radius: 20px;
-      z-index: 10002;
-      font-weight: bold;
-      box-shadow: 0 4px 20px rgba(76, 175, 80, 0.5);
-    `;
-    notification.textContent = '🎯 TABLE CENTER сброшен к настройкам по умолчанию';
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-      document.body.removeChild(notification);
-    }, 2000);
   };
 
   if (showJoinModal && !currentPlayer) {

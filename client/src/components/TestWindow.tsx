@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './TestWindow.css';
 import preflopSpotsLoader, { PreflopSpot } from '../utils/preflopSpotsLoader';
 import Card from './Card';
@@ -378,12 +378,12 @@ const TestWindow: React.FC = () => {
     { symbol: '♠', name: 'spades', color: '#2c3e50' }
   ];
 
-  const getSelectedSpotData = (): PreflopSpot | null => {
+  const getSelectedSpotData = useCallback((): PreflopSpot | null => {
     return preflopSpots.find(spot => spot.id === selectedSpot) || null;
-  };
+  }, [preflopSpots, selectedSpot]);
 
   // Получаем имена игроков из выбранного спота
-  const getPlayerNamesFromSpot = (): string[] => {
+  const getPlayerNamesFromSpot = useCallback((): string[] => {
     const spotData = getSelectedSpotData();
     if (!spotData || !spotData.actions) return [];
     
@@ -395,7 +395,7 @@ const TestWindow: React.FC = () => {
     
     console.log('🎮 Имена игроков из спота:', validPlayerNames);
     return validPlayerNames;
-  };
+  }, [getSelectedSpotData]);
 
   // Автоматически назначаем игроков позициям при выборе спота
   useEffect(() => {
@@ -419,7 +419,7 @@ const TestWindow: React.FC = () => {
     } else {
       console.log('⚠️ Недостаточно игроков для автоназначения:', playerNames.length);
     }
-  }, [selectedSpot, preflopSpots]); // Добавляем preflopSpots в зависимости
+  }, [selectedSpot, preflopSpots, getPlayerNamesFromSpot]); // Добавляем getPlayerNamesFromSpot в зависимости
 
   // Матрицы рук
   const renderHandMatrix = (position: 'ip' | 'oop') => {

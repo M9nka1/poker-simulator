@@ -26,7 +26,7 @@ class PreflopSpotsLoader {
     
     for (const line of lines) {
       // Парсим блайнды
-      const blindMatch = line.match(/(.+): posts (small blind|big blind) [\$€](\d+(?:\.\d+)?)/);
+      const blindMatch = line.match(/(.+): posts (small blind|big blind) [$€](\d+(?:\.\d+)?)/);
       if (blindMatch) {
         const player = blindMatch[1];
         const blindType = blindMatch[2];
@@ -71,11 +71,10 @@ class PreflopSpotsLoader {
         }
 
         // Парсим raises с "to" (например: raises $15.00 to $25.00)
-        const raiseToMatch = line.match(/(.+): raises [\$€](\d+(?:\.\d+)?) to [\$€](\d+(?:\.\d+)?)/);
+        const raiseToMatch = line.match(/(.+): raises [$€](\d+(?:\.\d+)?) to [$€](\d+(?:\.\d+)?)/);
         if (raiseToMatch) {
           const player = raiseToMatch[1];
           const totalBet = parseFloat(raiseToMatch[3]);
-          const previousBet = playerBets[player] || 0;
           
           // Определяем тип действия
           let actionType = 'raise';
@@ -95,7 +94,7 @@ class PreflopSpotsLoader {
         }
 
         // Парсим calls
-        const callMatch = line.match(/(.+): calls [\$€](\d+(?:\.\d+)?)/);
+        const callMatch = line.match(/(.+): calls [$€](\d+(?:\.\d+)?)/);
         if (callMatch) {
           const player = callMatch[1];
           const amount = parseFloat(callMatch[2]);
