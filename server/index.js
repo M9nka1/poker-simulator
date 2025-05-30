@@ -198,9 +198,10 @@ wss.on('connection', (ws) => {
             uniqueCurrentPlayerInfo
           );
           
-          // Устанавливаем хоста для каждой сессии - всегда Player 1 (создатель сессий)
-          const hostPlayerId = 1; // Всегда Player 1 является хостом
+          // 🔧 ИСПРАВЛЕНИЕ: Используем hostPlayerId от клиента (кто выбрал "За кого играть")
+          const hostPlayerId = currentPlayerInfo?.id || 1; // Используем ID текущего игрока как хоста
           sessionHosts.set(sessionId, hostPlayerId);
+          console.log(`👑 Setting host for session ${sessionId}: Player ${hostPlayerId} (${uniqueCurrentPlayerInfo?.name || 'Unknown'})`);
           
           // Сохраняем сессию
           gameSessions.set(sessionId, {
@@ -1018,6 +1019,7 @@ app.post('/api/create-session', (req, res) => {
       // Сохраняем сессию
       gameSessions.set(sessionId, session);
       sessionHosts.set(sessionId, hostPlayerId);
+      console.log(`👑 API: Setting host for session ${sessionId}: Player ${hostPlayerId} (${uniqueCurrentPlayer?.name || 'Unknown'})`);
 
       // Добавляем в группу
       sessionGroup.sessionIds.push(sessionId);
