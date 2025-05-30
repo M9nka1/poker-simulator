@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import RankCard from './RankCard';
 import PlayerJoinModal from './PlayerJoinModal';
 import { websocketService, PlayerInfo } from '../services/websocket';
-import config from '../config';
 import './ModernPokerTable.css';
 
 interface Card {
