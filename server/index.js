@@ -160,14 +160,42 @@ wss.on('connection', (ws) => {
             player2: data.handRanges?.player2 || []
           };
           
+          // 🔧 ИСПРАВЛЕНИЕ: Создаем уникальные имена игроков для каждого стола
+          const tableNumber = i + 1;
+          const activePlayersForTable = activePlayers.length > 0 ? activePlayers : playerNames;
+          const uniquePlayerNames = activePlayersForTable.map(name => `${name}_T${tableNumber}`);
+          
+          // 🔧 ИСПРАВЛЕНИЕ: Создаем уникальные стеки с новыми именами
+          const uniqueStacksMapping = {};
+          activePlayersForTable.forEach((originalName, index) => {
+            const uniqueName = uniquePlayerNames[index];
+            uniqueStacksMapping[uniqueName] = finalStacks[originalName] || 1000;
+          });
+          
+          // 🔧 ИСПРАВЛЕНИЕ: Обновляем информацию о текущем игроке
+          let uniqueCurrentPlayerInfo = null;
+          if (currentPlayerInfo) {
+            const originalIndex = activePlayersForTable.indexOf(currentPlayerInfo.name);
+            if (originalIndex >= 0) {
+              uniqueCurrentPlayerInfo = {
+                ...currentPlayerInfo,
+                name: uniquePlayerNames[originalIndex]
+              };
+            }
+          }
+          
+          console.log(`🎯 Creating session ${tableNumber}/${tableCount} with unique cards`);
+          console.log(`👥 Table ${tableNumber} players:`, uniquePlayerNames);
+          console.log(`💰 Table ${tableNumber} stacks:`, uniqueStacksMapping);
+          
           // Создаем уникальный PokerEngine для каждой сессии (уникальные карты)
           const pokerEngine = new PokerEngine(convertedBoardSettings, handRanges, data.preflopHistory);
           const table = pokerEngine.createTable(
             1, // всегда table ID = 1 в каждой сессии
             preflopData.potSize,
-            finalStacks,
-            activePlayers.length > 0 ? activePlayers : playerNames,
-            currentPlayerInfo
+            uniqueStacksMapping,
+            uniquePlayerNames,
+            uniqueCurrentPlayerInfo
           );
           
           // Устанавливаем хоста для каждой сессии - всегда Player 1 (создатель сессий)
@@ -177,12 +205,12 @@ wss.on('connection', (ws) => {
           // Сохраняем сессию
           gameSessions.set(sessionId, {
             tables: [table],
-            playerNames: playerNames,
-            currentPlayerInfo: currentPlayerInfo
+            playerNames: uniquePlayerNames, // Уникальные имена для этого стола
+            currentPlayerInfo: uniqueCurrentPlayerInfo
           });
           
           sessionIds.push(sessionId);
-          console.log(`✅ Created session ${i + 1}/${tableCount}: ${sessionId} with unique cards`);
+          console.log(`✅ Created session ${tableNumber}/${tableCount}: ${sessionId} with unique cards`);
         }
         
         // 🔧 ИСПРАВЛЕНИЕ: Отправляем массив уникальных sessionId
@@ -943,12 +971,39 @@ app.post('/api/create-session', (req, res) => {
       const sessionId = uuidv4();
       const pokerEngine = new PokerEngine(convertedBoardSettings, handRanges, preflopHistory);
       
+      // 🔧 ИСПРАВЛЕНИЕ: Создаем уникальные имена игроков для каждого стола
+      const tableNumber = i + 1;
+      const uniquePlayerNames = finalPlayerNames.map(name => `${name}_T${tableNumber}`);
+      
+      // 🔧 ИСПРАВЛЕНИЕ: Создаем уникальные стеки с новыми именами
+      const uniqueStacksMapping = {};
+      finalPlayerNames.forEach((originalName, index) => {
+        const uniqueName = uniquePlayerNames[index];
+        uniqueStacksMapping[uniqueName] = stacksWithCorrectNames[originalName] || 1000;
+      });
+      
+      // 🔧 ИСПРАВЛЕНИЕ: Обновляем информацию о текущем игроке
+      let uniqueCurrentPlayer = null;
+      if (currentPlayer) {
+        const originalIndex = finalPlayerNames.indexOf(currentPlayer.name);
+        if (originalIndex >= 0) {
+          uniqueCurrentPlayer = {
+            ...currentPlayer,
+            name: uniquePlayerNames[originalIndex]
+          };
+        }
+      }
+      
+      console.log(`🎯 Creating session ${tableNumber}/${tableCount} with unique cards`);
+      console.log(`👥 Table ${tableNumber} players:`, uniquePlayerNames);
+      console.log(`💰 Table ${tableNumber} stacks:`, uniqueStacksMapping);
+      
       const session = {
         id: sessionId,
         preflopHistory,
         preflopData, // Сохраняем парсенные данные
-        playerNames: finalPlayerNames, // Используем финальные имена игроков
-        currentPlayer, // Сохраняем информацию о текущем игроке
+        playerNames: uniquePlayerNames, // Используем уникальные имена игроков
+        currentPlayer: uniqueCurrentPlayer, // Обновленная информация о текущем игроке
         pokerEngine,
         handHistoryGenerator: new HandHistoryGenerator(preflopHistory, rakeSettings),
         tables: [],
@@ -957,8 +1012,7 @@ app.post('/api/create-session', (req, res) => {
         hostPlayerId
       };
 
-      console.log(`🎯 Creating session ${i + 1}/${tableCount} with unique cards`);
-      const table = pokerEngine.createTable(1, preflopData.potSize, stacksWithCorrectNames, finalPlayerNames, currentPlayer, null);
+      const table = pokerEngine.createTable(1, preflopData.potSize, uniqueStacksMapping, uniquePlayerNames, uniqueCurrentPlayer, null);
       session.tables.push(table);
 
       // Сохраняем сессию
@@ -970,7 +1024,14 @@ app.post('/api/create-session', (req, res) => {
       sessionGroup.tables.push(table);
     }
 
-    sessionGroup.playerNames = finalPlayerNames;
+    // 🔧 ИСПРАВЛЕНИЕ: Возвращаем информацию о всех столах с уникальными именами
+    sessionGroup.playerNames = finalPlayerNames; // Оригинальные имена для справки
+    sessionGroup.tablesPlayerNames = sessionGroup.tables.map((table, index) => ({
+      tableId: table.id,
+      tableNumber: index + 1,
+      playerNames: table.players.map(p => p.name),
+      sessionId: sessionGroup.sessionIds[index]
+    }));
     sessionGroup.preflopInfo = {
       potSize: preflopData.potSize,
       actions: preflopData.actions.length,
@@ -981,7 +1042,8 @@ app.post('/api/create-session', (req, res) => {
       success: true,
       sessionIds: sessionGroup.sessionIds, // Возвращаем массив ID сессий
       tables: sessionGroup.tables,
-      playerNames: finalPlayerNames,
+      playerNames: finalPlayerNames, // Оригинальные имена для обратной совместимости
+      tablesPlayerNames: sessionGroup.tablesPlayerNames, // Детальная информация по каждому столу
       currentPlayer,
       preflopInfo: sessionGroup.preflopInfo
     });
