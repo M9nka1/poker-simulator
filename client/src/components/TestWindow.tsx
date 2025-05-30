@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './TestWindow.css';
 import preflopSpotsLoader, { PreflopSpot } from '../utils/preflopSpotsLoader';
 import Card from './Card';
 import { SUITS_ORDER, RANKS_ORDER, Suit, Rank } from '../utils/cardSprites';
 import ModernPokerTable from './ModernPokerTable';
-import BoardSettings from './BoardSettings';
 import config from '../config';
 
 interface RakeSettings {
