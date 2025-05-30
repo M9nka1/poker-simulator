@@ -20,6 +20,7 @@ interface Player {
   position: string;
   actions: any[];
   connected: boolean;
+  isHost: boolean;
 }
 
 interface TableData {
@@ -83,6 +84,9 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
     pot: 100,
     allIn: 100
   });
+  const [isHost, setIsHost] = useState<boolean>(false);
+  const [showManualInput, setShowManualInput] = useState<boolean>(false);
+  const [manualBetAmount, setManualBetAmount] = useState<string>('');
 
   useEffect(() => {
     setTable(initialTable);
@@ -116,6 +120,7 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
       console.log('🎮 Received game_state:', data);
       setTable(data.table);
       setCurrentPlayerId(data.playerId);
+      setIsHost(data.isHost || false);
       setConnectionStatus('Подключен');
       setShowJoinModal(false); // Закрываем модальное окно при успешном подключении
     });
@@ -124,6 +129,7 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
       console.log('🔄 Received table_update:', data);
       console.log(`   Street: ${data.table.currentStreet}, CurrentPlayer: ${data.table.currentPlayer}, Pot: ${data.table.pot}`);
       setTable(data.table);
+      setIsHost(data.isHost || false);
       setSelectedBetAmount(0); // Сбрасываем выбранный размер при обновлении
       if (data.actionResult?.handComplete && data.actionResult?.handHistory) {
         onHandComplete(data.actionResult.handHistory);
@@ -132,6 +138,7 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
 
     websocketService.onMessage('new_hand', (data) => {
       setTable(data.table);
+      setIsHost(data.isHost || false);
     });
 
     websocketService.onMessage('player_connected', (data) => {
@@ -468,20 +475,24 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
           };
           
           const opponentBet = getPlayerBet(opponent);
+          // ИСПРАВЛЕНИЕ: Используем opponent.isHost из данных оппонента
+          const isOpponentHost = opponent.isHost || false;
           
           return (
             <div 
-              className={`player opponent ${opponent.id === table.currentPlayer ? 'active' : ''}`}
+              className={`player opponent ${opponent.id === table.currentPlayer ? 'active' : ''} ${isOpponentHost ? 'host-player' : ''}`}
               style={{
-                border: opponent.id === table.currentPlayer ? '3px solid #4CAF50' : '2px solid #34495e',
+                border: opponent.id === table.currentPlayer ? '3px solid #4CAF50' : 
+                        (isOpponentHost ? '3px solid #2196F3' : '2px solid #34495e'),
                 borderRadius: '10px',
                 padding: '15px',
-                backgroundColor: 'rgba(255,255,255,0.05)',
+                backgroundColor: isOpponentHost ? 'rgba(33,150,243,0.1)' : 'rgba(255,255,255,0.05)',
                 marginBottom: '20px',
                 maxWidth: '400px',
                 alignSelf: 'center',
                 position: 'relative',
-                boxShadow: opponent.id === table.currentPlayer ? '0 0 20px rgba(76,175,80,0.3)' : 'none'
+                boxShadow: opponent.id === table.currentPlayer ? '0 0 20px rgba(76,175,80,0.3)' : 
+                          (isOpponentHost ? '0 0 15px rgba(33,150,243,0.3)' : 'none')
               }}
             >
               {/* Turn Indicator */}
@@ -518,6 +529,16 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
                   </span>
                   {opponent.connected && (
                     <span style={{ color: '#4CAF50', fontSize: '0.8rem' }}>🟢</span>
+                  )}
+                  {isOpponentHost && (
+                    <span style={{ 
+                      color: '#FFD700', 
+                      fontSize: '0.8rem',
+                      background: 'rgba(255,215,0,0.2)',
+                      padding: '2px 6px',
+                      borderRadius: '10px',
+                      border: '1px solid rgba(255,215,0,0.5)'
+                    }} title="Хост игры" className="host-crown">👑</span>
                   )}
                 </h4>
                 <p style={{ margin: '5px 0', color: '#FFA726' }}>
@@ -661,20 +682,24 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
           };
           
           const myBet = getPlayerBet(myPlayer);
+          // ИСПРАВЛЕНИЕ: Используем myPlayer.isHost из данных игрока
+          const isMyPlayerHost = myPlayer.isHost || false;
           
           return (
             <div 
-              className={`player current-player ${myPlayer.id === table.currentPlayer ? 'active' : ''}`}
+              className={`player current-player ${myPlayer.id === table.currentPlayer ? 'active' : ''} ${isMyPlayerHost ? 'host-player' : ''}`}
               style={{
-                border: myPlayer.id === table.currentPlayer ? '3px solid #4CAF50' : '2px solid #34495e',
+                border: myPlayer.id === table.currentPlayer ? '3px solid #4CAF50' : 
+                        (isMyPlayerHost ? '3px solid #2196F3' : '2px solid #34495e'),
                 borderRadius: '10px',
                 padding: '15px',
-                backgroundColor: 'rgba(76,175,80,0.1)',
+                backgroundColor: isMyPlayerHost ? 'rgba(33,150,243,0.15)' : 'rgba(76,175,80,0.1)',
                 marginTop: '20px',
                 maxWidth: '400px',
                 alignSelf: 'center',
                 position: 'relative',
-                boxShadow: myPlayer.id === table.currentPlayer ? '0 0 20px rgba(76,175,80,0.3)' : 'none'
+                boxShadow: myPlayer.id === table.currentPlayer ? '0 0 20px rgba(76,175,80,0.3)' : 
+                          (isMyPlayerHost ? '0 0 15px rgba(33,150,243,0.3)' : 'none')
               }}
             >
               {/* Turn Indicator */}
@@ -713,6 +738,16 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
                     <span style={{ color: '#4CAF50', fontSize: '0.8rem' }}>🟢</span>
                   )}
                   <span style={{ color: '#2196F3', fontSize: '0.8rem' }}>👤</span>
+                  {isMyPlayerHost && (
+                    <span style={{ 
+                      color: '#FFD700', 
+                      fontSize: '0.8rem',
+                      background: 'rgba(255,215,0,0.2)',
+                      padding: '2px 6px',
+                      borderRadius: '10px',
+                      border: '1px solid rgba(255,215,0,0.5)'
+                    }} title="Хост игры" className="host-crown">👑</span>
+                  )}
                 </h4>
                 <p style={{ margin: '5px 0', color: '#FFA726' }}>
                   💰 Стек: €{myPlayer.stack}
@@ -869,89 +904,77 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
               </div>
             )}
 
-            {/* Sizing Buttons */}
-            <div style={{ 
-              display: 'flex', 
-              gap: '10px', 
-              justifyContent: 'center', 
-              flexWrap: 'wrap'
-            }}>
-              {availableBetSizes.map(({ type, amount, label }) => {
-                const callAmount = getCallAmount();
-                const isRaise = callAmount > 0;
-                
-                // Определяем финальную сумму в зависимости от типа действия
-                let finalAmount: number = amount;
-                
-                if (isRaise) {
-                  // Для raise: amount - это доплата к максимальной ставке
-                  finalAmount = amount; // Размер raise
-                } else {
-                  // Для bet: amount - это размер ставки
-                  finalAmount = amount;
-                }
-                
-                // Для raise проверяем, что размер больше 0
-                if (isRaise && finalAmount <= 0) {
-                  return null;
-                }
-                
-                const isSelected = selectedBetAmount === finalAmount;
-                
-                return (
-                  <button
-                    key={type}
-                    onClick={() => setSelectedBetAmount(finalAmount)}
-                    onDoubleClick={() => {
-                      if (type !== 'allIn') {
-                        setShowSizingSettings(true);
-                      }
-                    }}
-                    style={{
-                      background: isSelected 
-                        ? 'linear-gradient(135deg, #FFA726, #FF9800)' 
-                        : 'linear-gradient(135deg, rgba(255,167,38,0.2), rgba(255,152,0,0.2))',
-                      border: isSelected 
-                        ? '2px solid #FFA726' 
-                        : '2px solid rgba(255,167,38,0.5)',
-                      color: isSelected ? 'white' : '#FFA726',
-                      borderRadius: '12px',
-                      padding: '10px 16px',
-                      fontSize: '0.9rem',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      boxShadow: isSelected 
-                        ? '0 4px 15px rgba(255,167,38,0.4), inset 0 2px 4px rgba(255,255,255,0.2)' 
-                        : '0 2px 8px rgba(0,0,0,0.2), inset 0 1px 2px rgba(255,255,255,0.1)',
-                      transition: 'all 0.3s ease',
-                      transform: isSelected ? 'translateY(-2px)' : 'none',
-                      minWidth: '70px',
-                      position: 'relative',
-                      overflow: 'hidden'
-                    }}
-                    title={`€${finalAmount} ${type !== 'allIn' ? '(двойной клик для настройки)' : ''}`}
-                  >
-                    <div style={{
-                      position: 'relative',
-                      zIndex: 1
-                    }}>
-                      {label}
-                    </div>
-                    {/* Shine effect */}
-                    <div style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: '-100%',
-                      width: '100%',
-                      height: '100%',
-                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
-                      transition: 'left 0.5s ease',
-                      ...(isSelected && { left: '100%' })
-                    }} />
-                  </button>
-                );
-              }).filter(Boolean)}
+            {/* Sizing buttons */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {availableBetSizes.map(({ type, amount, label }) => (
+                <button
+                  key={type}
+                  onClick={() => setSelectedBetAmount(amount)}
+                  disabled={!isMyTurn}
+                  className={`btn ${selectedBetAmount === amount ? 'btn-info' : 'btn-outline-secondary'}`}
+                  style={{ 
+                    fontSize: '0.9rem', 
+                    padding: '8px 12px',
+                    minWidth: '80px'
+                  }}
+                  title={`${label} банка = €${amount}`}
+                >
+                  {label}<br/>€{amount}
+                </button>
+              ))}
+              
+              {/* Manual input button */}
+              <button
+                onClick={() => setShowManualInput(!showManualInput)}
+                disabled={!isMyTurn}
+                className={`btn ${showManualInput ? 'btn-warning' : 'btn-outline-warning'}`}
+                style={{ 
+                  fontSize: '0.9rem', 
+                  padding: '8px 12px',
+                  minWidth: '80px'
+                }}
+                title="Ручной ввод суммы"
+              >
+                ✏️<br/>Ручной
+              </button>
             </div>
+            
+            {/* Manual input field */}
+            {showManualInput && (
+              <div style={{ marginBottom: '15px', textAlign: 'center' }}>
+                <input
+                  type="number"
+                  value={manualBetAmount}
+                  onChange={(e) => setManualBetAmount(e.target.value)}
+                  placeholder="Введите сумму"
+                  disabled={!isMyTurn}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    marginRight: '8px',
+                    width: '120px',
+                    textAlign: 'center'
+                  }}
+                  min="1"
+                  max={myPlayerData?.stack || 1000}
+                />
+                <button
+                  onClick={() => {
+                    const amount = parseInt(manualBetAmount) || 0;
+                    if (amount > 0 && amount <= (myPlayerData?.stack || 1000)) {
+                      setSelectedBetAmount(amount);
+                      setShowManualInput(false);
+                    }
+                  }}
+                  disabled={!isMyTurn}
+                  className="btn btn-sm btn-success"
+                  style={{ padding: '8px 12px' }}
+                >
+                  ✓ Применить
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Main Action Buttons */}
@@ -966,21 +989,21 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
               <>
                 <button
                   onClick={() => makeAction('check')}
-                  disabled={isLoading}
-                  className="btn btn-secondary"
+                  disabled={isLoading || !isMyTurn}
+                  className="btn btn-success"
                   style={{ fontSize: '1.1rem', padding: '12px 20px' }}
                 >
-                  ✋ ЧЕК
+                  ✓ ЧЕК
                 </button>
                 
                 <button
                   onClick={() => makeAction('bet', selectedBetAmount || calculateBetSize('half'))}
-                  disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
-                  className="btn btn-success"
+                  disabled={isLoading || !isMyTurn || (!selectedBetAmount && calculateBetSize('half') <= 0)}
+                  className="btn btn-warning"
                   style={{ fontSize: '1.1rem', padding: '12px 20px' }}
                   title={`Бет €${selectedBetAmount || calculateBetSize('half')}`}
                 >
-                  💰 БЕТ €{selectedBetAmount || calculateBetSize('half')}
+                  🎯 БЕТ €{selectedBetAmount || calculateBetSize('half')}
                 </button>
               </>
             )}
@@ -990,7 +1013,7 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
               <>
                 <button
                   onClick={() => makeAction('fold')}
-                  disabled={isLoading}
+                  disabled={isLoading || !isMyTurn}
                   className="btn btn-danger"
                   style={{ fontSize: '1.1rem', padding: '12px 20px' }}
                 >
@@ -999,7 +1022,7 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
                 
                 <button
                   onClick={() => makeAction('call', getCallAmount())}
-                  disabled={isLoading}
+                  disabled={isLoading || !isMyTurn}
                   className="btn btn-primary"
                   style={{ fontSize: '1.1rem', padding: '12px 20px' }}
                   title={`Колл €${getCallAmount()}`}
@@ -1048,14 +1071,18 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
                       }
                     }
                     
+                    console.log(`🎯 Determined action: ${actionType} ${actionAmount}`);
                     makeAction(actionType, actionAmount);
                   }}
-                  disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
-                  className="btn btn-success"
+                  disabled={isLoading || !isMyTurn || (!selectedBetAmount && calculateBetSize('half') <= 0)}
+                  className="btn btn-warning"
                   style={{ fontSize: '1.1rem', padding: '12px 20px' }}
-                  title={`${getCallAmount() > 0 ? 'Рейз' : 'Бет'} €${selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half'))}`}
+                  title={`Рейз до €${selectedBetAmount || (getCallAmount() + calculateBetSize('half'))}`}
                 >
-                  {getCallAmount() > 0 ? '🚀 РЕЙЗ' : '💰 БЕТ'} €{selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half'))}
+                  {getCallAmount() > 0 ? 
+                    `⬆️ РЕЙЗ €${selectedBetAmount || (getCallAmount() + calculateBetSize('half'))}` : 
+                    `🎯 БЕТ €${selectedBetAmount || calculateBetSize('half')}`
+                  }
                 </button>
               </>
             )}
@@ -1124,6 +1151,15 @@ const MultiplayerPokerTable: React.FC<MultiplayerPokerTableProps> = ({
         color: 'rgba(255,255,255,0.7)'
       }}>
         {connectionStatus}
+        {isConnected && (
+          <div style={{ 
+            marginTop: '5px',
+            fontSize: '0.8rem',
+            color: isHost ? '#FFD700' : '#2196F3'
+          }}>
+            {isHost ? '👑 Вы — хост игры' : '🎯 Вы — гость'}
+          </div>
+        )}
       </div>
     </div>
   );

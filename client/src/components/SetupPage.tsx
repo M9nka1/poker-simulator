@@ -258,7 +258,8 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
         boardSettings,
         handRanges: convertedHandRanges,
         tableCount,
-        rakeSettings
+        rakeSettings,
+        hostPlayerId: 1 // Хост всегда Player 1 (создатель сессии)
       };
 
       const response = await fetch('/api/create-session', {
@@ -272,7 +273,8 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
       if (response.ok) {
         const result = await response.json();
         onSessionCreated({
-          sessionId: result.sessionId,
+          sessionIds: result.sessionIds,
+          sessionId: result.sessionIds ? result.sessionIds[0] : result.sessionId,
           tables: result.tables,
           settings: sessionData,
           playerNames: result.playerNames || [],
@@ -326,7 +328,8 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
         boardSettings,
         handRanges: convertedHandRanges,
         tableCount,
-        rakeSettings
+        rakeSettings,
+        hostPlayerId: 1 // Хост всегда Player 1 (создатель сессии)
       };
 
       const response = await fetch('/api/create-session', {
@@ -340,10 +343,17 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
       if (response.ok) {
         const result = await response.json();
         
-        // Открываем новые окна для каждого стола (без betSizes)
-        openTableWindows(result.sessionId, result.tables, result.playerNames || []);
-        
-        alert(`✅ Сессия создана! Открыто ${result.tables.length} окон с покерными столами.\n\nID сессии: ${result.sessionId}\n\nПоделитесь этим ID с другими игроками для присоединения к игре.`);
+        // Теперь result.sessionIds содержит массив ID сессий
+        if (result.sessionIds && result.sessionIds.length > 0) {
+          // Открываем новые окна для каждой сессии (каждая сессия = один стол)
+          openTableWindows(result.sessionIds, result.tables, result.playerNames || []);
+          
+          alert(`✅ Сессии созданы! Открыто ${result.sessionIds.length} окон с покерными столами.\n\nID сессий:\n${result.sessionIds.join('\n')}\n\nПоделитесь этими ID с другими игроками для присоединения к игре.`);
+        } else {
+          // Fallback для старого формата
+          openTableWindows([result.sessionId], result.tables, result.playerNames || []);
+          alert(`✅ Сессия создана! Открыто ${result.tables.length} окон с покерными столами.\n\nID сессии: ${result.sessionId}\n\nПоделитесь этим ID с другими игроками для присоединения к игре.`);
+        }
       } else {
         throw new Error('Failed to create session');
       }
@@ -355,11 +365,11 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
     }
   };
 
-  const openTableWindows = (sessionId: string, tables: any[], playerNames: string[]) => {
-    tables.forEach((table, index) => {
+  const openTableWindows = (sessionIds: string[], tables: any[], playerNames: string[]) => {
+    sessionIds.forEach((sessionId, index) => {
       // Небольшая задержка между открытием окон
       setTimeout(() => {
-        openTableWindow(sessionId, table.id, playerNames, index);
+        openTableWindow(sessionId, tables[index].id, playerNames, index);
       }, index * 300); // 300ms задержка между окнами
     });
   };

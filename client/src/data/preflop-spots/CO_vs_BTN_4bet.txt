@@ -1,0 +1,17 @@
+PokerStars Hand #242345678904: Hold'em No Limit (€2.50/€5.00 EUR) - 2024/05/25 21:30:15 CET
+Table 'Vega Stars' 6-max Seat #5 is the button
+Seat 4: Hero_CO (€1000.00 in chips)
+Seat 5: Villain_BTN (€1000.00 in chips)
+Seat 6: Player_SB (€1000.00 in chips)
+Seat 1: Player_BB (€1000.00 in chips)
+Player_SB: posts small blind €2.50
+Player_BB: posts big blind €5.00
+*** HOLE CARDS ***
+Dealt to Hero_CO [Qc Qs]
+Hero_CO: raises €12.50 to €17.50
+Villain_BTN: raises €32.50 to €50.00
+Player_SB: folds
+Player_BB: folds
+Hero_CO: raises €75.00 to €125.00
+Villain_BTN: calls €75.00
+*** FLOP *** 

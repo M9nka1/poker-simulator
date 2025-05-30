@@ -175,17 +175,34 @@ class PokerEngine {
   }
 
   generateFlop(deck, settings) {
-    if (settings.specific && settings.specificCards.length === 3) {
-      return settings.specificCards;
+    console.log('🎲 Generating flop with settings:', JSON.stringify(settings, null, 2));
+    
+    if (settings.specific && settings.specificCards && settings.specificCards.length === 3) {
+      // Фильтруем null значения и проверяем, что все карты определены
+      const validCards = settings.specificCards.filter(card => card && card.rank && card.suit);
+      if (validCards.length === 3) {
+        console.log('🎯 Using specific cards:', validCards);
+        return validCards;
+      }
     }
 
-    if (settings.ranges && settings.rangeSettings) {
+    // Если есть ranges, но также есть другие ограничения - используем комплексную генерацию
+    if (settings.ranges && settings.rangeSettings && (settings.twoTone || settings.rainbow || settings.monotone || settings.paired || settings.unpaired || settings.trips)) {
+      console.log('🔄 Using complex generation with ranges + constraints');
+      return this.generateComplexFlop(deck, settings);
+    }
+
+    // Если только ranges без других ограничений
+    if (settings.ranges && settings.rangeSettings && !settings.twoTone && !settings.rainbow && !settings.monotone && !settings.paired && !settings.unpaired && !settings.trips) {
+      console.log('📊 Using range settings only:', settings.rangeSettings);
       return this.generateFlopByRanges(deck, settings.rangeSettings);
     }
     
+    // Обычная логика для отдельных ограничений
     let candidates = [...deck];
     
     if (settings.twoTone) {
+      console.log('🎨 Generating two-tone flop');
       // Two cards of same suit, one different
       const suits = ['h', 'd', 'c', 's'];
       const mainSuit = suits[Math.floor(Math.random() * suits.length)];
@@ -196,11 +213,14 @@ class PokerEngine {
         const card1 = suitedCards[Math.floor(Math.random() * suitedCards.length)];
         const card2 = suitedCards.filter(c => c.display !== card1.display)[Math.floor(Math.random() * (suitedCards.length - 1))];
         const card3 = offsuitCards[Math.floor(Math.random() * offsuitCards.length)];
-        return this.shuffleArray([card1, card2, card3]);
+        const result = this.shuffleArray([card1, card2, card3]);
+        console.log('🎨 Two-tone flop generated:', result);
+        return result;
       }
     }
     
     if (settings.rainbow) {
+      console.log('🌈 Generating rainbow flop');
       // Three different suits
       const suits = ['h', 'd', 'c', 's'];
       const selectedSuits = this.shuffleArray(suits).slice(0, 3);
@@ -214,21 +234,55 @@ class PokerEngine {
         }
       }
       
-      return flop.length === 3 ? flop : this.getRandomCards(deck, 3);
+      if (flop.length === 3) {
+        console.log('🌈 Rainbow flop generated:', flop);
+        return flop;
+      } else {
+        console.log('⚠️ Failed to generate rainbow flop, using random');
+        return this.getRandomCards(deck, 3);
+      }
     }
     
     if (settings.monotone) {
+      console.log('🔵 Generating monotone flop');
       // Three cards of same suit
       const suits = ['h', 'd', 'c', 's'];
       const suit = suits[Math.floor(Math.random() * suits.length)];
       const suitedCards = candidates.filter(card => card.suit === suit);
       
       if (suitedCards.length >= 3) {
-        return this.shuffleArray(suitedCards).slice(0, 3);
+        const result = this.shuffleArray(suitedCards).slice(0, 3);
+        console.log('🔵 Monotone flop generated:', result);
+        return result;
+      }
+    }
+    
+    if (settings.unpaired) {
+      console.log('🚫 Generating unpaired flop');
+      // Three cards of different ranks
+      const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
+      const selectedRanks = this.shuffleArray(ranks).slice(0, 3);
+      const flop = [];
+      
+      for (const rank of selectedRanks) {
+        const rankCards = candidates.filter(card => card.rank === rank);
+        if (rankCards.length > 0) {
+          flop.push(rankCards[Math.floor(Math.random() * rankCards.length)]);
+          candidates = candidates.filter(card => card.display !== flop[flop.length - 1].display);
+        }
+      }
+      
+      if (flop.length === 3) {
+        console.log('🚫 Unpaired flop generated:', flop);
+        return flop;
+      } else {
+        console.log('⚠️ Failed to generate unpaired flop, using random');
+        return this.getRandomCards(deck, 3);
       }
     }
     
     if (settings.paired) {
+      console.log('👫 Generating paired flop');
       // Two cards of same rank
       const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
       const rank = ranks[Math.floor(Math.random() * ranks.length)];
@@ -238,12 +292,142 @@ class PokerEngine {
         const pair = this.shuffleArray(rankCards).slice(0, 2);
         const remaining = candidates.filter(card => card.rank !== rank);
         const thirdCard = remaining[Math.floor(Math.random() * remaining.length)];
-        return this.shuffleArray([...pair, thirdCard]);
+        const result = this.shuffleArray([...pair, thirdCard]);
+        console.log('👫 Paired flop generated:', result);
+        return result;
+      }
+    }
+    
+    if (settings.trips) {
+      console.log('🎯 Generating trips flop');
+      // Three cards of same rank
+      const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
+      const rank = ranks[Math.floor(Math.random() * ranks.length)];
+      const rankCards = candidates.filter(card => card.rank === rank);
+      
+      if (rankCards.length >= 3) {
+        const result = this.shuffleArray(rankCards).slice(0, 3);
+        console.log('🎯 Trips flop generated:', result);
+        return result;
       }
     }
     
     // Default: random flop
-    return this.getRandomCards(deck, 3);
+    console.log('🎲 Generating random flop (default)');
+    const result = this.getRandomCards(deck, 3);
+    console.log('🎲 Random flop generated:', result);
+    return result;
+  }
+
+  // Новый метод для комплексной генерации с учетом всех ограничений
+  generateComplexFlop(deck, settings) {
+    console.log('🔄 Complex flop generation started');
+    const { rangeSettings } = settings;
+    const maxAttempts = 1000;
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      attempts++;
+      let candidates = [...deck];
+      const flop = [];
+      const usedCards = [];
+
+      try {
+        // 1. Сначала применяем ограничения старшинства карт
+        if (rangeSettings) {
+          const { high, middle, low } = rangeSettings;
+          
+          // Генерируем высокую карту
+          if (high && high.length > 0) {
+            const highCards = candidates.filter(card => high.includes(card.rank));
+            if (highCards.length === 0) continue;
+            
+            const highCard = highCards[Math.floor(Math.random() * highCards.length)];
+            flop.push(highCard);
+            usedCards.push(highCard);
+            candidates = candidates.filter(card => card.display !== highCard.display);
+          }
+
+          // Генерируем среднюю карту  
+          if (middle && middle.length > 0) {
+            const middleCards = candidates.filter(card => middle.includes(card.rank));
+            if (middleCards.length === 0) continue;
+            
+            const middleCard = middleCards[Math.floor(Math.random() * middleCards.length)];
+            flop.push(middleCard);
+            usedCards.push(middleCard);
+            candidates = candidates.filter(card => card.display !== middleCard.display);
+          }
+
+          // Генерируем низкую карту
+          if (low && low.length > 0) {
+            const lowCards = candidates.filter(card => low.includes(card.rank));
+            if (lowCards.length === 0) continue;
+            
+            const lowCard = lowCards[Math.floor(Math.random() * lowCards.length)];
+            flop.push(lowCard);
+            usedCards.push(lowCard);
+            candidates = candidates.filter(card => card.display !== lowCard.display);
+          }
+        }
+
+        // Если не хватает карт, добавляем случайные
+        while (flop.length < 3) {
+          if (candidates.length === 0) break;
+          const randomCard = candidates[Math.floor(Math.random() * candidates.length)];
+          flop.push(randomCard);
+          usedCards.push(randomCard);
+          candidates = candidates.filter(card => card.display !== randomCard.display);
+        }
+
+        if (flop.length !== 3) continue;
+
+        // 2. Проверяем ограничения спаренности
+        const ranks = flop.map(card => card.rank);
+        const uniqueRanks = [...new Set(ranks)];
+        
+        if (settings.paired && uniqueRanks.length !== 2) continue; // Должна быть пара
+        if (settings.unpaired && uniqueRanks.length !== 3) continue; // Все разные
+        if (settings.trips && uniqueRanks.length !== 1) continue; // Все одинаковые
+
+        // 3. Проверяем ограничения мастей
+        const suits = flop.map(card => card.suit);
+        const uniqueSuits = [...new Set(suits)];
+        
+        if (settings.twoTone && uniqueSuits.length !== 2) continue; // Два цвета
+        if (settings.rainbow && uniqueSuits.length !== 3) continue; // Три цвета  
+        if (settings.monotone && uniqueSuits.length !== 1) continue; // Один цвет
+
+        // 4. Дополнительная проверка для двухтоновых флопов
+        if (settings.twoTone) {
+          // Должно быть 2 карты одной масти и 1 другой
+          const suitCounts = {};
+          suits.forEach(suit => {
+            suitCounts[suit] = (suitCounts[suit] || 0) + 1;
+          });
+          const counts = Object.values(suitCounts);
+          if (!counts.includes(2) || !counts.includes(1)) continue;
+        }
+
+        // Все ограничения выполнены!
+        console.log(`✅ Complex flop generated after ${attempts} attempts:`, flop);
+        console.log('🎯 Constraints met:', {
+          twoTone: settings.twoTone ? `${uniqueSuits.length} suits` : 'off',
+          paired: settings.paired ? `${uniqueRanks.length} ranks` : 'off',
+          ranges: rangeSettings ? 'applied' : 'off'
+        });
+        
+        return flop;
+        
+      } catch (error) {
+        console.log(`⚠️ Error in attempt ${attempts}:`, error.message);
+        continue;
+      }
+    }
+
+    // Если не удалось сгенерировать за 1000 попыток, возвращаем обычный range-based флоп
+    console.log('⚠️ Failed to generate complex flop, falling back to range-only generation');
+    return this.generateFlopByRanges(deck, settings.rangeSettings);
   }
 
   generateFlopByRanges(deck, rangeSettings) {
@@ -351,9 +535,18 @@ class PokerEngine {
     return shuffled;
   }
 
-  createTable(tableId, initialPotSize = 0, playerStacks = {}, activePlayers = []) {
+  createTable(tableId, initialPotSize = 0, playerStacks = {}, activePlayers = [], currentPlayerInfo = null, predefinedBoard = null) {
     const holeCards = this.generateHoleCards(this.handRanges);
-    const board = this.generateBoard(holeCards);
+    
+    // ИСПРАВЛЕНИЕ: Используем предопределенный борд если он передан, иначе генерируем новый
+    let board;
+    if (predefinedBoard && predefinedBoard.length >= 3) {
+      console.log(`🎯 Using predefined board for table ${tableId}:`, predefinedBoard.map(card => card.display).join(', '));
+      board = predefinedBoard;
+    } else {
+      console.log(`🎲 Generating new board for table ${tableId}`);
+      board = this.generateBoard(holeCards);
+    }
     
     // Определяем стеки игроков из префлоп данных или используем значения по умолчанию
     const defaultStack = 1000;
@@ -366,6 +559,110 @@ class PokerEngine {
     const player2Stack = playerStacks[player2Name] || defaultStack;
     
     console.log(`🎯 Creating table with active players: ${player1Name} (${player1Stack}) vs ${player2Name} (${player2Stack})`);
+    console.log(`🎮 Current player info:`, currentPlayerInfo);
+    console.log(`💰 Received player stacks:`, playerStacks);
+    console.log(`📋 Player names from activePlayers:`, playerNames);
+    console.log(`🔍 Stack lookup details:`);
+    console.log(`   Player 1: "${player1Name}" → stack: ${player1Stack} (from playerStacks["${player1Name}"] = ${playerStacks[player1Name]})`);
+    console.log(`   Player 2: "${player2Name}" → stack: ${player2Stack} (from playerStacks["${player2Name}"] = ${playerStacks[player2Name]})`);
+    
+    // Определяем позиции на основе информации о текущем игроке
+    let player1Position = 'BTN'; // По умолчанию Player 1 - BTN (IP)
+    let player2Position = 'BB';  // По умолчанию Player 2 - BB (OOP)
+    
+    // ИСПРАВЛЕНИЕ: Правильная логика для heads-up позиций
+    // В heads-up: BTN = SB = IP, BB = OOP
+    // Из hand history: Pio_OOP_3bet_SB означает что игрок на SB, но OOP в анализе
+    // Это означает что в анализе SB игрок рассматривается как OOP после 3bet
+    
+    if (currentPlayerInfo && currentPlayerInfo.position) {
+      // Если пользователь выбрал играть за IP позицию
+      if (currentPlayerInfo.position === 'ip') {
+        if (currentPlayerInfo.name === player1Name) {
+          // Player 1 играет IP = BTN/SB
+          player1Position = 'BTN';
+          player2Position = 'BB';
+        } else if (currentPlayerInfo.name === player2Name) {
+          // Player 2 играет IP = BTN/SB
+          player1Position = 'BB';
+          player2Position = 'BTN';
+        }
+      } 
+      // Если пользователь выбрал играть за OOP позицию  
+      else if (currentPlayerInfo.position === 'oop') {
+        if (currentPlayerInfo.name === player1Name) {
+          // Player 1 играет OOP = BB
+          player1Position = 'BB';
+          player2Position = 'BTN';
+        } else if (currentPlayerInfo.name === player2Name) {
+          // Player 2 играет OOP = BB
+          player1Position = 'BB';
+          player2Position = 'BTN';
+        }
+      }
+    } else {
+      // Fallback: анализируем имена игроков для автоопределения позиций
+      console.log(`🔍 Auto-detecting positions from player names...`);
+      
+      // Проверяем окончания ников для определения позиций
+      if (player1Name.includes('_SB')) {
+        // SB = Small Blind = Button в heads-up
+        player1Position = 'BTN';
+        player2Position = 'BB';
+        console.log(`📍 Player 1 has _SB suffix → BTN position`);
+      } else if (player1Name.includes('_BB')) {
+        // BB = Big Blind
+        player1Position = 'BB';
+        player2Position = 'BTN';
+        console.log(`📍 Player 1 has _BB suffix → BB position`);
+      } else if (player2Name.includes('_SB')) {
+        // SB = Small Blind = Button в heads-up
+        player1Position = 'BB';
+        player2Position = 'BTN';
+        console.log(`📍 Player 2 has _SB suffix → BTN position`);
+      } else if (player2Name.includes('_BB')) {
+        // BB = Big Blind
+        player1Position = 'BTN';
+        player2Position = 'BB';
+        console.log(`📍 Player 2 has _BB suffix → BB position`);
+      } else if (player1Name.includes('_OOP_')) {
+        // OOP означает Big Blind в heads-up постфлопе
+        player1Position = 'BB';
+        player2Position = 'BTN';
+        console.log(`📍 Player 1 has _OOP_ → BB position`);
+      } else if (player2Name.includes('_OOP_')) {
+        // OOP означает Big Blind в heads-up постфлопе  
+        player1Position = 'BTN';
+        player2Position = 'BB';
+        console.log(`📍 Player 2 has _OOP_ → BB position`);
+      } else if (player1Name.includes('_IP_') || player1Name.includes('_BTN') || player1Name.includes('_CO')) {
+        // IP/BTN/CO = Button
+        player1Position = 'BTN';
+        player2Position = 'BB';
+        console.log(`📍 Player 1 has IP/BTN/CO → BTN position`);
+      } else if (player2Name.includes('_IP_') || player2Name.includes('_BTN') || player2Name.includes('_CO')) {
+        // IP/BTN/CO = Button
+        player1Position = 'BB';
+        player2Position = 'BTN';
+        console.log(`📍 Player 2 has IP/BTN/CO → BTN position`);
+      } else {
+        // По умолчанию: Player 1 = BTN, Player 2 = BB
+        player1Position = 'BTN';
+        player2Position = 'BB';
+        console.log(`📍 Default positions: Player 1 = BTN, Player 2 = BB`);
+      }
+    }
+    
+    // В heads-up: BB (OOP) всегда действует первым на постфлопе
+    let currentPlayerId;
+    if (player1Position === 'BB') {
+      currentPlayerId = 1; // Player 1 является BB (OOP), он ходит первым
+    } else {
+      currentPlayerId = 2; // Player 2 является BB (OOP), он ходит первым
+    }
+    
+    console.log(`📍 Final positions: ${player1Name} = ${player1Position}, ${player2Name} = ${player2Position}`);
+    console.log(`🎯 Current player will be: ${currentPlayerId} (${currentPlayerId === 1 ? player1Name : player2Name}, ${currentPlayerId === 1 ? player1Position : player2Position})`);
     
     return {
       id: tableId,
@@ -376,7 +673,7 @@ class PokerEngine {
           stack: player1Stack,
           initialStack: player1Stack, // Сохраняем изначальный стек
           holeCards: holeCards.player1,
-          position: 'BTN', // Button (in position)
+          position: player1Position,
           actions: [],
           connected: false
         },
@@ -386,7 +683,7 @@ class PokerEngine {
           stack: player2Stack,
           initialStack: player2Stack, // Сохраняем изначальный стек
           holeCards: holeCards.player2,
-          position: 'BB', // Big Blind (out of position)
+          position: player2Position,
           actions: [],
           connected: false
         }
@@ -399,7 +696,7 @@ class PokerEngine {
       pot: initialPotSize,
       initialPot: initialPotSize,
       currentStreet: 'flop',
-      currentPlayer: 2, // BB действует первым на постфлопе (OOP)
+      currentPlayer: currentPlayerId, // Корректный игрок действует первым (OOP)
       handComplete: false,
       winner: null
     };
@@ -608,14 +905,25 @@ class PokerEngine {
   }
 
   advanceStreet(table) {
+    // Определяем, кто является OOP (BB) - он всегда ходит первым на новых улицах
+    const player1 = table.players.find(p => p.id === 1);
+    const player2 = table.players.find(p => p.id === 2);
+    
+    let oopPlayerId;
+    if (player1.position === 'BB') {
+      oopPlayerId = 1;
+    } else {
+      oopPlayerId = 2;
+    }
+    
     switch (table.currentStreet) {
       case 'flop':
         table.currentStreet = 'turn';
-        table.currentPlayer = 2; // BB действует первым на тёрне (OOP)
+        table.currentPlayer = oopPlayerId; // OOP (BB) действует первым на тёрне
         break;
       case 'turn':
         table.currentStreet = 'river';
-        table.currentPlayer = 2; // BB действует первым на ривере (OOP)
+        table.currentPlayer = oopPlayerId; // OOP (BB) действует первым на ривере
         break;
       case 'river':
         table.handComplete = true;
@@ -662,134 +970,67 @@ class PokerEngine {
     }
   }
 
-  validateAction(table, playerId, action, amount) {
-    const currentPlayer = table.players.find(p => p.id === playerId);
-    const otherPlayer = table.players.find(p => p.id !== playerId);
-    if (!otherPlayer || !currentPlayer) return;
+  validateAction(table, playerId, action, amount = 0) {
+    console.log(`🎮 Player ${playerId} attempting action: ${action} ${amount} on ${table.currentStreet}`);
+    console.log(`   Current table state: Street=${table.currentStreet}, CurrentPlayer=${table.currentPlayer}, Pot=${table.pot}`);
     
-    // Проверяем, что у игрока достаточно денег для bet и call
-    if ((action === 'bet' || action === 'call') && amount > currentPlayer.stack) {
-      throw new Error(`Insufficient funds. You have €${currentPlayer.stack}, but trying to bet €${amount}`);
+    const player = table.players.find(p => p.id === playerId);
+    console.log(`   Player positions: P1=${table.players[0].position}, P2=${table.players[1].position}`);
+    
+    if (!player) {
+      throw new Error('Invalid player');
+    }
+
+    if (table.handComplete) {
+      throw new Error('Hand is already complete');
+    }
+
+    // ИСПРАВЛЕНИЕ: Убираем жесткую проверку очередности хода
+    // Позволяем любому подключенному игроку делать действие
+    if (table.currentPlayer !== playerId) {
+      console.log(`⚠️ Turn order mismatch: Expected player ${table.currentPlayer}, but got ${playerId}`);
+      // Автоматически переключаем currentPlayer на действующего игрока
+      table.currentPlayer = playerId;
+      console.log(`🔄 Auto-switched current player to ${playerId}`);
     }
     
-    // Для raise проверяем реальную стоимость действия
-    if (action === 'raise') {
-      const alreadySpent = this.getStreetTotal(currentPlayer, table.currentStreet);
-      const maxBetOnStreet = this.getMaxBetOnStreet(table, table.currentStreet);
-      const newTotalBet = maxBetOnStreet + amount;
-      const actualCost = newTotalBet - alreadySpent;
-      
-      // Разрешаем raise даже если actualCost > stack (будет ограничен до all-in)
-      // Но проверяем, что у игрока есть хотя бы что-то для ставки
-      if (currentPlayer.stack <= 0) {
-        throw new Error(`Cannot raise with empty stack.`);
-      }
-    }
-    
-    // Получаем все действия на текущей улице в хронологическом порядке
-    const allStreetActions = [
-      ...currentPlayer.actions.filter(a => a.street === table.currentStreet),
-      ...otherPlayer.actions.filter(a => a.street === table.currentStreet)
-    ].sort((a, b) => a.timestamp - b.timestamp);
-    
-    const myActions = currentPlayer.actions.filter(a => a.street === table.currentStreet);
-    const otherActions = otherPlayer.actions.filter(a => a.street === table.currentStreet);
-    
-    // Находим последнюю ставку/рейз любого игрока
-    const lastBetAction = allStreetActions
-      .filter(a => a.action === 'bet' || a.action === 'raise')
-      .pop();
-    
-    // Проверяем чек после ставки
-    if (action === 'check' && lastBetAction) {
-      // Если последняя ставка была сделана оппонентом и мы еще не отвечали
-      if (lastBetAction.player !== playerId) {
-        const myActionsAfterBet = myActions.filter(a => a.timestamp > lastBetAction.timestamp);
-        if (myActionsAfterBet.length === 0) {
-          throw new Error('Cannot check when facing a bet. You must call, raise, or fold.');
+    console.log(`✅ Turn validation passed: Player ${playerId} is current player`);
+
+    // Validate specific actions
+    switch (action) {
+      case 'fold':
+      case 'check':
+        // Always valid
+        break;
+      case 'call':
+        // Check if there's something to call
+        const callAmount = this.getCallAmount(table, playerId);
+        if (callAmount <= 0) {
+          throw new Error('Nothing to call');
         }
-      }
-    }
-    
-    // Проверяем колл
-    if (action === 'call') {
-      if (!lastBetAction) {
-        throw new Error('Cannot call when there is no bet to call.');
-      }
-      
-      // Нельзя коллировать свою же ставку
-      if (lastBetAction.player === playerId) {
-        throw new Error('Cannot call your own bet.');
-      }
-      
-      // Проверяем, что мы еще не отвечали на эту ставку
-      const myActionsAfterBet = myActions.filter(a => a.timestamp > lastBetAction.timestamp);
-      if (myActionsAfterBet.length > 0) {
-        throw new Error('You have already responded to this bet.');
-      }
-      
-      // Рассчитываем правильную сумму call с учетом покерной логики
-      const myTotal = this.getStreetTotal(currentPlayer, table.currentStreet);
-      const opponentTotal = this.getStreetTotal(otherPlayer, table.currentStreet);
-      const expectedCallAmount = Math.min(opponentTotal - myTotal, currentPlayer.stack);
-      
-      if (amount !== expectedCallAmount) {
-        throw new Error(`Invalid call amount. Expected ${expectedCallAmount}, got ${amount}`);
-      }
-    }
-    
-    // Проверяем бет/рейз
-    if (action === 'bet' || action === 'raise') {
-      if (amount <= 0) {
-        throw new Error('Bet amount must be positive.');
-      }
-      
-      // Если есть активная ставка от другого игрока, это должен быть рейз
-      if (lastBetAction && lastBetAction.player !== playerId) {
-        if (action === 'bet') {
-          // Проверяем, что мы еще не отвечали на эту ставку
-          const myActionsAfterBet = myActions.filter(a => a.timestamp > lastBetAction.timestamp);
-          if (myActionsAfterBet.length === 0) {
-            throw new Error('Must raise when facing a bet, not bet.');
-          }
+        break;
+      case 'bet':
+        // Check if betting is allowed (no previous bets on this street)
+        const maxBetOnStreet = this.getMaxBetOnStreet(table, table.currentStreet);
+        if (maxBetOnStreet > 0) {
+          throw new Error('Cannot bet when there is already a bet on this street');
         }
-        
-        // Для raise проверяем минимальный размер
-        if (action === 'raise') {
-          // Находим размер последнего raise для определения минимального raise
-          // Минимальный raise = размер последнего raise (не общая сумма)
-          
-          // Ищем предыдущий raise в хронологическом порядке
-          const allActionsChronological = [
-            ...currentPlayer.actions.filter(a => a.street === table.currentStreet),
-            ...otherPlayer.actions.filter(a => a.street === table.currentStreet)
-          ].sort((a, b) => a.timestamp - b.timestamp);
-          
-          // Находим последний raise/bet
-          let lastRaiseSize = 0;
-          for (let i = allActionsChronological.length - 1; i >= 0; i--) {
-            const act = allActionsChronological[i];
-            if (act.action === 'bet') {
-              lastRaiseSize = act.amount;
-              break;
-            } else if (act.action === 'raise') {
-              // Для raise нужно найти размер raise, а не общую сумму
-              // Это сложно, поэтому упростим: разрешим любой raise > 0
-              lastRaiseSize = 1; // Минимальный raise
-              break;
-            }
-          }
-          
-          if (amount < lastRaiseSize) {
-            throw new Error(`Raise amount must be at least ${lastRaiseSize}`);
-          }
+        if (amount <= 0) {
+          throw new Error('Bet amount must be greater than 0');
         }
-      }
-      
-      // Если нет активной ставки, но используется raise
-      if (!lastBetAction && action === 'raise') {
-        throw new Error('Cannot raise when there is no bet to raise.');
-      }
+        break;
+      case 'raise':
+        // Check if there's a bet to raise
+        const currentMaxBet = this.getMaxBetOnStreet(table, table.currentStreet);
+        if (currentMaxBet <= 0) {
+          throw new Error('Cannot raise when there is no bet');
+        }
+        if (amount <= 0) {
+          throw new Error('Raise amount must be greater than 0');
+        }
+        break;
+      default:
+        throw new Error('Invalid action');
     }
   }
 

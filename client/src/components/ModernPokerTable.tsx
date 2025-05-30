@@ -19,6 +19,7 @@ interface Player {
   position: string;
   actions: any[];
   connected: boolean;
+  isHost: boolean;
 }
 
 interface TableData {
@@ -48,6 +49,11 @@ interface ModernPokerTableProps {
     allIn: boolean;
   };
   onHandComplete: (handHistory: string) => void;
+  currentPlayer?: {
+    name: string;
+    id: number;
+    position: string;
+  };
 }
 
 const ModernPokerTable: React.FC<ModernPokerTableProps> = ({ 
@@ -61,7 +67,8 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
     pot: true,
     allIn: true
   }, 
-  onHandComplete 
+  onHandComplete,
+  currentPlayer
 }) => {
   const [table, setTable] = useState<TableData>(initialTable);
   const [isLoading, setIsLoading] = useState(false);
@@ -92,6 +99,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
   const [showManualInput, setShowManualInput] = useState<boolean>(false);
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [modalShown, setModalShown] = useState<boolean>(false);
+  const [isHost, setIsHost] = useState<boolean>(false);
   
   // Drag and Drop Edit Mode States
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
@@ -111,6 +119,8 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
       'current-player': { x: 41.8, y: 66.5 },
       'board-container': { x: 34.8, y: 42.4 },
       'betting-panel': { x: 19.8, y: 79.1 },
+      'betting-sizing-panel': { x: 15, y: 75 },
+      'betting-actions-panel': { x: 25, y: 85 },
       'header-controls': { x: 2.5, y: 5 },
       'new-hand-button': { x: 79.1, y: 90.9 }
     };
@@ -119,10 +129,29 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
   const [showEditHelp, setShowEditHelp] = useState<boolean>(false);
   const tableRef = useRef<HTMLDivElement>(null);
 
+  // Table Center control states
+  const [tableCenterSize, setTableCenterSize] = useState<number>(() => {
+    const saved = localStorage.getItem('poker-table-center-size');
+    return saved ? parseInt(saved) : 82; // Default 82%
+  });
+  const [tableCenterPosition, setTableCenterPosition] = useState<{x: number, y: number}>(() => {
+    const saved = localStorage.getItem('poker-table-center-position');
+    return saved ? JSON.parse(saved) : { x: 0, y: 0 }; // Default center
+  });
+
   // Save positions to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('poker-table-positions', JSON.stringify(elementPositions));
   }, [elementPositions]);
+
+  // Save table center settings whenever they change
+  useEffect(() => {
+    localStorage.setItem('poker-table-center-size', tableCenterSize.toString());
+  }, [tableCenterSize]);
+
+  useEffect(() => {
+    localStorage.setItem('poker-table-center-position', JSON.stringify(tableCenterPosition));
+  }, [tableCenterPosition]);
 
   // Drag and Drop Functions
   const toggleEditMode = useCallback(() => {
@@ -144,6 +173,8 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
       'current-player': { x: 41.8, y: 66.5 },
       'board-container': { x: 34.8, y: 42.4 },
       'betting-panel': { x: 19.8, y: 79.1 },
+      'betting-sizing-panel': { x: 15, y: 75 },
+      'betting-actions-panel': { x: 25, y: 85 },
       'header-controls': { x: 2.5, y: 5 },
       'new-hand-button': { x: 79.1, y: 90.9 }
     };
@@ -232,19 +263,25 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
     // Setup WebSocket message handlers
     websocketService.onMessage('game_state', (data) => {
       console.log('🎮 Received game_state:', data);
+      console.log('🏆 HOST DEBUG: sessionId:', sessionId, 'playerId:', data.playerId, 'isHost:', data.isHost);
       setTable(data.table);
       setCurrentPlayerId(data.playerId);
+      setIsHost(data.isHost || false);
       setConnectionStatus('Подключен');
       setShowJoinModal(false);
       setModalShown(true); // Помечаем что подключение успешно
       setIsConnecting(false);
       console.log('✅ Подключение успешно завершено');
+      console.log('🏆 HOST STATE UPDATED TO:', data.isHost || false);
     });
 
     websocketService.onMessage('table_update', (data) => {
       console.log('🔄 Received table_update:', data);
+      console.log('🏆 HOST DEBUG UPDATE: sessionId:', sessionId, 'playerId:', data.playerId, 'isHost:', data.isHost);
       setTable(data.table);
+      setIsHost(data.isHost || false);
       setSelectedBetAmount(0);
+      console.log('🏆 HOST STATE UPDATED TO:', data.isHost || false);
       if (data.actionResult?.handComplete && data.actionResult?.handHistory) {
         onHandComplete(data.actionResult.handHistory);
         setHandHistories(prev => [...prev, data.actionResult.handHistory]);
@@ -253,7 +290,11 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
     });
 
     websocketService.onMessage('new_hand', (data) => {
+      console.log('🔄 Received new_hand:', data);
+      console.log('🏆 HOST DEBUG NEW HAND: sessionId:', sessionId, 'playerId:', data.playerId, 'isHost:', data.isHost);
       setTable(data.table);
+      setIsHost(data.isHost || false);
+      console.log('🏆 HOST STATE UPDATED TO:', data.isHost || false);
     });
 
     websocketService.onMessage('player_connected', (data) => {
@@ -267,13 +308,18 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
 
     websocketService.onMessage('error', (data) => {
       alert(`Ошибка: ${data.message}`);
-      setShowJoinModal(true);
-      setModalShown(false); // Сбрасываем флаг чтобы можно было попробовать снова
       setIsConnecting(false);
     });
 
-    // Проверяем подключение WebSocket и существующую информацию об игроке
-    const checkConnectionAndShowModal = () => {
+    // Автоматическое подключение если переданы данные currentPlayer
+    const autoConnect = () => {
+      if (!currentPlayer) {
+        console.log('⚠️ Нет данных о текущем игроке, показываем модальное окно');
+        setShowJoinModal(true);
+        setModalShown(true);
+        return;
+      }
+
       const playerInfo = websocketService.getPlayerInfo();
       const isConnected = websocketService.isWebSocketConnected();
       
@@ -282,19 +328,19 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
         setCurrentPlayerId(playerInfo.playerId);
         setConnectionStatus('Подключен');
         setShowJoinModal(false);
-        setModalShown(true); // Помечаем что модальное окно уже обработано
+        setModalShown(true);
         return;
       }
       
-      // Если модальное окно уже было показано, не показываем его снова
+      // Если модальное окно уже было обработано, не подключаемся снова
       if (modalShown) {
         return;
       }
       
-      // Показываем модальное окно только если WebSocket подключен
+      // Автоматически подключаемся с данными currentPlayer
       if (isConnected) {
-        setShowJoinModal(true);
-        setModalShown(true);
+        console.log('🎮 Автоматическое подключение:', currentPlayer);
+        handleJoinSession(currentPlayer.id, currentPlayer.name);
       } else {
         // Ждем подключения WebSocket с таймаутом
         let attempts = 0;
@@ -303,11 +349,11 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
         const checkInterval = setInterval(() => {
           attempts++;
           if (websocketService.isWebSocketConnected()) {
-            setShowJoinModal(true);
-            setModalShown(true);
+            console.log('🎮 WebSocket подключен, автоматически подключаем игрока:', currentPlayer);
+            handleJoinSession(currentPlayer.id, currentPlayer.name);
             clearInterval(checkInterval);
           } else if (attempts >= maxAttempts) {
-            // Если WebSocket не подключился, все равно показываем модальное окно
+            console.log('⚠️ WebSocket не подключился, показываем модальное окно');
             setShowJoinModal(true);
             setModalShown(true);
             clearInterval(checkInterval);
@@ -316,9 +362,9 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
       }
     };
 
-    // Запускаем проверку только один раз при монтировании компонента
+    // Запускаем автоподключение только один раз при монтировании компонента
     if (!modalShown) {
-      checkConnectionAndShowModal();
+      autoConnect();
     }
 
     return () => {
@@ -329,7 +375,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
       websocketService.offMessage('player_disconnected');
       websocketService.offMessage('error');
     };
-  }, [sessionId, table.id, onHandComplete, modalShown]);
+  }, [sessionId, table.id, onHandComplete, modalShown, currentPlayer]);
 
   const handleJoinSession = (playerId: number, playerName: string) => {
     // Защита от повторных подключений
@@ -560,18 +606,36 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
     const handleMouseMove = (moveEvent: MouseEvent) => {
       if (!tableRef.current) return;
       
-      const rect = tableRef.current.getBoundingClientRect();
-      const x = ((moveEvent.clientX - rect.left) / rect.width) * 100;
-      const y = ((moveEvent.clientY - rect.top) / rect.height) * 100;
+      const canEscapeBounds = ['opponent-player', 'current-player', 'board-container', 'betting-sizing-panel', 'betting-actions-panel'];
       
-      // Ограничиваем позицию в пределах стола
-      const clampedX = Math.max(0, Math.min(100, x));
-      const clampedY = Math.max(0, Math.min(100, y));
-      
-      setElementPositions(prev => ({
-        ...prev,
-        [elementId]: { x: clampedX, y: clampedY }
-      }));
+      if (canEscapeBounds.includes(elementId)) {
+        // Используем viewport координаты для элементов, которые могут выходить за границы
+        const x = (moveEvent.clientX / window.innerWidth) * 100;
+        const y = (moveEvent.clientY / window.innerHeight) * 100;
+        
+        // Разрешаем отрицательные координаты и координаты больше 100
+        const clampedX = Math.max(-50, Math.min(150, x));
+        const clampedY = Math.max(-50, Math.min(150, y));
+        
+        setElementPositions(prev => ({
+          ...prev,
+          [elementId]: { x: clampedX, y: clampedY }
+        }));
+      } else {
+        // Для остальных элементов используем старую логику
+        const rect = tableRef.current.getBoundingClientRect();
+        const x = ((moveEvent.clientX - rect.left) / rect.width) * 100;
+        const y = ((moveEvent.clientY - rect.top) / rect.height) * 100;
+        
+        // Ограничиваем позицию в пределах стола
+        const clampedX = Math.max(0, Math.min(100, x));
+        const clampedY = Math.max(0, Math.min(100, y));
+        
+        setElementPositions(prev => ({
+          ...prev,
+          [elementId]: { x: clampedX, y: clampedY }
+        }));
+      }
     };
     
     const handleMouseUp = () => {
@@ -652,12 +716,16 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
     const position = elementPositions[elementId];
     if (!position) return {};
     
+    // Для элементов, которые должны выходить за границы TABLE CENTER
+    const canEscapeBounds = ['opponent-player', 'current-player', 'board-container', 'betting-sizing-panel', 'betting-actions-panel'];
+    const useFixed = canEscapeBounds.includes(elementId) && (position.y < 0 || position.y > 100);
+    
     const baseStyle = {
-      position: 'absolute' as const,
-      left: `${position.x}%`,
-      top: `${position.y}%`,
+      position: useFixed ? 'fixed' as const : 'absolute' as const,
+      left: useFixed ? `${position.x}vw` : `${position.x}%`,
+      top: useFixed ? `${position.y}vh` : `${position.y}%`,
       cursor: isEditMode ? (draggedElement === elementId ? 'grabbing' : 'grab') : 'default',
-      zIndex: draggedElement === elementId ? 1000 : 'auto',
+      zIndex: draggedElement === elementId ? 1000 : useFixed ? 999 : 'auto',
       transition: isDragging && draggedElement === elementId ? 'none' : 'all 0.2s ease',
       border: isEditMode ? '2px dashed rgba(255, 255, 255, 0.5)' : 'none',
       borderRadius: isEditMode ? '8px' : '0',
@@ -673,7 +741,50 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
     return baseStyle;
   };
 
-  if (showJoinModal) {
+  // Table Center control functions
+  const adjustTableCenterSize = (delta: number) => {
+    const newSize = Math.max(40, Math.min(120, tableCenterSize + delta)); // Limit between 40% and 120%
+    setTableCenterSize(newSize);
+  };
+
+  const moveTableCenter = (deltaX: number, deltaY: number) => {
+    const newPosition = {
+      x: Math.max(-500, Math.min(500, tableCenterPosition.x + deltaX)), // Расширяем лимиты движения
+      y: Math.max(-800, Math.min(800, tableCenterPosition.y + deltaY))  // Разрешаем подъем до -800px
+    };
+    setTableCenterPosition(newPosition);
+  };
+
+  const resetTableCenter = () => {
+    setTableCenterSize(82);
+    setTableCenterPosition({ x: 0, y: 0 });
+    localStorage.removeItem('poker-table-center-size');
+    localStorage.removeItem('poker-table-center-position');
+    
+    // Show feedback
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(76, 175, 80, 0.95);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 20px;
+      z-index: 10002;
+      font-weight: bold;
+      box-shadow: 0 4px 20px rgba(76, 175, 80, 0.5);
+    `;
+    notification.textContent = '🎯 TABLE CENTER сброшен к настройкам по умолчанию';
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      document.body.removeChild(notification);
+    }, 2000);
+  };
+
+  if (showJoinModal && !currentPlayer) {
     return (
       <PlayerJoinModal
         sessionId={sessionId}
@@ -687,54 +798,17 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
 
   return (
     <div className={`modern-poker-table theme-${colorTheme}`}>
-      {/* Floating Edit Mode Toggle Button */}
+      {/* Temporary RED LINE at very top of screen for comparison */}
       <div style={{
         position: 'fixed',
-        top: '20px',
-        right: '20px',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '2px',
+        backgroundColor: 'lime',
         zIndex: 10001,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px'
-      }}>
-        <button
-          onClick={toggleEditMode}
-          style={{
-            padding: '12px 16px',
-            borderRadius: '25px',
-            border: 'none',
-            background: isEditMode 
-              ? 'linear-gradient(135deg, #ff6b6b, #ffd93d)' 
-              : 'linear-gradient(135deg, #4ecdc4, #44a08d)',
-            color: 'white',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-            transition: 'all 0.3s ease',
-            fontSize: '14px',
-            minWidth: '120px'
-          }}
-          title={isEditMode ? "Выйти из режима редактирования (Esc)" : "Режим редактирования позиций (Ctrl+E)"}
-        >
-          🔧
-        </button>
-        
-        {isEditMode && (
-          <div style={{
-            background: 'rgba(0, 0, 0, 0.8)',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '15px',
-            fontSize: '12px',
-            textAlign: 'center',
-            maxWidth: '200px'
-          }}>
-            <div>Ctrl+E - переключить</div>
-            <div>Ctrl+R - сброс</div>
-            <div>Esc - выйти</div>
-          </div>
-        )}
-      </div>
+        boxShadow: '0 0 10px lime'
+      }}></div>
 
       {/* Edit Mode Indicator */}
       {isEditMode && (
@@ -793,7 +867,27 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
       <div className="game-container">
         {/* Center Table Area with Players */}
         <div className="table-center">
-          <div className="poker-felt glass-morphism" ref={tableRef}>
+          {/* Temporary RED LINE to show top edge of TABLE CENTER */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '3px',
+            backgroundColor: 'red',
+            zIndex: 10000,
+            boxShadow: '0 0 10px red',
+            animation: 'pulse 1s infinite'
+          }}></div>
+
+          <div className="poker-felt glass-morphism" 
+               ref={tableRef}
+               style={{
+                 width: `${tableCenterSize}%`,
+                 transform: `translate(${tableCenterPosition.x}px, ${tableCenterPosition.y}px)`,
+                 transition: 'all 0.3s ease'
+               }}
+          >
             {/* Header Controls в левой части TABLE CENTER - вертикально */}
             <div 
               className="table-header-controls-left"
@@ -830,17 +924,6 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               >
                 📁
               </button>
-              <button
-                className={`control-btn ${isEditMode ? 'active' : ''}`}
-                onClick={toggleEditMode}
-                title={isEditMode ? "Выйти из режима редактирования (Esc)" : "Режим редактирования позиций (Ctrl+E)"}
-                style={{
-                  backgroundColor: isEditMode ? 'rgba(255, 215, 0, 0.3)' : 'transparent',
-                  border: isEditMode ? '2px solid gold' : '1px solid rgba(255, 255, 255, 0.2)'
-                }}
-              >
-                🔧
-              </button>
               {isEditMode && (
                 <>
                   <button
@@ -873,6 +956,69 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               >
                 ❌
               </button>
+              
+              {/* Table Center Controls */}
+              <div className="table-center-controls" style={{ marginTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '10px' }}>
+                {/* Size Controls */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  {/* Removed 🔍+ and 🔍- buttons */}
+                </div>
+                
+                {/* Position Controls */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '5px' }}>
+                  <button
+                    className="control-btn"
+                    onClick={() => moveTableCenter(0, -20)}
+                    title="Переместить TABLE CENTER вверх (большой шаг)"
+                    style={{ fontSize: '0.8rem', padding: '6px' }}
+                  >
+                    ⬆️
+                  </button>
+                  <div style={{ display: 'flex', gap: '2px' }}>
+                    <button
+                      className="control-btn"
+                      onClick={() => moveTableCenter(-20, 0)}
+                      title="Переместить TABLE CENTER влево (большой шаг)"
+                      style={{ fontSize: '0.8rem', padding: '6px' }}
+                    >
+                      ⬅️
+                    </button>
+                    <button
+                      className="control-btn"
+                      onClick={() => moveTableCenter(20, 0)}
+                      title="Переместить TABLE CENTER вправо (большой шаг)"
+                      style={{ fontSize: '0.8rem', padding: '6px' }}
+                    >
+                      ➡️
+                    </button>
+                  </div>
+                  <button
+                    className="control-btn"
+                    onClick={() => moveTableCenter(0, 20)}
+                    title="Переместить TABLE CENTER вниз (большой шаг)"
+                    style={{ fontSize: '0.8rem', padding: '6px' }}
+                  >
+                    ⬇️
+                  </button>
+                </div>
+                
+                {/* Removed 🎯 reset button and quick position buttons (🔝, ⭕) */}
+              </div>
+            </div>
+
+            {/* Edit Mode Button in Top Right Corner of TABLE CENTER */}
+            <div className="table-edit-mode-top-right">
+              <button
+                className={`control-btn ${isEditMode ? 'active' : ''}`}
+                onClick={toggleEditMode}
+                title={isEditMode ? "Выйти из режима редактирования (Esc)" : "Режим редактирования позиций (Ctrl+E)"}
+                style={{
+                  backgroundColor: isEditMode ? 'rgba(255, 215, 0, 0.3)' : 'transparent',
+                  border: isEditMode ? '2px solid gold' : '1px solid rgba(255, 255, 255, 0.2)'
+                }}
+              >
+                🔧
+              </button>
             </div>
 
             {/* Opponent Player - внутри TABLE CENTER */}
@@ -889,14 +1035,49 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               
               const opponentBet = getPlayerBet(opponent);
               const isOpponentTurn = opponent.id === table.currentPlayer;
+              // ИСПРАВЛЕНИЕ: Используем player.isHost из данных оппонента
+              const isOpponentHost = opponent.isHost || false;
+              
+              // 🏆 ОТЛАДКА: Логируем состояние хоста
+              console.log(`🏆 OPPONENT HOST DEBUG (Session: ${sessionId}):`, {
+                opponentId: opponent.id,
+                opponentName: opponent.name,
+                opponentIsHost: opponent.isHost,
+                isOpponentHost: isOpponentHost,
+                currentPlayerId: currentPlayerId,
+                isHost: isHost
+              });
               
               return (
                 <div 
-                  className={`opponent-in-center ${isOpponentTurn ? 'active-turn' : ''}`}
+                  className={`opponent-player ${isOpponentTurn ? 'active-turn' : ''}`}
                   style={getElementStyle('opponent-player')}
                   onMouseDown={(e) => handleMouseDown(e, 'opponent-player')}
                 >
-                  <div className={`player-card glass-morphism ${isOpponentTurn ? 'player-turn-animation' : ''}`}>
+                  {/* Turn indicator - сверху */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '-10px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    background: isOpponentTurn ? 'linear-gradient(135deg, #4CAF50, #45a049)' : 'rgba(255,255,255,0.1)',
+                    color: 'white',
+                    padding: '4px 12px',
+                    borderRadius: '15px',
+                    fontSize: '0.7rem',
+                    fontWeight: 'bold',
+                    display: isOpponentTurn ? 'block' : 'none',
+                    zIndex: 10000,
+                    boxShadow: '0 0 10px blue'
+                  }}></div>
+
+                  <div className={`player-card glass-morphism ${isOpponentTurn ? 'player-turn-animation' : ''} ${isOpponentHost ? 'host-player' : ''}`}
+                       style={{
+                         border: isOpponentHost ? '3px solid #2196F3' : undefined,
+                         backgroundColor: isOpponentHost ? 'rgba(33,150,243,0.1)' : undefined,
+                         boxShadow: isOpponentHost ? '0 0 15px rgba(33,150,243,0.3)' : undefined
+                       }}
+                  >
                     <div className="hole-cards">
                       {opponent.holeCards.map((card, index) => (
                         <RankCard 
@@ -909,7 +1090,20 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                     </div>
                     
                     <div className="player-info">
-                      <h3 className="player-name">{opponent.name}</h3>
+                      <h3 className="player-name">
+                        {opponent.name}
+                        {isOpponentHost && (
+                          <span style={{ 
+                            color: '#FFD700', 
+                            fontSize: '0.8rem',
+                            background: 'rgba(255,215,0,0.2)',
+                            padding: '2px 6px',
+                            borderRadius: '10px',
+                            border: '1px solid rgba(255,215,0,0.5)',
+                            marginLeft: '8px'
+                          }} title="Хост игры" className="host-indicator">👑</span>
+                        )}
+                      </h3>
                       <div className="player-stack">€{opponent.stack}</div>
                     </div>
                   </div>
@@ -1013,6 +1207,18 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               
               const myBet = getPlayerBet(myPlayer);
               const isMyPlayerTurn = myPlayer.id === table.currentPlayer;
+              // ИСПРАВЛЕНИЕ: Используем myPlayer.isHost из данных игрока
+              const isMyPlayerHost = myPlayer.isHost || false;
+              
+              // 🏆 ОТЛАДКА: Логируем состояние хоста для текущего игрока
+              console.log(`🏆 MY PLAYER HOST DEBUG (Session: ${sessionId}):`, {
+                myPlayerId: myPlayer.id,
+                myPlayerName: myPlayer.name,
+                myPlayerIsHost: myPlayer.isHost,
+                isMyPlayerHost: isMyPlayerHost,
+                currentPlayerId: currentPlayerId,
+                isHost: isHost
+              });
               
               return (
                 <div 
@@ -1020,7 +1226,13 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                   style={getElementStyle('current-player')}
                   onMouseDown={(e) => handleMouseDown(e, 'current-player')}
                 >
-                  <div className={`player-card glass-morphism ${isMyPlayerTurn ? 'player-turn-animation' : ''}`}>
+                  <div className={`player-card glass-morphism ${isMyPlayerTurn ? 'player-turn-animation' : ''} ${isMyPlayerHost ? 'host-player' : ''}`}
+                       style={{
+                         border: isMyPlayerHost ? '3px solid #2196F3' : undefined,
+                         backgroundColor: isMyPlayerHost ? 'rgba(33,150,243,0.1)' : undefined,
+                         boxShadow: isMyPlayerHost ? '0 0 15px rgba(33,150,243,0.3)' : undefined
+                       }}
+                  >
                     <div className="hole-cards">
                       {myPlayer.holeCards.map((card, index) => (
                         <RankCard 
@@ -1033,7 +1245,20 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
                     </div>
                     
                     <div className="player-info">
-                      <h3 className="player-name">{myPlayer.name}</h3>
+                      <h3 className="player-name">
+                        {myPlayer.name}
+                        {isMyPlayerHost && (
+                          <span style={{ 
+                            color: '#FFD700', 
+                            fontSize: '0.8rem',
+                            background: 'rgba(255,215,0,0.2)',
+                            padding: '2px 6px',
+                            borderRadius: '10px',
+                            border: '1px solid rgba(255,215,0,0.5)',
+                            marginLeft: '8px'
+                          }} title="Хост игры" className="host-indicator">👑</span>
+                        )}
+                      </h3>
                       <div className="player-stack">€{myPlayer.stack}</div>
                     </div>
                   </div>
@@ -1052,7 +1277,7 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               );
             })()}
 
-            {/* Betting Action Panel внутри Table Center */}
+            {/* Bet Sizing Panel - отдельная панель */}
             {(() => {
               const myPlayerData = table.players.find(p => p.id === currentPlayerId);
               if (!myPlayerData) return null;
@@ -1060,211 +1285,210 @@ const ModernPokerTable: React.FC<ModernPokerTableProps> = ({
               
               return (
                 <div 
-                  className="betting-action-panel-in-table"
-                  style={getElementStyle('betting-panel')}
-                  onMouseDown={(e) => handleMouseDown(e, 'betting-panel')}
+                  className="betting-sizing-panel-separate"
+                  style={getElementStyle('betting-sizing-panel')}
+                  onMouseDown={(e) => handleMouseDown(e, 'betting-sizing-panel')}
                 >
                   {!table.handComplete && (
-                    <div className="table-betting-panel glass-morphism">
-                      {/* Bet Sizing Section */}
-                      <div className="bet-sizing-section">
-                        <div className="sizing-buttons">
-                          {availableBetSizes.map(({ type, amount, label }) => {
-                            const callAmount = getCallAmount();
-                            const isRaise = callAmount > 0;
-                            let finalAmount: number = amount;
-                            
-                            if (isRaise && finalAmount <= 0) {
-                              return null;
-                            }
-                            
-                            const isSelected = selectedBetAmount === finalAmount;
-                            
-                            return (
-                              <button
-                                key={type}
-                                className={`sizing-btn ${isSelected ? 'selected' : ''}`}
-                                onClick={() => setSelectedBetAmount(finalAmount)}
-                                onWheel={(e) => handleWheelBetSize(e, finalAmount)}
-                                disabled={!isMyTurn}
-                              >
-                                <span className="sizing-label">{label}</span>
-                                <span className="sizing-amount">€{finalAmount}</span>
-                              </button>
-                            );
-                          }).filter(Boolean)}
+                    <div className="sizing-panel glass-morphism">
+                      <div className="sizing-buttons">
+                        {availableBetSizes.map(({ type, amount, label }) => {
+                          const callAmount = getCallAmount();
+                          const isRaise = callAmount > 0;
+                          let finalAmount: number = amount;
                           
-                          {/* Кнопка ручного ввода */}
-                          <button
-                            className={`sizing-btn manual-input-btn ${showManualInput ? 'selected' : ''}`}
-                            onClick={() => {
-                              setShowManualInput(!showManualInput);
-                              if (!showManualInput) {
-                                setManualBetAmount(selectedBetAmount.toString());
-                              }
-                            }}
-                            disabled={!isMyTurn}
-                            title="Ручной ввод ставки"
-                          >
-                            <span className="sizing-label">Ручной</span>
-                            <span className="sizing-amount">€{selectedBetAmount}</span>
-                          </button>
-
-                          {/* Кнопка настроек после кнопки ручного ввода */}
-                          <button
-                            className={`settings-btn ${showSizingSettings ? 'active' : ''}`}
-                            onClick={() => setShowSizingSettings(!showSizingSettings)}
-                            title="Настройки размеров ставок"
-                          >
-                            ⚙️
-                          </button>
-                        </div>
-                        
-                        {/* Панель ручного ввода */}
-                        {showManualInput && (
-                          <div className="manual-input-panel neumorphism">
-                            <input
-                              type="number"
-                              value={manualBetAmount}
-                              onChange={(e) => handleManualBetChange(e.target.value)}
-                              onWheel={(e) => handleWheelBetSize(e, parseInt(manualBetAmount) || 0)}
-                              placeholder="Введите сумму"
-                              className="manual-input"
-                              min="0"
-                              max={myPlayerData?.stack || 1000}
-                              disabled={!isMyTurn}
-                            />
+                          if (isRaise && finalAmount <= 0) {
+                            return null;
+                          }
+                          
+                          const isSelected = selectedBetAmount === finalAmount;
+                          
+                          return (
                             <button
-                              className="apply-btn"
-                              onClick={applyManualBet}
+                              key={type}
+                              className={`sizing-btn ${isSelected ? 'selected' : ''}`}
+                              onClick={() => setSelectedBetAmount(finalAmount)}
+                              onWheel={(e) => handleWheelBetSize(e, finalAmount)}
                               disabled={!isMyTurn}
                             >
-                              ✓
+                              <span className="sizing-label">{label}</span>
+                              <span className="sizing-amount">€{finalAmount}</span>
                             </button>
-                          </div>
-                        )}
+                          );
+                        }).filter(Boolean)}
+                        
+                        {/* Кнопка ручного ввода */}
+                        <button
+                          className={`sizing-btn manual-input-btn ${showManualInput ? 'selected' : ''}`}
+                          onClick={() => {
+                            setShowManualInput(!showManualInput);
+                            if (!showManualInput) {
+                              setManualBetAmount(selectedBetAmount.toString());
+                            }
+                          }}
+                          disabled={!isMyTurn}
+                          title="Ручной ввод ставки"
+                        >
+                          <span className="sizing-label">Ручной</span>
+                          <span className="sizing-amount">€{selectedBetAmount}</span>
+                        </button>
 
-                        {/* Настройки размеров ставок */}
-                        {showSizingSettings && (
-                          <div className="sizing-settings neumorphism">
-                            {Object.entries(customSizings).filter(([key]) => key !== 'allIn').map(([key, value]) => (
-                              <div key={key} className="sizing-control">
-                                <label>{key === 'quarter' ? '1/4' : key === 'half' ? '1/2' : key === 'threeQuarter' ? '3/4' : 'Пот'}</label>
-                                <input
-                                  type="range"
-                                  min="5"
-                                  max="200"
-                                  step="5"
-                                  value={value}
-                                  onChange={(e) => setCustomSizings(prev => ({
-                                    ...prev,
-                                    [key]: parseInt(e.target.value)
-                                  }))}
-                                  className="sizing-slider"
-                                />
-                                <span>{value}%</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        {/* Кнопка настроек после кнопки ручного ввода */}
+                        <button
+                          className={`settings-btn ${showSizingSettings ? 'active' : ''}`}
+                          onClick={() => setShowSizingSettings(!showSizingSettings)}
+                          title="Настройки размеров ставок"
+                        >
+                          ⚙️
+                        </button>
                       </div>
-
-                      {/* Action Buttons Section */}
-                      <div className="action-section">
-                        <div className="action-buttons">
-                          {isMyTurn ? (
-                            <>
-                              {canCheck() && (
-                                <>
-                                  <button
-                                    className="action-btn check-btn neumorphism"
-                                    onClick={() => makeAction('check')}
-                                    disabled={isLoading}
-                                  >
-                                    <span className="btn-text">ЧЕК</span>
-                                  </button>
-                                  
-                                  <button
-                                    className="action-btn bet-btn neumorphism"
-                                    onClick={() => makeAction('bet', selectedBetAmount || calculateBetSize('half'))}
-                                    onWheel={(e) => handleWheelBetSize(e, selectedBetAmount || calculateBetSize('half'))}
-                                    disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
-                                  >
-                                    <span className="btn-text">БЕТ</span>
-                                    <span className="btn-amount">€{selectedBetAmount || calculateBetSize('half')}</span>
-                                  </button>
-                                </>
-                              )}
-                              
-                              {canCall() && (
-                                <>
-                                  <button
-                                    className="action-btn fold-btn neumorphism"
-                                    onClick={() => makeAction('fold')}
-                                    disabled={isLoading}
-                                  >
-                                    <span className="btn-text">ФОЛД</span>
-                                  </button>
-                                  
-                                  <button
-                                    className="action-btn call-btn neumorphism"
-                                    onClick={() => makeAction('call', getCallAmount())}
-                                    disabled={isLoading}
-                                  >
-                                    <span className="btn-text">{getCallAmount() === myPlayerData?.stack ? 'ALL-IN' : 'КОЛЛ'}</span>
-                                    <span className="btn-amount">€{getCallAmount()}</span>
-                                  </button>
-                                  
-                                  <button
-                                    className="action-btn raise-btn neumorphism"
-                                    onClick={() => {
-                                      const callAmount = getCallAmount();
-                                      const hasOpponentBet = callAmount > 0;
-                                      
-                                      let actionType: string;
-                                      let actionAmount: number;
-                                      
-                                      if (!hasOpponentBet) {
-                                        actionType = 'bet';
-                                        actionAmount = selectedBetAmount || calculateBetSize('half');
-                                      } else {
-                                        const desiredAmount = selectedBetAmount || (callAmount + calculateBetSize('half'));
-                                        
-                                        if (desiredAmount === callAmount) {
-                                          actionType = 'call';
-                                          actionAmount = callAmount;
-                                        } else if (desiredAmount > callAmount) {
-                                          actionType = 'raise';
-                                          actionAmount = desiredAmount - callAmount;
-                                        } else {
-                                          actionType = 'call';
-                                          actionAmount = callAmount;
-                                        }
-                                      }
-                                      
-                                      makeAction(actionType, actionAmount);
-                                    }}
-                                    onWheel={(e) => handleWheelBetSize(e, selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half')))}
-                                    disabled={isLoading || (!selectedBetAmount && calculateBetSize('half') <= 0)}
-                                  >
-                                    <span className="btn-text">{getCallAmount() > 0 ? 'РЕЙЗ' : 'БЕТ'}</span>
-                                    <span className="btn-amount">€{selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half'))}</span>
-                                  </button>
-                                </>
-                              )}
-                            </>
-                          ) : (
-                            <div className="waiting-turn">
-                              <div className="waiting-spinner"></div>
-                              <span>
-                                {currentPlayerData ? 
-                                  `Ход игрока: ${currentPlayerData.name}` : 
-                                  'Ожидание хода...'
-                                }
-                              </span>
+                      
+                      {/* Настройки размеров ставок */}
+                      {showSizingSettings && (
+                        <div className="sizing-settings neumorphism">
+                          {Object.entries(customSizings).filter(([key]) => key !== 'allIn').map(([key, value]) => (
+                            <div key={key} className="sizing-control">
+                              <label>{key === 'quarter' ? '1/4' : key === 'half' ? '1/2' : key === 'threeQuarter' ? '3/4' : 'Пот'}</label>
+                              <input
+                                type="range"
+                                min="5"
+                                max="200"
+                                step="5"
+                                value={value}
+                                onChange={(e) => setCustomSizings(prev => ({
+                                  ...prev,
+                                  [key]: parseInt(e.target.value)
+                                }))}
+                                className="sizing-slider"
+                              />
+                              <span>{value}%</span>
                             </div>
-                          )}
+                          ))}
                         </div>
+                      )}
+                      
+                      {/* Панель ручного ввода */}
+                      {showManualInput && (
+                        <div className="manual-input-panel neumorphism">
+                          <input
+                            type="number"
+                            value={manualBetAmount}
+                            onChange={(e) => handleManualBetChange(e.target.value)}
+                            onWheel={(e) => handleWheelBetSize(e, parseInt(manualBetAmount) || 0)}
+                            placeholder="Введите сумму"
+                            className="manual-input"
+                            min="0"
+                            max={myPlayerData?.stack || 1000}
+                            disabled={!isMyTurn}
+                          />
+                          <button
+                            className="apply-btn"
+                            onClick={applyManualBet}
+                            disabled={!isMyTurn}
+                          >
+                            ✓
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Betting Actions Panel - отдельная панель */}
+            {(() => {
+              const myPlayerData = table.players.find(p => p.id === currentPlayerId);
+              if (!myPlayerData) return null;
+              const isMyTurn = myPlayerData?.id === table.currentPlayer;
+              
+              return (
+                <div 
+                  className="betting-actions-panel-separate"
+                  style={getElementStyle('betting-actions-panel')}
+                  onMouseDown={(e) => handleMouseDown(e, 'betting-actions-panel')}
+                >
+                  {!table.handComplete && (
+                    <div className="actions-panel glass-morphism">
+                      <div className="action-buttons">
+                        {canCheck() && (
+                          <>
+                            <button
+                              className="action-btn check-btn neumorphism"
+                              onClick={() => makeAction('check')}
+                              disabled={isLoading || !isMyTurn}
+                            >
+                              <span className="btn-text">ЧЕК</span>
+                            </button>
+                            
+                            <button
+                              className="action-btn bet-btn neumorphism"
+                              onClick={() => makeAction('bet', selectedBetAmount || calculateBetSize('half'))}
+                              onWheel={(e) => handleWheelBetSize(e, selectedBetAmount || calculateBetSize('half'))}
+                              disabled={isLoading || !isMyTurn || (!selectedBetAmount && calculateBetSize('half') <= 0)}
+                            >
+                              <span className="btn-text">БЕТ</span>
+                              <span className="btn-amount">€{selectedBetAmount || calculateBetSize('half')}</span>
+                            </button>
+                          </>
+                        )}
+                        
+                        {canCall() && (
+                          <>
+                            <button
+                              className="action-btn fold-btn neumorphism"
+                              onClick={() => makeAction('fold')}
+                              disabled={isLoading || !isMyTurn}
+                            >
+                              <span className="btn-text">ФОЛД</span>
+                            </button>
+                            
+                            <button
+                              className="action-btn call-btn neumorphism"
+                              onClick={() => makeAction('call', getCallAmount())}
+                              disabled={isLoading || !isMyTurn}
+                            >
+                              <span className="btn-text">{getCallAmount() === myPlayerData?.stack ? 'ALL-IN' : 'КОЛЛ'}</span>
+                              <span className="btn-amount">€{getCallAmount()}</span>
+                            </button>
+                            
+                            <button
+                              className="action-btn raise-btn neumorphism"
+                              onClick={() => {
+                                const callAmount = getCallAmount();
+                                const hasOpponentBet = callAmount > 0;
+                                
+                                let actionType: string;
+                                let actionAmount: number;
+                                
+                                if (!hasOpponentBet) {
+                                  actionType = 'bet';
+                                  actionAmount = selectedBetAmount || calculateBetSize('half');
+                                } else {
+                                  const desiredAmount = selectedBetAmount || (callAmount + calculateBetSize('half'));
+                                  
+                                  if (desiredAmount === callAmount) {
+                                    actionType = 'call';
+                                    actionAmount = callAmount;
+                                  } else if (desiredAmount > callAmount) {
+                                    actionType = 'raise';
+                                    actionAmount = desiredAmount - callAmount;
+                                  } else {
+                                    actionType = 'call';
+                                    actionAmount = callAmount;
+                                  }
+                                }
+                                
+                                makeAction(actionType, actionAmount);
+                              }}
+                              onWheel={(e) => handleWheelBetSize(e, selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half')))}
+                              disabled={isLoading || !isMyTurn || (!selectedBetAmount && calculateBetSize('half') <= 0)}
+                            >
+                              <span className="btn-text">{getCallAmount() > 0 ? 'РЕЙЗ' : 'БЕТ'}</span>
+                              <span className="btn-amount">€{selectedBetAmount || (getCallAmount() > 0 ? getCallAmount() + calculateBetSize('half') : calculateBetSize('half'))}</span>
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}

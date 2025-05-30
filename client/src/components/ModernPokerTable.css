@@ -19,7 +19,7 @@
   min-height: 100vh;
   background: linear-gradient(135deg, var(--primary-bg) 0%, var(--secondary-bg) 100%);
   color: var(--text-primary);
-  padding: 20px;
+  padding: 0;
   box-sizing: border-box;
   position: relative;
   overflow: visible;
@@ -497,13 +497,14 @@
   flex: 1;
   min-height: 421px;
   position: relative;
+  margin-top: -120px; /* Поднимаем TABLE CENTER до самого верха */
 }
 
 .poker-felt {
   width: 82%;
   max-width: 1800px;
   height: 60%;
-  min-height: 530px;
+  min-height: 565px;
   background: 
     linear-gradient(135deg, rgba(13, 79, 60, 0.3), rgba(0, 0, 0, 0.4)),
     url('../assets/table.png') center/contain no-repeat;
@@ -515,7 +516,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 60px 100px;
+  padding: 0 100px 60px 100px; /* Убираем верхний padding, оставляем только боковые и нижний */
   position: relative;
   border: 3px solid var(--glass-border);
   border-radius: 20px;
@@ -732,10 +733,12 @@
   background: var(--glass-bg);
   outline: none;
   -webkit-appearance: none;
+  appearance: none;
 }
 
 .sizing-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
+  appearance: none;
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -1423,28 +1426,27 @@
 
 .bet-sizing-panel-table-center .sizing-buttons {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
-  justify-content: flex-start;
+  gap: 2px;
+  justify-content: center;
+  margin-bottom: 0px;
 }
 
 .bet-sizing-panel-table-center .settings-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: none;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 8px;
-  color: white;
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 60px;
-  font-size: 1.2rem;
+  font-size: 1rem;
+  min-width: 55px;
 }
 
 .bet-sizing-panel-table-center .settings-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--accent-color);
   transform: translateY(-2px);
 }
 
@@ -1532,7 +1534,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   min-width: 60px;
-  font-size: 1.2rem;
+  font-size: 1rem;
 }
 
 .bet-sizing-section .settings-btn:hover:not(:disabled) {
@@ -1592,28 +1594,27 @@
 
 .bet-sizing-panel-table-center .sizing-buttons {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
-  justify-content: flex-start;
+  gap: 2px;
+  justify-content: center;
+  margin-bottom: 0px;
 }
 
 .bet-sizing-panel-table-center .settings-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   padding: 8px 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: none;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 8px;
-  color: white;
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 60px;
-  font-size: 1.2rem;
+  font-size: 1rem;
+  min-width: 55px;
 }
 
 .bet-sizing-panel-table-center .settings-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--accent-color);
   transform: translateY(-2px);
 }
 
@@ -1739,7 +1740,7 @@
 
 .table-betting-panel .action-section .action-buttons {
   display: flex;
-  gap: 10px;
+  gap: 6px;
   justify-content: center;
   flex-wrap: wrap;
 }
@@ -1799,67 +1800,6 @@
 .table-betting-panel .sizing-amount {
   font-size: 0.75rem;
   font-weight: bold;
-}
-
-.table-betting-panel .settings-btn {
-  padding: 6px 10px;
-  border: none;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: 8px;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1rem;
-  min-width: 55px;
-}
-
-.table-betting-panel .settings-btn:hover,
-.table-betting-panel .settings-btn.active {
-  background: var(--accent-color);
-  color: var(--primary-bg);
-  transform: scale(1.05);
-}
-
-.table-betting-panel .action-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 12px 18px;
-  border: none;
-  border-radius: 15px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 100px;
-  font-weight: bold;
-  position: relative;
-  overflow: hidden;
-}
-
-.table-betting-panel .action-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px var(--shadow-color);
-}
-
-.table-betting-panel .action-btn:active {
-  transform: translateY(-1px);
-}
-
-.table-betting-panel .action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.table-betting-panel .btn-text {
-  font-size: 0.9rem;
-  font-weight: bold;
-}
-
-.table-betting-panel .btn-amount {
-  font-size: 0.8rem;
-  opacity: 0.9;
 }
 
 .table-betting-panel .waiting-turn {
@@ -1968,4 +1908,327 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* Table Center Controls */
+.table-center-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.table-center-controls .control-btn {
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.table-center-controls .control-btn:hover {
+  background: var(--accent-color);
+  transform: translateY(-1px) scale(1.05);
+  box-shadow: 0 3px 10px var(--shadow-color);
+}
+
+/* Settings Button in Top Right Corner of TABLE CENTER */
+.table-settings-top-right {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 200;
+}
+
+.table-settings-top-right .settings-btn {
+  padding: 12px;
+  border: none;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 15px;
+  color: var(--text-primary);
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px var(--shadow-color);
+}
+
+.table-settings-top-right .settings-btn:hover {
+  background: var(--accent-color);
+  transform: translateY(-2px) scale(1.1);
+  box-shadow: 0 6px 20px var(--shadow-color);
+}
+
+.table-settings-top-right .settings-btn.active {
+  background: rgba(255, 193, 7, 0.3);
+  border-color: #FFC107;
+  box-shadow: 0 0 15px rgba(255, 193, 7, 0.5);
+}
+
+/* Edit Mode Button in Top Right Corner of TABLE CENTER */
+.table-edit-mode-top-right {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 200;
+}
+
+.table-edit-mode-top-right .control-btn {
+  padding: 12px;
+  border: none;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 15px;
+  color: var(--text-primary);
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 15px var(--shadow-color);
+}
+
+.table-edit-mode-top-right .control-btn:hover {
+  background: var(--accent-color);
+  transform: translateY(-2px) scale(1.1);
+  box-shadow: 0 6px 20px var(--shadow-color);
+}
+
+.table-edit-mode-top-right .control-btn.active {
+  background: rgba(255, 215, 0, 0.3) !important;
+  border: 2px solid gold !important;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+
+/* Separate Betting Panels Styles */
+.betting-sizing-panel-separate {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+}
+
+.betting-actions-panel-separate {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+}
+
+.sizing-panel,
+.actions-panel {
+  background: rgba(42, 41, 60, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 8px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  min-width: 200px;
+}
+
+.panel-title {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 8px;
+}
+
+/* Ensure the existing betting panel styles work with the new structure */
+.sizing-panel .sizing-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+  margin-bottom: 0px;
+}
+
+.actions-panel .action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin: 0px;
+}
+
+/* Override for smaller panels */
+.sizing-panel .sizing-btn {
+  min-width: 60px;
+  font-size: 11px;
+  padding: 8px 12px;
+}
+
+.sizing-panel .sizing-label {
+  font-size: 0.7rem;
+  opacity: 0.8;
+  margin-bottom: 2px;
+}
+
+.sizing-panel .sizing-amount {
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.sizing-panel .settings-btn {
+  padding: 8px 12px;
+  border: none;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  min-width: 55px;
+}
+
+/* Theme support for new panels */
+.theme-light .sizing-panel,
+.theme-light .actions-panel {
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+.theme-light .panel-title {
+  color: rgba(0, 0, 0, 0.8);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.theme-neon .sizing-panel,
+.theme-neon .actions-panel {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #00ffff;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+}
+
+.theme-neon .panel-title {
+  color: #00ffff;
+  border-bottom: 1px solid #00ffff;
+  text-shadow: 0 0 10px #00ffff;
+}
+
+/* Action button styles for separate panels */
+.actions-panel .action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 70px;
+  font-weight: bold;
+  position: relative;
+  overflow: hidden;
+}
+
+.actions-panel .action-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px var(--shadow-color);
+}
+
+.actions-panel .action-btn:active {
+  transform: translateY(-1px);
+}
+
+.actions-panel .action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.actions-panel .btn-text {
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.actions-panel .btn-amount {
+  font-size: 0.7rem;
+  opacity: 0.9;
+}
+
+/* Action button colors for separate panels */
+.actions-panel .check-btn {
+  background: linear-gradient(145deg, #4CAF50, #45a049);
+  color: white;
+}
+
+.actions-panel .call-btn {
+  background: linear-gradient(145deg, #2196F3, #1976D2);
+  color: white;
+}
+
+.actions-panel .bet-btn,
+.actions-panel .raise-btn {
+  background: linear-gradient(145deg, #FF9800, #F57C00);
+  color: white;
+}
+
+.actions-panel .fold-btn {
+  background: linear-gradient(145deg, #f44336, #d32f2f);
+  color: white;
+}
+
+/* Settings button styles for sizing panel */
+.sizing-panel .settings-btn {
+  padding: 8px 12px;
+  border: none;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  min-width: 55px;
+}
+
+.sizing-panel .settings-btn:hover,
+.sizing-panel .settings-btn.active {
+  background: var(--accent-color);
+  color: var(--primary-bg);
+  transform: scale(1.05);
+}
+
+/* Host player highlighting */
+.player-card.host-player {
+  border: 3px solid #2196F3 !important;
+  background: rgba(33, 150, 243, 0.1) !important;
+  box-shadow: 0 0 15px rgba(33, 150, 243, 0.3) !important;
+}
+
+.player-card.host-player .player-name {
+  color: #2196F3;
+  text-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
+}
+
+/* Host indicator animation */
+.host-indicator {
+  animation: host-glow 2s ease-in-out infinite;
+}
+
+@keyframes host-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 30px rgba(33, 150, 243, 0.3);
+  }
 } 

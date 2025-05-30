@@ -95,6 +95,12 @@ const RankCard: React.FC<RankCardProps> = ({
   // Получаем стили для sprite sheet карты
   const getSpriteCardStyles = () => {
     try {
+      // Добавляем проверки безопасности
+      if (!card || !card.rank || !card.suit) {
+        console.warn('Invalid card data for sprite:', card);
+        return null;
+      }
+      
       // Конвертируем наш формат в формат sprite sheet
       const suitMap: { [key: string]: string } = {
         's': 'spades',
@@ -145,6 +151,12 @@ const RankCard: React.FC<RankCardProps> = ({
 
   // Генерируем путь к изображению карты (fallback)
   const getCardImagePath = () => {
+    // Добавляем проверки безопасности
+    if (!card || !card.rank || !card.suit) {
+      console.warn('Invalid card data:', card);
+      return '/cards/back.png'; // Возвращаем рубашку карты по умолчанию
+    }
+    
     // Формат: /cards/AS.png, /cards/KH.png, etc.
     const suitMap: { [key: string]: string } = {
       's': 'S', // Spades
@@ -163,10 +175,41 @@ const RankCard: React.FC<RankCardProps> = ({
     return `/cards/${mappedRank}${mappedSuit}.png`;
   };
 
-  const rankColor = getRankColor(card.rank);
-  const suitColor = getSuitColor(card.suit);
-  const suitSymbol = getSuitSymbol(card.suit);
+  const rankColor = getRankColor(card?.rank || '');
+  const suitColor = getSuitColor(card?.suit || '');
+  const suitSymbol = getSuitSymbol(card?.suit || '');
   const sizeStyles = getSizeStyles();
+
+  // Если карта не определена или у неё нет данных, показываем заглушку
+  if (!card || !card.rank || !card.suit) {
+    return (
+      <div
+        className="rank-card-error"
+        style={{
+          ...sizeStyles,
+          background: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
+          border: '2px solid #c0392b',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          margin: '2px',
+          transition: 'all 0.2s ease',
+          cursor: 'default'
+        }}
+      >
+        <div style={{
+          color: 'white',
+          fontSize: size === 'small' ? '0.6rem' : size === 'large' ? '1rem' : '0.8rem',
+          fontWeight: 'bold',
+          textAlign: 'center'
+        }}>
+          ?
+        </div>
+      </div>
+    );
+  }
 
   // Если карта скрыта, показываем рубашку
   if (card.hidden) {

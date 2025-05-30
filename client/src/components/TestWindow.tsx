@@ -1,17 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './TestWindow.css';
-import preflopSpots from '../data/preflop-spots/spots.json';
+import preflopSpotsLoader, { PreflopSpot } from '../utils/preflopSpotsLoader';
 import Card from './Card';
 import { SUITS_ORDER, RANKS_ORDER, Suit, Rank } from '../utils/cardSprites';
-
-interface PreflopSpot {
-  id: string;
-  name: string;
-  description: string;
-  potSize: number;
-  blinds: { small: number; big: number };
-  actions: Array<{ player: string; action: string; amount: number }>;
-}
+import ModernPokerTable from './ModernPokerTable';
 
 interface RakeSettings {
   percentage: number;
@@ -90,6 +82,17 @@ const TestWindow: React.FC = () => {
   // Состояние для игровой симуляции
   const [selectedPosition, setSelectedPosition] = useState<'ip' | 'oop'>('ip');
   const [isGameStarted, setIsGameStarted] = useState(false);
+  
+  // Состояние для игровой сессии
+  const [gameSession, setGameSession] = useState<any>(null);
+  const [handHistories, setHandHistories] = useState<string[]>([]);
+
+  // Состояния для спотов
+  const [preflopSpots, setPreflopSpots] = useState<PreflopSpot[]>([]);
+  const [spotsLoading, setSpotsLoading] = useState(true);
+
+  // Состояние для уведомления о копировании
+  const [copyNotification, setCopyNotification] = useState<string>('');
 
   const togglePanel = () => {
     setIsPanelOpen(!isPanelOpen);
@@ -379,6 +382,45 @@ const TestWindow: React.FC = () => {
     return preflopSpots.find(spot => spot.id === selectedSpot) || null;
   };
 
+  // Получаем имена игроков из выбранного спота
+  const getPlayerNamesFromSpot = (): string[] => {
+    const spotData = getSelectedSpotData();
+    if (!spotData || !spotData.actions) return [];
+    
+    // Извлекаем уникальные имена игроков из действий
+    const playerNames = Array.from(new Set(spotData.actions.map(action => action.player)));
+    
+    // Фильтруем только валидные имена игроков (убираем пустые строки)
+    const validPlayerNames = playerNames.filter(name => name && name.trim().length > 0);
+    
+    console.log('🎮 Имена игроков из спота:', validPlayerNames);
+    return validPlayerNames;
+  };
+
+  // Автоматически назначаем игроков позициям при выборе спота
+  useEffect(() => {
+    const playerNames = getPlayerNamesFromSpot();
+    console.log('🔄 Спот изменился:', selectedSpot, 'Игроки:', playerNames);
+    
+    if (playerNames.length >= 2) {
+      console.log('✅ Назначаем игроков: IP =', playerNames[0], ', OOP =', playerNames[1]);
+      // Первый игрок - IP, второй - OOP (или наоборот, в зависимости от логики)
+      setMatrixSettings(prev => ({
+        ...prev,
+        ip: {
+          ...prev.ip,
+          selectedPlayer: playerNames[0]
+        },
+        oop: {
+          ...prev.oop,
+          selectedPlayer: playerNames[1]
+        }
+      }));
+    } else {
+      console.log('⚠️ Недостаточно игроков для автоназначения:', playerNames.length);
+    }
+  }, [selectedSpot, preflopSpots]); // Добавляем preflopSpots в зависимости
+
   // Матрицы рук
   const renderHandMatrix = (position: 'ip' | 'oop') => {
     const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
@@ -531,154 +573,388 @@ const TestWindow: React.FC = () => {
     }
   };
 
-  const startGameSimulation = () => {
-    setIsGameStarted(true);
-    setIsPanelOpen(false);
-  };
+  const startGameSimulation = async () => {
+    // Создаем сессию через API с настройками из TestWindow
+    try {
+      // Конвертируем настройки для API
+      const convertedHandRanges = {
+        player1: Object.keys(matrixSettings.ip.matrix).filter(hand => matrixSettings.ip.matrix[hand] > 0),
+        player2: Object.keys(matrixSettings.oop.matrix).filter(hand => matrixSettings.oop.matrix[hand] > 0)
+      };
 
-  // Генерация случайной руки из матрицы
-  const generateRandomHandFromMatrix = (position: 'ip' | 'oop'): string[] => {
-    const matrix = matrixSettings[position].matrix;
-    const hands = Object.keys(matrix).filter(hand => matrix[hand] > 0);
-    
-    if (hands.length === 0) {
-      // Если матрица пуста, возвращаем случайную руку
-      const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
-      const suits = ['♠', '♥', '♦', '♣'];
-      
-      const randomRank1 = ranks[Math.floor(Math.random() * ranks.length)];
-      const randomRank2 = ranks[Math.floor(Math.random() * ranks.length)];
-      const randomSuit1 = suits[Math.floor(Math.random() * suits.length)];
-      const randomSuit2 = suits[Math.floor(Math.random() * suits.length)];
-      
-      return [`${randomRank1}${randomSuit1}`, `${randomRank2}${randomSuit2}`];
-    }
-    
-    // Выбираем случайную руку из матрицы с учетом вероятности
-    const totalWeight = hands.reduce((sum, hand) => sum + matrix[hand], 0);
-    let random = Math.random() * totalWeight;
-    
-    for (const hand of hands) {
-      random -= matrix[hand];
-      if (random <= 0) {
-        return convertHandNotationToCards(hand);
+      // Если диапазоны пусты, добавляем базовые руки
+      if (convertedHandRanges.player1.length === 0) {
+        convertedHandRanges.player1 = ['AA', 'KK', 'QQ', 'AKs', 'AKo'];
       }
-    }
-    
-    return convertHandNotationToCards(hands[0]);
-  };
+      if (convertedHandRanges.player2.length === 0) {
+        convertedHandRanges.player2 = ['AA', 'KK', 'QQ', 'AKs', 'AKo'];
+      }
 
-  // Конвертация нотации руки в карты
-  const convertHandNotationToCards = (handNotation: string): string[] => {
-    const suits = ['♠', '♥', '♦', '♣'];
-    
-    if (handNotation.length === 2) {
-      // Пара (например, AA)
-      const rank = handNotation[0];
-      const suit1 = suits[Math.floor(Math.random() * suits.length)];
-      let suit2 = suits[Math.floor(Math.random() * suits.length)];
-      while (suit2 === suit1) {
-        suit2 = suits[Math.floor(Math.random() * suits.length)];
-      }
-      return [`${rank}${suit1}`, `${rank}${suit2}`];
-    } else {
-      // Непарная рука (например, AKs, AKo)
-      const rank1 = handNotation[0];
-      const rank2 = handNotation[1];
-      const suitType = handNotation[2]; // 's' или 'o'
+      // Получаем данные выбранного спота
+      const spotData = getSelectedSpotData();
+      let preflopHistory = '';
+      let preflopInfo = null;
       
-      if (suitType === 's') {
-        // Suited
-        const suit = suits[Math.floor(Math.random() * suits.length)];
-        return [`${rank1}${suit}`, `${rank2}${suit}`];
-      } else {
-        // Offsuit
-        const suit1 = suits[Math.floor(Math.random() * suits.length)];
-        let suit2 = suits[Math.floor(Math.random() * suits.length)];
-        while (suit2 === suit1) {
-          suit2 = suits[Math.floor(Math.random() * suits.length)];
+      if (spotData) {
+        console.log('📊 Используем данные спота:', spotData);
+        
+        // Используем полный текст hand history если доступен
+        if (spotData.handHistoryText) {
+          preflopHistory = spotData.handHistoryText;
+        } else {
+          // Создаем базовую префлоп историю на основе спота
+          preflopHistory = `PokerStars Hand #${Date.now()}: Hold'em No Limit (€${spotData.blinds.small}/€${spotData.blinds.big} EUR) - ${new Date().toISOString().replace('T', ' ').slice(0, 19)} ET
+Table '${spotData.name}' 2-max Seat #1 is the button
+Seat 1: Player1 (€1000 in chips)
+Seat 2: Player2 (€1000 in chips)
+Player1: posts small blind €${spotData.blinds.small}
+Player2: posts big blind €${spotData.blinds.big}
+*** HOLE CARDS ***`;
+
+          // Добавляем действия из спота
+          for (const action of spotData.actions) {
+            if (action.action === 'raise') {
+              preflopHistory += `\n${action.player}: raises €${action.amount}`;
+            } else if (action.action === 'call') {
+              preflopHistory += `\n${action.player}: calls €${action.amount}`;
+            } else if (action.action === '3bet') {
+              preflopHistory += `\n${action.player}: raises €${action.amount}`;
+            }
+            // Добавить другие действия по необходимости
+          }
+          
+          preflopHistory += '\n*** FLOP ***';
         }
-        return [`${rank1}${suit1}`, `${rank2}${suit2}`];
+        
+        // Создаем объект preflopInfo с данными спота
+        preflopInfo = {
+          potSize: spotData.potSize,
+          blinds: spotData.blinds,
+          actions: spotData.actions,
+          playerNames: spotData.actions.map(action => action.player).filter((name, index, arr) => arr.indexOf(name) === index)
+        };
+        
+        console.log('💰 Передаем данные о банке и стеках:', preflopInfo);
       }
-    }
-  };
 
-  // Генерация флопа по настройкам
-  const generateFlopFromSettings = (): string[] => {
-    if (boardSettings.flop.specificCards.every(card => card !== '')) {
-      // Используем конкретный флоп
-      return boardSettings.flop.specificCards;
-    }
-    
-    // Генерируем случайный флоп по параметрам
-    const suits = ['♠', '♥', '♦', '♣'];
-    const ranks = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
-    
-    // Простая генерация (можно расширить логику для учета всех параметров)
-    const flop = [];
-    const usedCards = new Set();
-    
-    for (let i = 0; i < 3; i++) {
-      let card;
-      do {
-        const rank = ranks[Math.floor(Math.random() * ranks.length)];
-        const suit = suits[Math.floor(Math.random() * suits.length)];
-        card = `${rank}${suit}`;
-      } while (usedCards.has(card));
+      // Определяем имя игрока и позицию на основе выбранных настроек
+      const playerNames = getPlayerNamesFromSpot();
+      let currentPlayerName = '';
+      let currentPlayerId = 1;
+      let otherPlayerName = '';
+      let finalPlayerNames: string[] = [];
       
-      usedCards.add(card);
-      flop.push(card);
+      console.log('🎮 Определяем игроков:');
+      console.log('📍 Выбранная позиция:', selectedPosition);
+      console.log('🏷️ IP игрок:', matrixSettings.ip.selectedPlayer);
+      console.log('🏷️ OOP игрок:', matrixSettings.oop.selectedPlayer);
+      console.log('👥 Доступные игроки:', playerNames);
+      
+      if (selectedPosition === 'ip') {
+        // Играем за IP - используем выбранного IP игрока как currentPlayer
+        currentPlayerName = matrixSettings.ip.selectedPlayer || 'Player1';
+        currentPlayerId = 1; // IP всегда позиция 1
+        otherPlayerName = matrixSettings.oop.selectedPlayer || 'Player2';
+        // Порядок: [IP игрок, OOP игрок]
+        finalPlayerNames = [currentPlayerName, otherPlayerName];
+      } else if (selectedPosition === 'oop') {
+        // Играем за OOP - используем выбранного OOP игрока как currentPlayer  
+        currentPlayerName = matrixSettings.oop.selectedPlayer || 'Player2';
+        currentPlayerId = 2; // OOP всегда позиция 2
+        otherPlayerName = matrixSettings.ip.selectedPlayer || 'Player1';
+        // Порядок: [IP игрок, OOP игрок] (НЕ меняем, просто указываем кто текущий)
+        finalPlayerNames = [otherPlayerName, currentPlayerName];
+      }
+      
+      console.log('✅ Итоговые игроки:');
+      console.log('🎯 Текущий игрок (за кого играем):', currentPlayerName, '(позиция', selectedPosition.toUpperCase(), ')');
+      console.log('👤 Другой игрок:', otherPlayerName);
+      console.log('📋 Порядок передачи на сервер:', finalPlayerNames);
+
+      const sessionData = {
+        preflopHistory,
+        preflopInfo, // Добавляем структурированные данные о префлопе
+        boardSettings: {
+          flopSettings: {
+            // Конкретные карты
+            specific: boardSettings.flop.specific && boardSettings.flop.specificCards.every(card => card !== ''),
+            specificCards: boardSettings.flop.specific ? boardSettings.flop.specificCards : [],
+            
+            // Настройки мастей - конвертируем из массива в boolean флаги
+            twoTone: boardSettings.flop.suits.includes('flush-draw'),
+            rainbow: boardSettings.flop.suits.includes('rainbow'),
+            monotone: boardSettings.flop.suits.includes('monotone'),
+            
+            // Настройки спаренности - конвертируем из массива в boolean флаги
+            unpaired: boardSettings.flop.paired.includes('unpaired'),
+            paired: boardSettings.flop.paired.includes('paired'),
+            trips: boardSettings.flop.paired.includes('trips'),
+            
+            // Диапазоны карт
+            ranges: !boardSettings.flop.highCard.includes('any') && 
+                   (boardSettings.flop.highCard.length > 0 || 
+                    boardSettings.flop.middleCard.length > 0 || 
+                    boardSettings.flop.lowCard.length > 0),
+            rangeSettings: {
+              high: boardSettings.flop.highCard.includes('any') ? [] : boardSettings.flop.highCard,
+              middle: boardSettings.flop.middleCard.includes('any') ? [] : boardSettings.flop.middleCard,
+              low: boardSettings.flop.lowCard.includes('any') ? [] : boardSettings.flop.lowCard
+            }
+          },
+          turnSettings: { enabled: true },
+          riverSettings: { enabled: true }
+        },
+        handRanges: convertedHandRanges,
+        tableCount,
+        rakeSettings,
+        hostPlayerId: currentPlayerId, // ИСПРАВЛЕНИЕ: Хост - это тот игрок за которого мы играем
+        // Передаем правильные имена игроков в правильном порядке
+        playerNames: finalPlayerNames,
+        // Передаем информацию о текущем игроке
+        currentPlayer: {
+          name: currentPlayerName,
+          id: currentPlayerId,
+          position: selectedPosition
+        }
+      };
+
+      console.log('🚀 Отправляем данные на сервер:', sessionData);
+
+      const response = await fetch('/api/create-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sessionData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        console.log('✅ Получили ответ от сервера:', result);
+        
+        // Теперь result содержит sessionIds - массив ID сессий
+        setGameSession({
+          sessionIds: result.sessionIds, // Массив ID сессий
+          sessionId: result.sessionIds[0], // Используем первый ID для совместимости
+          tables: result.tables,
+          settings: sessionData,
+          playerNames: result.playerNames || playerNames,
+          preflopInfo: result.preflopInfo || preflopInfo,
+          // Передаем информацию о текущем игроке
+          currentPlayer: {
+            name: currentPlayerName,
+            id: currentPlayerId,
+            position: selectedPosition
+          }
+        });
+        setIsGameStarted(true);
+        setIsPanelOpen(false);
+      } else {
+        throw new Error('Failed to create session');
+      }
+    } catch (error) {
+      console.error('Error creating session:', error);
+      alert('Ошибка при создании сессии. Проверьте подключение к серверу.');
     }
-    
-    return flop;
   };
 
-  // Компонент покерного стола
-  const PokerTable = ({ tableIndex }: { tableIndex: number }) => {
-    const playerHand = generateRandomHandFromMatrix(selectedPosition);
-    const opponentHand = generateRandomHandFromMatrix(selectedPosition === 'ip' ? 'oop' : 'ip');
-    const flop = generateFlopFromSettings();
+  const joinSessionFromClipboard = async () => {
+    try {
+      // Читаем ID сессии из буфера обмена
+      const clipboardContent = await navigator.clipboard.readText();
+      
+      if (!clipboardContent || clipboardContent.trim().length === 0) {
+        alert('Буфер обмена пуст. Скопируйте ID сессии и попробуйте снова.');
+        return;
+      }
+      
+      const cleanContent = clipboardContent.trim();
+      console.log('🔗 Clipboard content:', cleanContent);
+      
+      // Проверяем если это несколько ID (разделенных переносами строк)
+      const sessionIds = cleanContent.split('\n').map(id => id.trim()).filter(id => id.length > 0);
+      
+      if (sessionIds.length === 0) {
+        alert('Не удалось найти действительные ID сессий в буфере обмена.');
+        return;
+      }
+      
+      if (sessionIds.length === 1) {
+        // Одна сессия - подключаемся напрямую
+        const sessionId = sessionIds[0];
+        console.log('🔗 Joining single session:', sessionId);
+        
+        try {
+          const response = await fetch(`/api/session/${sessionId}`);
+          const sessionData = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(sessionData.error || 'Failed to load session');
+          }
+          
+          // Устанавливаем режим гостя
+          setGameSession({
+            sessionId: sessionId,
+            tables: sessionData.tables,
+            playerNames: sessionData.playerNames,
+            isGuest: true
+          });
+          
+        } catch (error: any) {
+          console.error('Failed to join session:', error);
+          alert(`Не удалось подключиться к сессии: ${error.message}`);
+        }
+      } else {
+        // Множественные сессии - открываем отдельные окна для каждой БЕЗ предварительной проверки
+        console.log(`🔗 Opening ${sessionIds.length} separate windows for sessions:`, sessionIds);
+        
+        // Открываем отдельное окно для каждой сессии сразу
+        const openedWindows = [];
+        for (let i = 0; i < sessionIds.length; i++) {
+          const sessionId = sessionIds[i];
+          
+          try {
+            console.log(`🪟 Opening window ${i + 1}/${sessionIds.length} for session ${sessionId}`);
+            const newWindow = openSessionWindow(sessionId, i + 1);
+            if (newWindow) {
+              openedWindows.push(newWindow);
+            }
+            
+            // Небольшая задержка между открытием окон
+            if (i < sessionIds.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 200));
+            }
+          } catch (error: any) {
+            console.error(`Failed to open window for session ${sessionId}:`, error);
+          }
+        }
+        
+        console.log(`✅ Successfully opened ${openedWindows.length} windows for ${sessionIds.length} sessions`);
+        
+        if (openedWindows.length > 0) {
+          alert(`Успешно подключились к ${sessionIds.length} столам!\nОткрыто ${openedWindows.length} окон.`);
+        } else {
+          alert('Не удалось открыть окна. Проверьте настройки блокировки всплывающих окон в браузере.');
+        }
+      }
+      
+    } catch (error: any) {
+      console.error('Error reading clipboard:', error);
+      alert('Ошибка при чтении буфера обмена. Убедитесь, что страница имеет разрешение на доступ к буферу обмена.');
+    }
+  };
+
+  const openSessionWindow = (sessionId: string, tableNumber: number) => {
+    // Создаем URL для подключения гостя к сессии
+    const baseUrl = window.location.origin;
     
-    return (
-      <div className="poker-table">
-        <div className="table-surface">
-          <div className="table-number">Стол {tableIndex + 1}</div>
-          
-          {/* Флоп */}
-          <div className="community-cards">
-            {flop.map((card, index) => (
-              <div key={index} className="community-card">
-                {card}
-              </div>
-            ))}
-          </div>
-          
-          {/* Игрок */}
-          <div className="player-position player">
-            <div className="player-label">Вы ({selectedPosition.toUpperCase()})</div>
-            <div className="player-cards">
-              {playerHand.map((card, index) => (
-                <div key={index} className="player-card">
-                  {card}
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Оппонент */}
-          <div className="player-position opponent">
-            <div className="player-label">Оппонент ({selectedPosition === 'ip' ? 'OOP' : 'IP'})</div>
-            <div className="player-cards">
-              {opponentHand.map((card, index) => (
-                <div key={index} className="player-card">
-                  {card}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    // Упрощенный URL без hash для тестирования
+    const guestUrl = `${baseUrl}/#join?sessionId=${sessionId}&isGuest=true&tableStyle=modern`;
+    
+    console.log(`🪟 Opening window ${tableNumber} for session ${sessionId}`);
+    console.log(`🔗 URL: ${guestUrl}`);
+    
+    // Настройки окна
+    const windowFeatures = [
+      'width=1200',
+      'height=800',
+      `left=${200 + (tableNumber - 1) * 150}`, // Увеличиваем смещение для лучшей видимости
+      `top=${100 + (tableNumber - 1) * 150}`,
+      'resizable=yes',
+      'scrollbars=no',
+      'status=no',
+      'menubar=no',
+      'toolbar=no',
+      'location=no',
+      'directories=no'
+    ].join(',');
+    
+    try {
+      // Открываем новое окно
+      const newWindow = window.open(
+        guestUrl,
+        `poker-guest-table-${tableNumber}`,
+        windowFeatures
+      );
+      
+      if (newWindow) {
+        console.log(`✅ Window opened successfully for table ${tableNumber}`);
+        
+        // Фокусируемся на новом окне
+        setTimeout(() => {
+          try {
+            newWindow.focus();
+            console.log(`✅ Focused window ${tableNumber}`);
+          } catch (e: any) {
+            console.log(`⚠️ Could not focus window ${tableNumber}:`, e.message);
+          }
+        }, 500);
+        
+        return newWindow;
+      } else {
+        console.error(`❌ Failed to open window for session ${sessionId} - window.open returned null`);
+        // Если окно не открылось (заблокировано браузером)
+        if (tableNumber === 1) {
+          alert('Не удалось открыть новые окна. Проверьте настройки блокировки всплывающих окон в браузере.\n\nРазрешите всплывающие окна для этого сайта в настройках браузера.');
+        }
+        return null;
+      }
+    } catch (error: any) {
+      console.error(`❌ Exception when opening window for session ${sessionId}:`, error);
+      if (tableNumber === 1) {
+        alert(`Ошибка при открытии окон: ${error.message}\n\nПроверьте настройки браузера.`);
+      }
+      return null;
+    }
+  };
+
+  const createSingleSession = () => {
+    // Возвращаемся к основному окну создания игры
+    window.location.href = '/';
+  };
+
+  // Загрузка спотов при монтировании компонента
+  useEffect(() => {
+    const loadSpots = async () => {
+      setSpotsLoading(true);
+      try {
+        const spots = await preflopSpotsLoader.loadSpotsFromFolder();
+        setPreflopSpots(spots);
+      } catch (error) {
+        console.error('Ошибка загрузки спотов:', error);
+      } finally {
+        setSpotsLoading(false);
+      }
+    };
+
+    loadSpots();
+  }, []);
+
+  // Функция для копирования Session ID
+  const copySessionId = async (sessionId: string) => {
+    try {
+      await navigator.clipboard.writeText(sessionId);
+      setCopyNotification('Скопировано!');
+      setTimeout(() => setCopyNotification(''), 2000);
+    } catch (error) {
+      console.error('Ошибка копирования:', error);
+      setCopyNotification('Ошибка копирования');
+      setTimeout(() => setCopyNotification(''), 2000);
+    }
+  };
+
+  const copyAllSessionIds = async (sessionIds: string[]) => {
+    try {
+      const allIds = sessionIds.join('\n');
+      await navigator.clipboard.writeText(allIds);
+      setCopyNotification('Все ID скопированы!');
+      setTimeout(() => setCopyNotification(''), 2000);
+    } catch (error) {
+      console.error('Ошибка копирования всех ID:', error);
+      setCopyNotification('Ошибка копирования всех ID');
+      setTimeout(() => setCopyNotification(''), 2000);
+    }
   };
 
   return (
@@ -699,30 +975,94 @@ const TestWindow: React.FC = () => {
         <div className="panel-header">
           <div className="header-content">
             <h2>Панель управления</h2>
+            {isGameStarted && gameSession && (
+              <div className="session-id-display">
+                {gameSession.sessionIds ? (
+                  // Если есть массив ID сессий - показываем их все
+                  <div className="multiple-sessions">
+                    <span className="session-label">Session IDs ({gameSession.sessionIds.length}):</span>
+                    <div className="session-list">
+                      {gameSession.sessionIds.map((sessionId: string, index: number) => (
+                        <div key={sessionId} className="session-item">
+                          <span className="session-number">{index + 1}:</span>
+                          <span 
+                            className="session-id"
+                            onClick={() => copySessionId(sessionId)}
+                            title="Нажмите для копирования"
+                          >
+                            {sessionId}
+                          </span>
+                        </div>
+                      ))}
+                      <button
+                        className="copy-all-btn"
+                        onClick={() => copyAllSessionIds(gameSession.sessionIds)}
+                        title="Копировать все ID в формате для подключения"
+                      >
+                        📋 Копировать все
+                      </button>
+                    </div>
+                  </div>
+                ) : gameSession.sessionId ? (
+                  // Fallback для одного ID
+                  <div className="single-session">
+                    <span className="session-label">Session ID:</span>
+                    <span 
+                      className="session-id"
+                      onClick={() => copySessionId(gameSession.sessionId)}
+                      title="Нажмите для копирования"
+                    >
+                      {gameSession.sessionId}
+                    </span>
+                  </div>
+                ) : null}
+                {copyNotification && (
+                  <span className="copy-notification">
+                    {copyNotification}
+                  </span>
+                )}
+              </div>
+            )}
             <div className="position-selector">
               <span className="position-label">За кого играть:</span>
               <div className="position-buttons">
                 <button 
                   className={`position-btn ${selectedPosition === 'ip' ? 'active' : ''}`}
                   onClick={() => setSelectedPosition('ip')}
+                  disabled={isGameStarted}
                 >
                   IP
                 </button>
                 <button 
                   className={`position-btn ${selectedPosition === 'oop' ? 'active' : ''}`}
                   onClick={() => setSelectedPosition('oop')}
+                  disabled={isGameStarted}
                 >
                   OOP
                 </button>
               </div>
             </div>
-            <button 
-              className="start-btn"
-              onClick={startGameSimulation}
-              title="Начать симуляцию"
-            >
-              ▶
-            </button>
+            <div className="control-section">
+              <div className="control-group">
+                <div className="control-row" style={{ gap: '8px' }}>
+                  <button
+                    className="start-simulation-btn"
+                    onClick={startGameSimulation}
+                    disabled={tableCount === 0}
+                    title="Начать симуляцию"
+                  >
+                    ▶
+                  </button>
+                  <button
+                    className="join-session-btn"
+                    onClick={joinSessionFromClipboard}
+                    title="Подключиться к сессии (ID из буфера обмена)"
+                  >
+                    🔗
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
           <button 
             className="close-btn"
@@ -741,14 +1081,27 @@ const TestWindow: React.FC = () => {
               className="modern-select modern-select-narrow"
               value={selectedSpot}
               onChange={(e) => handleSpotChange(e.target.value)}
+              disabled={spotsLoading}
             >
-              <option value="">Выберите спот...</option>
+              <option value="">
+                {spotsLoading ? "Загрузка спотов..." : "Выберите спот..."}
+              </option>
               {preflopSpots.map((spot: PreflopSpot) => (
                 <option key={spot.id} value={spot.id}>
                   {spot.name}
                 </option>
               ))}
             </select>
+            {spotsLoading && (
+              <div className="spots-loading">
+                <span>🔄 Загрузка TXT файлов...</span>
+              </div>
+            )}
+            {!spotsLoading && preflopSpots.length > 0 && (
+              <div className="spots-info">
+                <span className="spots-count">📁 Загружено {preflopSpots.length} спотов</span>
+              </div>
+            )}
             {getSelectedSpotData() && (
               <div className="spot-info">
                 <p className="spot-description">{getSelectedSpotData()!.description}</p>
@@ -834,42 +1187,55 @@ const TestWindow: React.FC = () => {
               <div className="flop-settings">
                 {/* Конкретный флоп */}
                 <div className="flop-subsection">
-                  <label className="subsection-label">Конкретный флоп</label>
-                  <div className="specific-cards-row">
-                    {[0, 1, 2].map(index => {
-                      const cardString = boardSettings.flop.specificCards[index];
-                      const cardData = convertCardToSprite(cardString);
-                      
-                      return (
-                        <div 
-                          key={index}
-                          className="card-slot"
-                          onClick={() => openCardModal(index)}
-                        >
-                          {cardData ? (
-                            <Card
-                              suit={cardData.suit}
-                              rank={cardData.rank}
-                              width={50}
-                              height={70}
-                              animated={true}
-                            />
-                          ) : (
-                            <div className="card-back">
-                              🂠
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    <button 
-                      className="quick-select-btn" 
-                      onClick={openFreeCardModal}
-                      title="Быстрый выбор карт"
-                    >
-                      ⚡ Выбрать карты
-                    </button>
+                  <div className="subsection-header">
+                    <input
+                      type="checkbox"
+                      id="specific-flop"
+                      checked={boardSettings.flop.specific}
+                      onChange={(e) => setBoardSettings(prev => ({
+                        ...prev,
+                        flop: { ...prev.flop, specific: e.target.checked }
+                      }))}
+                    />
+                    <label htmlFor="specific-flop" className="subsection-label">Конкретный флоп</label>
                   </div>
+                  {boardSettings.flop.specific && (
+                    <div className="specific-cards-row">
+                      {[0, 1, 2].map(index => {
+                        const cardString = boardSettings.flop.specificCards[index];
+                        const cardData = convertCardToSprite(cardString);
+                        
+                        return (
+                          <div 
+                            key={index}
+                            className="card-slot"
+                            onClick={() => openCardModal(index)}
+                          >
+                            {cardData ? (
+                              <Card
+                                suit={cardData.suit}
+                                rank={cardData.rank}
+                                width={50}
+                                height={70}
+                                animated={true}
+                              />
+                            ) : (
+                              <div className="card-back">
+                                🂠
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      <button 
+                        className="quick-select-btn" 
+                        onClick={openFreeCardModal}
+                        title="Быстрый выбор карт"
+                      >
+                        ⚡ Выбрать карты
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Масти */}
@@ -1004,9 +1370,11 @@ const TestWindow: React.FC = () => {
                       onChange={(e) => handleMatrixPlayerChange('ip', e.target.value)}
                     >
                       <option value="">Выберите игрока</option>
-                      <option value="tight">Tight Player</option>
-                      <option value="loose">Loose Player</option>
-                      <option value="aggressive">Aggressive Player</option>
+                      {getPlayerNamesFromSpot().map(playerName => (
+                        <option key={`ip-${playerName}`} value={playerName}>
+                          {playerName}
+                        </option>
+                      ))}
                     </select>
                     <button 
                       className="paste-btn" 
@@ -1048,9 +1416,11 @@ const TestWindow: React.FC = () => {
                       onChange={(e) => handleMatrixPlayerChange('oop', e.target.value)}
                     >
                       <option value="">Выберите игрока</option>
-                      <option value="tight">Tight Player</option>
-                      <option value="loose">Loose Player</option>
-                      <option value="aggressive">Aggressive Player</option>
+                      {getPlayerNamesFromSpot().map(playerName => (
+                        <option key={`oop-${playerName}`} value={playerName}>
+                          {playerName}
+                        </option>
+                      ))}
                     </select>
                     <button 
                       className="paste-btn" 
@@ -1096,11 +1466,51 @@ const TestWindow: React.FC = () => {
             >
               ⚙️ Настройки
             </button>
-            <div className={`tables-container tables-${tableCount}`}>
-              {Array.from({ length: tableCount }, (_, index) => (
-                <PokerTable key={index} tableIndex={index} />
-              ))}
-            </div>
+            {gameSession ? (
+              <div className={`tables-container tables-${gameSession.tables.length}`}>
+                {gameSession.tables.map((table: any, index: number) => (
+                  <div key={table.sessionId || table.id} className="table-wrapper">
+                    <div className="table-header">
+                      <h3>Стол {table.tableNumber || index + 1}</h3>
+                      {table.sessionId && (
+                        <div className="session-info">
+                          Сессия: {table.sessionId.substring(0, 8)}...
+                        </div>
+                      )}
+                    </div>
+                    <ModernPokerTable
+                      table={table}
+                      sessionId={table.sessionId || gameSession.sessionId}
+                      playerNames={gameSession.playerNames}
+                      currentPlayer={gameSession.currentPlayer}
+                      onHandComplete={(handHistory: string) => {
+                        setHandHistories(prev => [...prev, handHistory]);
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="session-creation">
+                <h2>Покерный симулятор</h2>
+                <button 
+                  onClick={createSingleSession}
+                  className="btn-primary"
+                >
+                  Создать новую игру
+                </button>
+                
+                <div className="join-session">
+                  <h3>Присоединиться к игре</h3>
+                  <button 
+                    onClick={joinSessionFromClipboard}
+                    className="btn-secondary"
+                  >
+                    Подключиться по ID из буфера обмена
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="content-wrapper">
@@ -1136,6 +1546,10 @@ const TestWindow: React.FC = () => {
                       {boardSettings.activeStreet === 'flop' ? 'Флоп' : 
                        boardSettings.activeStreet === 'turn' ? 'Тёрн' : 'Ривер'}
                     </span>
+                  </div>
+                  <div className="setting-item">
+                    <span className="setting-label">Hand Histories:</span>
+                    <span className="setting-value">{handHistories.length} рук</span>
                   </div>
                 </div>
               </div>

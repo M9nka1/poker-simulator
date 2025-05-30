@@ -5,14 +5,14 @@ Seat 2: Pio_BB ($1000.00 in chips)
 Seat 3: Pio_EP ($1000.00 in chips)
 Seat 4: Pio_MP ($1000.00 in chips)
 Seat 5: Pio_CO ($1000.00 in chips)
-Seat 6: Pio_IP_c3b_BTN ($1000.00 in chips)
+Seat 6: Pio_IP_c3bBU ($1000.00 in chips)
 Pio_OOP_3bet_SB: posts small blind $5.00
 Pio_BB: posts big blind $10.00
 *** HOLE CARDS ***
 Pio_EP: folds
 Pio_MP: folds
 Pio_CO: folds
-Pio_IP_c3b_BTN: raises $15.00 to $25.00
+Pio_IP_c3bBU: raises $15.00 to $25.00
 Pio_OOP_3bet_SB: raises $85.00 to $110.00
 Pio_BB: folds
-Pio_IP_c3b_BTN: calls $85.00
+Pio_IP_c3bBU: calls $85.00

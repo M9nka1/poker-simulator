@@ -14,16 +14,56 @@ import TestWindow from './components/TestWindow';
 
 export interface GameSession {
   sessionId: string;
+  sessionIds?: string[]; // Массив ID сессий для множественных столов
   tables: any[];
   settings: any;
   playerNames: string[];
   preflopInfo?: any;
+  isGuest?: boolean;
 }
 
 function App() {
   const [currentPage, setCurrentPage] = useState<'setup' | 'game' | 'join' | 'table' | 'sprite-editor' | 'card-test' | 'card-position' | 'optimized-card-test' | 'layout-debugger' | 'hand-range-test' | 'test-window'>('setup');
   const [gameSession, setGameSession] = useState<GameSession | null>(null);
   const [tableParams, setTableParams] = useState<any>(null);
+
+  // Новая функция для автоматического подключения гостя к сессии
+  const joinSessionAsGuest = async (sessionId: string, tableStyle: string = 'modern') => {
+    try {
+      console.log('🔗 Auto-joining session as guest:', sessionId);
+      
+      // Получаем информацию о сессии
+      const response = await fetch(`/api/session/${sessionId}`);
+      
+      if (!response.ok) {
+        throw new Error('Сессия не найдена или недоступна');
+      }
+      
+      const sessionData = await response.json();
+      console.log('📊 Session data for guest:', sessionData);
+      
+      // Создаем сессию для гостя
+      const guestSession: GameSession = {
+        sessionId: sessionId,
+        tables: sessionData.tables,
+        settings: sessionData.settings,
+        playerNames: sessionData.playerNames || ['Player1', 'Player2'],
+        isGuest: true // Помечаем как гостя
+      };
+      
+      // Устанавливаем сессию и переходим к игре
+      setGameSession(guestSession);
+      setCurrentPage('game');
+      
+      console.log('✅ Successfully joined session as guest');
+      
+    } catch (error) {
+      console.error('❌ Error joining session as guest:', error);
+      alert(`Ошибка подключения к сессии: ${(error as Error).message}`);
+      // Возвращаемся к странице подключения при ошибке
+      setCurrentPage('join');
+    }
+  };
 
   // Проверяем hash при загрузке для определения, нужно ли показать отдельный стол
   useEffect(() => {
@@ -44,7 +84,7 @@ function App() {
       } else if (hash === '#test-window') {
         setCurrentPage('test-window');
       } else if (hash.startsWith('#table?')) {
-        // Парсим параметры из hash
+        // Парсим параметры из hash для отдельного стола (хост)
         const params = new URLSearchParams(hash.substring(7)); // убираем '#table?'
         const sessionId = params.get('sessionId');
         const tableId = params.get('tableId');
@@ -61,6 +101,18 @@ function App() {
             tableStyle
           });
           setCurrentPage('table');
+        }
+      } else if (hash.startsWith('#join?')) {
+        // Парсим параметры для подключения гостя к сессии
+        const params = new URLSearchParams(hash.substring(6)); // убираем '#join?'
+        const sessionId = params.get('sessionId');
+        const isGuest = params.get('isGuest') === 'true';
+        const tableStyle = params.get('tableStyle') || 'modern';
+
+        if (sessionId && isGuest) {
+          console.log('🔗 Guest joining session from URL:', sessionId);
+          // Автоматически подключаемся к сессии как гость
+          joinSessionAsGuest(sessionId, tableStyle);
         }
       }
     };

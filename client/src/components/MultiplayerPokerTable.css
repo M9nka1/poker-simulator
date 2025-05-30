@@ -109,4 +109,30 @@
     padding: 8px 16px !important;
     fontSize: 1rem !important;
   }
+}
+
+/* Host player highlighting */
+.player.host-player {
+  border: 3px solid #2196F3 !important;
+  background-color: rgba(33, 150, 243, 0.15) !important;
+  box-shadow: 0 0 15px rgba(33, 150, 243, 0.3) !important;
+}
+
+.player.host-player h4 {
+  color: #2196F3;
+  text-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
+}
+
+/* Host crown animation */
+.host-crown {
+  animation: crown-glow 2s ease-in-out infinite;
+}
+
+@keyframes crown-glow {
+  0%, 100% {
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.8), 0 0 20px rgba(33, 150, 243, 0.3);
+  }
 } 

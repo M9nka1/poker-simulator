@@ -1,0 +1,12 @@
+PokerStars Hand #242345678903: Hold'em No Limit (€2.50/€5.00 EUR) - 2024/05/25 20:15:30 CET
+Table 'Andromeda II' 2-max Seat #1 is the button
+Seat 1: Hero_BTN (€1000.00 in chips)
+Seat 2: Villain_BB (€1000.00 in chips)
+Hero_BTN: posts small blind €2.50
+Villain_BB: posts big blind €5.00
+*** HOLE CARDS ***
+Dealt to Hero_BTN [As Kh]
+Hero_BTN: raises €7.50 to €12.50
+Villain_BB: raises €25.00 to €37.50
+Hero_BTN: calls €25.00
+*** FLOP *** 
