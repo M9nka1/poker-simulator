@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ModernPokerTable from './ModernPokerTable';
+import config from '../config';
 
 interface TablePageProps {
   sessionId: string;
@@ -47,7 +48,7 @@ const TablePage: React.FC<TablePageProps> = ({
     // Загружаем данные стола
     const loadTable = async () => {
       try {
-        const response = await fetch(`/api/session/${sessionId}`);
+        const response = await fetch(`${config.apiBaseUrl}/api/session/${sessionId}`);
         if (response.ok) {
           const sessionData = await response.json();
           const targetTable = sessionData.tables.find((t: any) => t.id === tableId);

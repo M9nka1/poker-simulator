@@ -4,6 +4,10 @@ import preflopSpotsLoader, { PreflopSpot } from '../utils/preflopSpotsLoader';
 import Card from './Card';
 import { SUITS_ORDER, RANKS_ORDER, Suit, Rank } from '../utils/cardSprites';
 import ModernPokerTable from './ModernPokerTable';
+import HandRangeMatrix from './HandRangeMatrix';
+import BoardSettings from './BoardSettings';
+import parsePokerLogFile from '../utils/preflopSpotsLoader';
+import config from '../config';
 
 interface RakeSettings {
   percentage: number;
@@ -382,44 +386,33 @@ const TestWindow: React.FC = () => {
     return preflopSpots.find(spot => spot.id === selectedSpot) || null;
   }, [preflopSpots, selectedSpot]);
 
-  // Получаем имена игроков из выбранного спота
-  const getPlayerNamesFromSpot = useCallback((): string[] => {
-    const spotData = getSelectedSpotData();
-    if (!spotData || !spotData.actions) return [];
+  // Загрузка имен игроков из выбранного спота
+  const getPlayerNamesFromSpot = useCallback((spotId: string): string[] => {
+    const spot = preflopSpots.find(s => s.id === spotId);
+    if (!spot) return ['Player1', 'Player2'];
     
-    // Извлекаем уникальные имена игроков из действий
-    const playerNames = Array.from(new Set(spotData.actions.map(action => action.player)));
+    // Извлекаем имена игроков из названия спота
+    const spotName = spot.name.replace('.txt', '');
+    const parts = spotName.split(' vs ');
     
-    // Фильтруем только валидные имена игроков (убираем пустые строки)
-    const validPlayerNames = playerNames.filter(name => name && name.trim().length > 0);
+    if (parts.length === 2) {
+      return [parts[0], parts[1]];
+    }
     
-    console.log('🎮 Имена игроков из спота:', validPlayerNames);
-    return validPlayerNames;
-  }, [getSelectedSpotData]);
+    return ['Player1', 'Player2'];
+  }, [preflopSpots]);
 
-  // Автоматически назначаем игроков позициям при выборе спота
+  // Обновляем имена игроков при изменении выбранного спота
   useEffect(() => {
-    const playerNames = getPlayerNamesFromSpot();
-    console.log('🔄 Спот изменился:', selectedSpot, 'Игроки:', playerNames);
-    
-    if (playerNames.length >= 2) {
-      console.log('✅ Назначаем игроков: IP =', playerNames[0], ', OOP =', playerNames[1]);
-      // Первый игрок - IP, второй - OOP (или наоборот, в зависимости от логики)
+    if (selectedSpot) {
+      const names = getPlayerNamesFromSpot(selectedSpot);
       setMatrixSettings(prev => ({
         ...prev,
-        ip: {
-          ...prev.ip,
-          selectedPlayer: playerNames[0]
-        },
-        oop: {
-          ...prev.oop,
-          selectedPlayer: playerNames[1]
-        }
+        ip: { ...prev.ip, selectedPlayer: names[0] },
+        oop: { ...prev.oop, selectedPlayer: names[1] }
       }));
-    } else {
-      console.log('⚠️ Недостаточно игроков для автоназначения:', playerNames.length);
     }
-  }, [selectedSpot, preflopSpots, getPlayerNamesFromSpot]); // Добавляем getPlayerNamesFromSpot в зависимости
+  }, [selectedSpot, getPlayerNamesFromSpot]);
 
   // Матрицы рук
   const renderHandMatrix = (position: 'ip' | 'oop') => {
@@ -638,7 +631,7 @@ Player2: posts big blind €${spotData.blinds.big}
       }
 
       // Определяем имя игрока и позицию на основе выбранных настроек
-      const playerNames = getPlayerNamesFromSpot();
+      const playerNames = getPlayerNamesFromSpot(selectedSpot);
       let currentPlayerName = '';
       let currentPlayerId = 1;
       let otherPlayerName = '';
@@ -847,7 +840,7 @@ Player2: posts big blind €${spotData.blinds.big}
 
   const openSessionWindow = (sessionId: string, tableNumber: number) => {
     // Создаем URL для подключения гостя к сессии
-    const baseUrl = window.location.origin;
+    const baseUrl = config.apiBaseUrl;
     
     // Упрощенный URL без hash для тестирования
     const guestUrl = `${baseUrl}/#join?sessionId=${sessionId}&isGuest=true&tableStyle=modern`;
@@ -1370,7 +1363,7 @@ Player2: posts big blind €${spotData.blinds.big}
                       onChange={(e) => handleMatrixPlayerChange('ip', e.target.value)}
                     >
                       <option value="">Выберите игрока</option>
-                      {getPlayerNamesFromSpot().map(playerName => (
+                      {getPlayerNamesFromSpot(selectedSpot).map(playerName => (
                         <option key={`ip-${playerName}`} value={playerName}>
                           {playerName}
                         </option>
@@ -1416,7 +1409,7 @@ Player2: posts big blind €${spotData.blinds.big}
                       onChange={(e) => handleMatrixPlayerChange('oop', e.target.value)}
                     >
                       <option value="">Выберите игрока</option>
-                      {getPlayerNamesFromSpot().map(playerName => (
+                      {getPlayerNamesFromSpot(selectedSpot).map(playerName => (
                         <option key={`oop-${playerName}`} value={playerName}>
                           {playerName}
                         </option>

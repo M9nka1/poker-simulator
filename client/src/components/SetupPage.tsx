@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import HandRangeMatrix from './HandRangeMatrix';
 import BoardSettings from './BoardSettings';
 import { GameSession } from '../App';
+import config from '../config';
 
 interface SetupPageProps {
   onSessionCreated: (session: GameSession) => void;
@@ -375,9 +376,8 @@ const SetupPage: React.FC<SetupPageProps> = ({ onSessionCreated, onGoToJoin }) =
   };
 
   const openTableWindow = (sessionId: string, tableId: number, playerNames: string[], windowIndex: number) => {
-    // Создаем URL с параметрами для стола (без betSizes)
-    const baseUrl = window.location.origin;
-    const tableUrl = new URL(`${baseUrl}`);
+    const baseUrl = config.apiBaseUrl;
+    const tableUrl = new URL(baseUrl);
     
     // Добавляем параметры в hash для передачи в новое окно
     tableUrl.hash = `table?sessionId=${sessionId}&tableId=${tableId}&playerNames=${encodeURIComponent(JSON.stringify(playerNames))}&tableStyle=modern`;

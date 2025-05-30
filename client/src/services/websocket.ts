@@ -1,3 +1,5 @@
+import config from '../config';
+
 export interface WebSocketMessage {
   type: string;
   [key: string]: any;
@@ -28,17 +30,7 @@ export class WebSocketService {
 
   private connect() {
     try {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      
-      // Определяем правильный URL для WebSocket
-      let wsUrl: string;
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        // Локальная разработка - используем порт 5000
-        wsUrl = `${protocol}//${window.location.hostname}:5000`;
-      } else {
-        // Продакшн (Railway) - используем тот же хост без порта
-        wsUrl = `${protocol}//${window.location.host}`;
-      }
+      const wsUrl = config.wsUrl;
       
       this.ws = new WebSocket(wsUrl);
       

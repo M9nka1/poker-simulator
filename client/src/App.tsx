@@ -11,6 +11,7 @@ import OptimizedCardTest from './components/OptimizedCardTest';
 import LayoutDebugger from './components/LayoutDebugger';
 import HandRangeTest from './components/HandRangeTest';
 import TestWindow from './components/TestWindow';
+import config from './config';
 
 export interface GameSession {
   sessionId: string;
@@ -33,7 +34,7 @@ function App() {
       console.log('🔗 Auto-joining session as guest:', sessionId);
       
       // Получаем информацию о сессии
-      const response = await fetch(`/api/session/${sessionId}`);
+      const response = await fetch(`${config.apiBaseUrl}/api/session/${sessionId}`);
       
       if (!response.ok) {
         throw new Error('Сессия не найдена или недоступна');

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GameSession } from '../App';
+import config from '../config';
 
 interface JoinSessionPageProps {
   onSessionJoined: (session: GameSession) => void;
@@ -35,7 +36,7 @@ const JoinSessionPage: React.FC<JoinSessionPageProps> = ({
     setError('');
 
     try {
-      const response = await fetch('/api/sessions');
+      const response = await fetch(`${config.apiBaseUrl}/api/sessions`);
       
       if (response.ok) {
         const sessionsData = await response.json();
@@ -45,7 +46,7 @@ const JoinSessionPage: React.FC<JoinSessionPageProps> = ({
       }
     } catch (error) {
       console.error('Load sessions error:', error);
-      setError('Ошибка при загрузке списка сессий. Попробуйте обновить страницу.');
+      setError('Ошибка при загрузке сессий. Попробуйте еще раз.');
     } finally {
       setIsLoading(false);
     }
@@ -56,14 +57,12 @@ const JoinSessionPage: React.FC<JoinSessionPageProps> = ({
     setError('');
 
     try {
-      const response = await fetch('/api/sessions/cleanup', {
-        method: 'DELETE'
+      const response = await fetch(`${config.apiBaseUrl}/api/sessions/cleanup`, {
+        method: 'POST'
       });
       
       if (response.ok) {
-        const result = await response.json();
-        alert(`✅ ${result.message}`);
-        // Обновляем список сессий после очистки
+        // После очистки обновляем список сессий
         await loadAvailableSessions();
       } else {
         throw new Error('Failed to cleanup sessions');
@@ -81,7 +80,7 @@ const JoinSessionPage: React.FC<JoinSessionPageProps> = ({
     setError('');
 
     try {
-      const response = await fetch(`/api/session/${sessionId}`);
+      const response = await fetch(`${config.apiBaseUrl}/api/session/${sessionId}`);
       
       if (response.ok) {
         const sessionData = await response.json();

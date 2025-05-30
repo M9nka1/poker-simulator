@@ -904,6 +904,19 @@ class PokerEngine {
     return maxBet;
   }
 
+  getCallAmount(table, playerId) {
+    // Возвращает сумму, которую игрок должен доплатить для колла
+    const player = table.players.find(p => p.id === playerId);
+    if (!player) {
+      return 0;
+    }
+    
+    const currentMaxBet = this.getMaxBetOnStreet(table, table.currentStreet);
+    const playerBetOnStreet = this.getStreetTotal(player, table.currentStreet);
+    
+    return Math.max(0, currentMaxBet - playerBetOnStreet);
+  }
+
   advanceStreet(table) {
     // Определяем, кто является OOP (BB) - он всегда ходит первым на новых улицах
     const player1 = table.players.find(p => p.id === 1);
